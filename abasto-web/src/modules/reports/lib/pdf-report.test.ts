@@ -84,7 +84,7 @@ function dashboard(range: { from: string; to: string }): OwnerDashboardData {
       },
       byProduct: products,
       bySupplier: [
-        row('s1', 'Grupo Lala', 326076, 231840, 3),
+        row('s1', 'LALA', 326076, 231840, 3),
         row('s2', 'Alpura', 317582, 261791, 3),
       ],
       byWarehouse: [

@@ -54,6 +54,8 @@ export const supplierOrderInput = z.object({
   discounts: z.array(z.object({ pendingId: id })).optional(),
 })
 
+export const folioPreviewInput = z.object({ supplierId: id, warehouseId: id })
+
 export const orderIdInput = z.object({ purchaseId: id })
 
 export const supplierOrdersInput = z.object({

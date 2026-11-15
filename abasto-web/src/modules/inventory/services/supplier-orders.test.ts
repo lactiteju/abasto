@@ -6,6 +6,7 @@ import { resetDatabase } from '#/db/testing'
 import type { AppErrorCode } from '#/lib/errors'
 import { presentations, products } from '#/modules/catalog/db/schema'
 import { updateProduct } from '#/modules/catalog/services/products'
+import { updateSupplier } from '#/modules/catalog/services/suppliers'
 import {
   lots,
   purchaseLines,
@@ -19,6 +20,7 @@ import {
   createSupplierOrder,
   getSupplierOrder,
   listSupplierOrders,
+  previewSupplierFolio,
   receiveSupplierOrder,
 } from '#/modules/inventory/services/supplier-orders'
 import {
@@ -70,7 +72,7 @@ describe('createSupplierOrder', () => {
       supplierId: fx.supplier.id,
       warehouseId: fx.a.id,
       expectedOn: '2026-11-10',
-      reference: 'E001',
+      reference: 'A00001',
       receivedAt: null,
       receivedBy: null,
     })
@@ -382,7 +384,7 @@ describe('receiveSupplierOrder', () => {
     expect(milkLot).toMatchObject({
       productId: fx.milk.id,
       warehouseId: fx.a.id,
-      code: 'E001',
+      code: 'A00001',
       expiresOn: '2026-12-01',
       receivedQuantity: 120,
       receivedCostCents: 13440,
@@ -413,7 +415,7 @@ describe('receiveSupplierOrder', () => {
     expect(stored.lines[0]).toMatchObject({
       goodQuantity: 120,
       damagedQuantity: 0,
-      lotCode: 'E001',
+      lotCode: 'A00001',
     })
     expect((await supplierState()).pendings).toEqual([])
   })
@@ -638,11 +640,11 @@ describe('receiveSupplierOrder', () => {
         { receivedBoxes: 2, damagedBoxes: 0 },
       ]),
     )
-    expect(order.code).toBe('E001')
-    expect(result.lots.map((lot) => lot.code)).toEqual(['E001', 'E001'])
+    expect(order.code).toBe('A00001')
+    expect(result.lots.map((lot) => lot.code)).toEqual(['A00001', 'A00001'])
   })
 
-  test('the folio is automatic and consecutive: E001, E002…, shared by the lots of each order', async () => {
+  test('the folio is automatic and consecutive per supplier: A00001, A00002…, shared by the lots of each order', async () => {
     const fx = await setupSupplierOrders()
     const first = await createSupplierOrder(fx.owner, orderOf(fx))
     const second = await createSupplierOrder(
@@ -653,9 +655,9 @@ describe('receiveSupplierOrder', () => {
       await getSupplierOrder(fx.owner, first.id),
       await getSupplierOrder(fx.owner, second.id),
     ]
-    expect([a.reference, a.code]).toEqual(['E001', 'E001'])
+    expect([a.reference, a.code]).toEqual(['A00001', 'A00001'])
     // A folio typed by the client is ignored: the folio is not editable.
-    expect([b.reference, b.code]).toEqual(['E002', 'E002'])
+    expect([b.reference, b.code]).toEqual(['A00002', 'A00002'])
     const result = await receiveSupplierOrder(
       fx.owner,
       arrive(b, [
@@ -663,22 +665,90 @@ describe('receiveSupplierOrder', () => {
         { receivedBoxes: 2, damagedBoxes: 0 },
       ]),
     )
-    expect(result.lots.map((lot) => lot.code)).toEqual(['E002', 'E002'])
+    expect(result.lots.map((lot) => lot.code)).toEqual(['A00002', 'A00002'])
     const stored = await getSupplierOrder(fx.owner, b.id)
-    expect(stored.lines.map((line) => line.lotCode)).toEqual(['E002', 'E002'])
+    expect(stored.lines.map((line) => line.lotCode)).toEqual([
+      'A00002',
+      'A00002',
+    ])
     const listed = await listSupplierOrders(fx.owner, { warehouseId: fx.a.id })
-    expect(listed.find((row) => row.id === b.id)?.code).toBe('E002')
+    expect(listed.find((row) => row.id === b.id)?.code).toBe('A00002')
   })
 
-  test('the folio continues after the highest E folio already stored', async () => {
+  test('the folio continues after the highest number the supplier already has', async () => {
     const fx = await setupSupplierOrders()
     const first = await createSupplierOrder(fx.owner, orderOf(fx))
     await db
       .update(purchases)
-      .set({ reference: 'E041' })
+      .set({ reference: 'A00041' })
       .where(eq(purchases.id, first.id))
     const next = await createSupplierOrder(fx.owner, orderOf(fx))
-    expect((await getSupplierOrder(fx.owner, next.id)).code).toBe('E042')
+    expect((await getSupplierOrder(fx.owner, next.id)).code).toBe('A00042')
+  })
+
+  test('each supplier has its own consecutive and key', async () => {
+    const fx = await setupSupplierOrders()
+    expect(fx.cocaCola.folioPrefix).toBe('C')
+    await createSupplierOrder(fx.owner, orderOf(fx))
+    await createSupplierOrder(fx.owner, orderOf(fx))
+    const input = orderOf(fx, {
+      supplierId: fx.cocaCola.id,
+      lines: [lineFor(fx.cola, 1)],
+    })
+    const first = await createSupplierOrder(fx.owner, input)
+    const second = await createSupplierOrder(fx.owner, input)
+    expect((await getSupplierOrder(fx.owner, first.id)).code).toBe('C00001')
+    expect((await getSupplierOrder(fx.owner, second.id)).code).toBe('C00002')
+    const third = await createSupplierOrder(fx.owner, orderOf(fx))
+    expect((await getSupplierOrder(fx.owner, third.id)).code).toBe('A00003')
+  })
+
+  test('the preview is the folio the next order gets, and does not consume it', async () => {
+    const fx = await setupSupplierOrders()
+    expect(await previewSupplierFolio(fx.owner, fx.supplier.id, fx.a.id)).toBe(
+      'A00001',
+    )
+    expect(await previewSupplierFolio(fx.owner, fx.supplier.id, fx.a.id)).toBe(
+      'A00001',
+    )
+    await createSupplierOrder(fx.owner, orderOf(fx))
+    const preview = await previewSupplierFolio(
+      fx.owner,
+      fx.supplier.id,
+      fx.a.id,
+    )
+    expect(preview).toBe('A00002')
+    const created = await createSupplierOrder(fx.owner, orderOf(fx))
+    expect((await getSupplierOrder(fx.owner, created.id)).code).toBe(preview)
+    expect(await previewSupplierFolio(fx.owner, fx.cocaCola.id, fx.a.id)).toBe(
+      'C00001',
+    )
+  })
+
+  test('the preview needs permission and a real supplier', async () => {
+    const fx = await setupSupplierOrders()
+    const missing = await errorOf(() =>
+      previewSupplierFolio(
+        fx.owner,
+        '00000000-0000-4000-8000-000000000000',
+        fx.a.id,
+      ),
+    )
+    expect(missing.code).toBe('not_found')
+    const denied = await errorOf(() =>
+      previewSupplierFolio(fx.managerB, fx.supplier.id, fx.a.id),
+    )
+    expect(denied.code).toBe('forbidden')
+  })
+
+  test('changing the supplier key keeps the old folios and continues the count with the new key', async () => {
+    const fx = await setupSupplierOrders()
+    await createSupplierOrder(fx.owner, orderOf(fx))
+    await updateSupplier(fx.owner, fx.supplier.id, { folioPrefix: 'alp' })
+    const next = await createSupplierOrder(fx.owner, orderOf(fx))
+    expect((await getSupplierOrder(fx.owner, next.id)).code).toBe('ALP00002')
+    const first = await listSupplierOrders(fx.owner, { warehouseId: fx.a.id })
+    expect(first.map((row) => row.code).sort()).toEqual(['A00001', 'ALP00002'])
   })
 
   test('all zero exceptions mean everything arrived well; the expiry goes to the line lot', async () => {

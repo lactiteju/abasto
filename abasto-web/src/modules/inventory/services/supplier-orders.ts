@@ -6,6 +6,7 @@ import { businessDate } from '#/lib/utils/format'
 import { authorize } from '#/modules/access/lib/policy'
 import type { Actor } from '#/modules/access/lib/policy'
 import { grossLineCents, netLineCents } from '#/lib/utils/supplier-cost'
+import { suppliers } from '#/modules/catalog/db/schema'
 import { purchaseLines, purchases } from '#/modules/inventory/db/schema'
 import { supplierFolio } from '#/modules/inventory/lib/order-code'
 import { openOf } from '#/modules/inventory/lib/pending-value'
@@ -89,17 +90,43 @@ function validate(input: SupplierOrderInput) {
 }
 
 /**
- * Next automatic folio (E001, E002…): one past the highest `E<number>`
- * reference stored. The transaction lock keeps two orders from taking the same one.
+ * Next automatic folio of a supplier (`A00001`, `A00002`…): its current key
+ * plus one past the highest trailing number among that supplier's references
+ * made of 1–3 letters and digits. Counting by supplier, not by key, means a
+ * key change keeps the old folios and the count continues with the new key.
+ * The per-supplier transaction lock keeps two orders from taking the same one.
  */
-async function nextSupplierFolio(tx: Tx): Promise<string> {
+async function nextSupplierFolio(tx: Tx, supplierId: string): Promise<string> {
   await tx.execute(
-    sql`select pg_advisory_xact_lock(hashtext('purchases.supplier_folio'))`,
+    sql`select pg_advisory_xact_lock(hashtext(${'purchases.supplier_folio:' + supplierId}))`,
   )
+  const prefix = (
+    await tx
+      .select({ prefix: suppliers.folioPrefix })
+      .from(suppliers)
+      .where(eq(suppliers.id, supplierId))
+  ).at(0)?.prefix
+  if (!prefix) throw new AppError('not_found', 'No encontramos ese proveedor.')
   const result = await tx.execute<{ last: number | null }>(
-    sql`select max(substring(${purchases.reference} from '^E([0-9]+)$')::int) as last from ${purchases}`,
+    sql`select max(substring(${purchases.reference} from '^[A-Z]{1,3}([0-9]+)$')::int) as last from ${purchases} where ${purchases.supplierId} = ${supplierId}`,
   )
-  return supplierFolio(Number(result.rows[0]?.last ?? 0) + 1)
+  return supplierFolio(prefix, Number(result.rows[0]?.last ?? 0) + 1)
+}
+
+/**
+ * The folio the next order to this supplier would get, for the new-order
+ * dialog. It is a preview: the real one is assigned when the order is saved.
+ */
+export async function previewSupplierFolio(
+  actor: Actor,
+  supplierId: string,
+  warehouseId: string,
+): Promise<string> {
+  authorize(actor, 'warehouse.manage', warehouseId)
+  return db.transaction(async (tx) => {
+    await requireSupplier(tx, supplierId)
+    return nextSupplierFolio(tx, supplierId)
+  })
 }
 
 /**
@@ -197,7 +224,7 @@ export async function createSupplierOrder(
       .values({
         supplierId: input.supplierId,
         warehouseId: input.warehouseId,
-        reference: await nextSupplierFolio(tx),
+        reference: await nextSupplierFolio(tx, input.supplierId),
         purchasedOn: businessDate(),
         expectedOn: input.expectedOn || null,
         status: 'Pedido',

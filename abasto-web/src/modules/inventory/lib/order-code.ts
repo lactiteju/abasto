@@ -1,6 +1,9 @@
-/** Supplier-order folio: `E` plus the consecutive padded to three digits (`E001`). */
-export const supplierFolio = (consecutive: number) =>
-  `E${String(consecutive).padStart(3, '0')}`
+/**
+ * Supplier-order folio: the supplier's key plus its consecutive padded to
+ * five digits (`A00001`, `L00012`).
+ */
+export const supplierFolio = (prefix: string, consecutive: number) =>
+  `${prefix}${String(consecutive).padStart(5, '0')}`
 
 /**
  * The code shared by every lot an order creates: its reference when it has

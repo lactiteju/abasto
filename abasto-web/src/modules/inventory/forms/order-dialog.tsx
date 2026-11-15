@@ -99,6 +99,25 @@ export function OrderDialog({
   // Pending ids of the balances to discount; chosen only until the order is registered.
   const [discounted, setDiscounted] = useState<ReadonlyArray<string>>([])
 
+  // Folio the order would get; undefined while loading or when no supplier is chosen.
+  const [folio, setFolio] = useState<string>()
+
+  // The folio belongs to the supplier: refresh it when the supplier changes.
+  useEffect(() => {
+    let current = true
+    setFolio(undefined)
+    if (draft.supplierId) {
+      void actions
+        .loadFolioPreview(draft.supplierId, draft.warehouseId)
+        .then((next) => {
+          if (current) setFolio(next)
+        })
+    }
+    return () => {
+      current = false
+    }
+  }, [draft.supplierId, draft.warehouseId])
+
   // Standard prices are shown read-only; reload them for the receiving warehouse.
   useEffect(() => {
     let current = true
@@ -272,9 +291,18 @@ export function OrderDialog({
             <FieldInput
               readOnly
               aria-readonly
-              value="Automático: E001, E002… (se asigna al guardar)"
+              value={
+                !draft.supplierId
+                  ? 'Elige un proveedor para ver su folio'
+                  : (folio ?? 'Calculando…')
+              }
               className="text-[#907e84]"
             />
+            {draft.supplierId && folio && (
+              <p className="mt-1 text-xs text-[#9c898f]">
+                Se confirma al guardar el pedido.
+              </p>
+            )}
           </Field>
           {draft.supplierId ? (
             <>

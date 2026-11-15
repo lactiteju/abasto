@@ -65,7 +65,7 @@ const dashboard = (orders: number): ManagerDashboard => ({
   pendingOrders: [],
 })
 
-const lala = { id: 's1', name: 'Grupo Lala', active: true }
+const lala = { id: 's1', name: 'LALA', active: true }
 const alpura = { id: 's2', name: 'Alpura', active: false }
 
 /** The rail links to other screens, so the page renders inside a router. */
@@ -132,7 +132,7 @@ describe('ManagerReportsPage', () => {
     }
     const all = await render(load)
     expect(all).toContain('Todos los proveedores')
-    expect(all).toContain('Grupo Lala')
+    expect(all).toContain('LALA')
     expect(all).toContain('Alpura')
     expect(all).not.toContain('La caja no se filtra por proveedor.')
 

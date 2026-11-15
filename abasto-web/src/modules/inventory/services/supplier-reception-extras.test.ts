@@ -87,7 +87,7 @@ describe('receiveSupplierOrder: products that arrived without being ordered', ()
     expect(result.lots).toHaveLength(3)
     expect(result.lots[2]).toMatchObject({
       productId: fx.free.id,
-      code: 'E001',
+      code: 'A00001',
       expiresOn: '2027-01-15',
       receivedQuantity: 18,
       receivedCostCents: 900,
@@ -106,7 +106,7 @@ describe('receiveSupplierOrder: products that arrived without being ordered', ()
       goodQuantity: 18,
       damagedQuantity: 0,
       missingQuantity: 0,
-      lotCode: 'E001',
+      lotCode: 'A00001',
     })
     expect(stored.totalCostCents).toBe(13440 + 4032 + 900)
     const pendings = await listSupplierPendings(fx.owner, fx.supplier.id)

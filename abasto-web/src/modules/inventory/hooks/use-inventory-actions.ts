@@ -16,6 +16,7 @@ import {
   receiveSupplierOrderFn,
   returnPendingsFn,
   scrapPendingsFn,
+  supplierFolioPreviewFn,
   supplierOrderFn,
 } from '#/modules/inventory/server/supplier-orders'
 import type { OrderStock } from '#/modules/inventory/lib/order-rows'
@@ -77,6 +78,22 @@ export function useInventoryActions() {
         return unwrap(await supplierOrderFn({ data: { purchaseId } }))
       } catch (failure) {
         toast.error(messageOf(failure))
+        return undefined
+      }
+    },
+    /**
+     * The folio the next order to this supplier would get. A failure resolves to
+     * undefined: the preview is informative and must not block the order.
+     */
+    async loadFolioPreview(
+      supplierId: string,
+      warehouseId: string,
+    ): Promise<string | undefined> {
+      try {
+        return unwrap(
+          await supplierFolioPreviewFn({ data: { supplierId, warehouseId } }),
+        )
+      } catch {
         return undefined
       }
     },

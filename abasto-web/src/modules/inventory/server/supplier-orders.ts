@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { parseInput } from '#/lib/boundary'
 import { runWithActor } from '#/lib/server-actor'
 import {
+  folioPreviewInput,
   orderIdInput,
   pendingsInput,
   receiveOrderInput,
@@ -15,6 +16,7 @@ import {
   createSupplierOrder,
   getSupplierOrder,
   listSupplierOrders,
+  previewSupplierFolio,
   receiveSupplierOrder,
 } from '#/modules/inventory/services/supplier-orders'
 import {
@@ -29,6 +31,16 @@ export const createSupplierOrderFn = createServerFn({ method: 'POST' })
     runWithActor((actor) =>
       createSupplierOrder(actor, parseInput(supplierOrderInput, data)),
     ),
+  )
+
+/** Next folio of a supplier, shown before the order is saved. */
+export const supplierFolioPreviewFn = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => data)
+  .handler(({ data }) =>
+    runWithActor((actor) => {
+      const input = parseInput(folioPreviewInput, data)
+      return previewSupplierFolio(actor, input.supplierId, input.warehouseId)
+    }),
   )
 
 export const cancelSupplierOrderFn = createServerFn({ method: 'POST' })

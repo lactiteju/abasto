@@ -11,7 +11,7 @@ const warehouses = [
   { id: 'w2', name: 'Sultepec' },
 ]
 const suppliers = [
-  { id: 's1', name: 'Grupo Lala', active: true },
+  { id: 's1', name: 'LALA', active: true },
   { id: 's2', name: 'Alpura', active: false },
 ]
 
@@ -47,7 +47,7 @@ describe('OwnerToolbar', () => {
     expect(html).toContain('Todos los proveedores')
     expect(html).toContain('Alpura (inactivo)')
     expect(html).toMatch(/<option value="w2" selected="">Sultepec/)
-    expect(html).toMatch(/<option value="s1" selected="">Grupo Lala/)
+    expect(html).toMatch(/<option value="s1" selected="">LALA/)
   })
 
   test('asks for the dates only on a custom period', () => {
