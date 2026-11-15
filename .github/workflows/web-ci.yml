@@ -57,9 +57,9 @@ jobs:
           cache-from: type=gha,scope=abasto-web
           cache-to: type=gha,mode=max,scope=abasto-web
 
-  # Staging deploy: only for pushes to dev whose image built.
+  # Staging deploy: pushes to dev (and manual runs on dev) whose image built.
   deploy-staging:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    if: github.ref == 'refs/heads/dev' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     needs: [docker-build]
     runs-on: ubuntu-latest
     permissions:
@@ -80,20 +80,30 @@ jobs:
           DOKPLOY_WEBHOOK_URL: ${{ secrets.DOKPLOY_WEBHOOK_URL || vars.DOKPLOY_WEBHOOK_URL }}
         # The staging app's source is GitHub: Dokploy deploys only a GitHub push
         # event (header + payload with the branch and changed files), and answers
-        # 301 "Branch Not Match" to anything else, so the push payload is forwarded
-        # (with the changed files added); 200 deploys, a push outside the app's watch paths is skipped, and
+        # 301 "Branch Not Match" to anything else, so a GitHub-shaped push payload
+        # is sent; 200 deploys, a push outside the app's watch paths is skipped, and
         # anything else fails the job.
         run: |
           test -n "$DOKPLOY_WEBHOOK_URL" || { echo 'DOKPLOY_WEBHOOK_URL is not set'; exit 1; }
-          # The Actions push payload carries no file lists in its commits, which
-          # Dokploy needs to match its watch paths: add the files the push changed.
-          before=$(jq -r .before "$GITHUB_EVENT_PATH")
-          git cat-file -e "$before^{commit}" 2>/dev/null || before=$(git rev-parse HEAD~1)
-          git diff --name-only "$before" HEAD | jq -R . | jq -s . > files.json
-          echo "Files changed by the push: $(jq length files.json)"
-          jq --slurpfile files files.json \
-            '.commits = [{id: .after, message: (.head_commit.message // ""), added: [], removed: [], modified: $files[0]}]' \
-            "$GITHUB_EVENT_PATH" > payload.json
+          # Dokploy matches its watch paths against the files in the payload's
+          # commits, which the Actions push payload does not list: a push sends the
+          # files it changed; a manual run (Run workflow on dev) redeploys, so it
+          # sends every tracked file.
+          if [ "$GITHUB_EVENT_NAME" = push ]; then
+            before=$(jq -r .before "$GITHUB_EVENT_PATH")
+            git cat-file -e "$before^{commit}" 2>/dev/null || before=$(git rev-parse HEAD~1)
+            git diff --name-only "$before" HEAD > files.txt
+          else
+            git ls-files > files.txt
+          fi
+          echo "Files sent to Dokploy: $(wc -l < files.txt)"
+          jq -n --rawfile files files.txt \
+            --arg sha "$(git rev-parse HEAD)" --arg message "$(git log -1 --format=%s)" \
+            '{ref: "refs/heads/dev", after: $sha,
+              head_commit: {id: $sha, message: $message},
+              commits: [{id: $sha, message: $message, added: [], removed: [],
+                         modified: ($files | split("\n") | map(select(length > 0)))}]}' \
+            > payload.json
           status=$(curl --silent --show-error --max-time 30 -o response.json -w '%{http_code}' \
             -X POST "$DOKPLOY_WEBHOOK_URL" \
             -H 'Content-Type: application/json' \
