@@ -725,6 +725,24 @@ describe('receiveSupplierOrder', () => {
     )
   })
 
+  test('only key-plus-five-digit references count: legacy references neither jump nor break the folio', async () => {
+    const fx = await setupSupplierOrders()
+    for (const reference of ['F98765X', 'FAC12345678901', 'F123']) {
+      await createPurchase(fx.managerA, {
+        supplierId: fx.supplier.id,
+        warehouseId: fx.a.id,
+        reference,
+        purchasedOn: '2026-11-01',
+        lines: [{ productId: fx.milk.id, quantity: 24, totalCostCents: 2688 }],
+      })
+    }
+    expect(await previewSupplierFolio(fx.owner, fx.supplier.id, fx.a.id)).toBe(
+      'A00001',
+    )
+    const created = await createSupplierOrder(fx.owner, orderOf(fx))
+    expect((await getSupplierOrder(fx.owner, created.id)).code).toBe('A00001')
+  })
+
   test('the preview needs permission and a real supplier', async () => {
     const fx = await setupSupplierOrders()
     const missing = await errorOf(() =>

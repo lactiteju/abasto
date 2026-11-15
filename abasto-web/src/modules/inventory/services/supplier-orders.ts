@@ -92,7 +92,7 @@ function validate(input: SupplierOrderInput) {
 /**
  * Next automatic folio of a supplier (`A00001`, `A00002`…): its current key
  * plus one past the highest trailing number among that supplier's references
- * made of 1–3 letters and digits. Counting by supplier, not by key, means a
+ * made of 1–3 letters and exactly five digits. Counting by supplier, not by key, means a
  * key change keeps the old folios and the count continues with the new key.
  * The per-supplier transaction lock keeps two orders from taking the same one.
  */
@@ -108,7 +108,7 @@ async function nextSupplierFolio(tx: Tx, supplierId: string): Promise<string> {
   ).at(0)?.prefix
   if (!prefix) throw new AppError('not_found', 'No encontramos ese proveedor.')
   const result = await tx.execute<{ last: number | null }>(
-    sql`select max(substring(${purchases.reference} from '^[A-Z]{1,3}([0-9]+)$')::int) as last from ${purchases} where ${purchases.supplierId} = ${supplierId}`,
+    sql`select max(substring(${purchases.reference} from '^[A-Z]{1,3}([0-9]{5})$')::int) as last from ${purchases} where ${purchases.supplierId} = ${supplierId}`,
   )
   return supplierFolio(prefix, Number(result.rows[0]?.last ?? 0) + 1)
 }

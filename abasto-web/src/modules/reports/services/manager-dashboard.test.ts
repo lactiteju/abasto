@@ -44,7 +44,7 @@ describe('getManagerDashboard', () => {
     const dashboard = await getManagerDashboard(fx.managerA, week)
     expect(dashboard.warehouse.id).toBe(fx.a.id)
     expect(dashboard.pendingOrders.map((order) => order.reference)).toEqual([
-      'E001',
+      'A00001',
     ])
     expect(dashboard.sales.warehouses.map((item) => item.id)).toEqual([fx.a.id])
     expect(dashboard.cash.warehouses.map((item) => item.id)).toEqual([fx.a.id])
@@ -65,7 +65,9 @@ describe('getManagerDashboard', () => {
 
     const own = await getManagerDashboard(fx.managerB, week)
     expect(own.warehouse.id).toBe(fx.b.id)
-    expect(own.pendingOrders.map((order) => order.reference)).toEqual(['E002'])
+    expect(own.pendingOrders.map((order) => order.reference)).toEqual([
+      'A00002',
+    ])
   })
 
   test('only a manager reads it', async () => {
@@ -161,8 +163,8 @@ describe('getManagerDashboard supplier filter', () => {
 
     const all = await getManagerDashboard(fx.managerA, week)
     expect(all.pendingOrders.map((order) => order.reference).sort()).toEqual([
-      'E001',
-      'E002',
+      'A00001',
+      'C00001',
     ])
     const lowStock = (d: typeof all) => d.stock.lowStock.map((row) => row.name)
     expect(lowStock(all)).toEqual(
@@ -173,7 +175,9 @@ describe('getManagerDashboard supplier filter', () => {
       ...week,
       supplierId: fx.cocaCola.id,
     })
-    expect(cola.pendingOrders.map((order) => order.reference)).toEqual(['E002'])
+    expect(cola.pendingOrders.map((order) => order.reference)).toEqual([
+      'C00001',
+    ])
     expect(lowStock(cola)).toEqual(['Cola 600ml'])
 
     const unknown = await getManagerDashboard(fx.managerA, {
