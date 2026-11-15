@@ -77,7 +77,8 @@ jobs:
         # The staging app's source is GitHub: Dokploy deploys only a GitHub push
         # event (header + payload with the branch and changed files), and answers
         # 301 "Branch Not Match" to anything else, so the push payload is forwarded
-        # as is and anything but 200 fails the job.
+        # as is; 200 deploys, a push outside the app's watch paths is skipped, and
+        # anything else fails the job.
         run: |
           test -n "$DOKPLOY_WEBHOOK_URL" || { echo 'DOKPLOY_WEBHOOK_URL is not set'; exit 1; }
           status=$(curl --silent --show-error --max-time 30 -o response.json -w '%{http_code}' \
@@ -86,4 +87,9 @@ jobs:
             -H 'X-GitHub-Event: push' \
             --data-binary @"$GITHUB_EVENT_PATH")
           echo "Dokploy answered $status: $(cat response.json)"
+          # The app's watch paths decide what deploys: a push outside them is skipped on purpose.
+          if [ "$status" = 301 ] && grep -q 'Watch Paths Not Match' response.json; then
+            echo '::notice::No deploy: the push changed nothing under the staging app watch paths.'
+            exit 0
+          fi
           test "$status" = 200
