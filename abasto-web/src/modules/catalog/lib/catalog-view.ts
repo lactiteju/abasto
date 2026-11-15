@@ -1,6 +1,6 @@
 export type CatalogView = 'table' | 'cards'
 
-export const defaultCatalogView: CatalogView = 'table'
+export const defaultCatalogView: CatalogView = 'cards'
 
 export const catalogViewKey = 'abasto.catalog.view'
 

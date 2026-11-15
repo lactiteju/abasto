@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import type { ReactNode } from 'react'
 
-import { XIcon } from 'lucide-react'
+import { Maximize2Icon, Minimize2Icon, XIcon } from 'lucide-react'
 
 import {
   Dialog,
@@ -32,6 +33,8 @@ export function CounterDialog({
   children,
 }: CounterDialogProps) {
   wide ||= full
+  // A full dialog can grow to the whole viewport, without the width cap.
+  const [maximized, setMaximized] = useState(false)
   const gutter = wide ? 'px-5 md:px-[29px]' : 'px-[23px] md:px-[29px]'
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -40,18 +43,20 @@ export function CounterDialog({
         className={cn(
           // The content never scrolls: the header and the close button stay put while the body scrolls.
           'flex max-h-[92dvh] flex-col gap-0 overflow-hidden rounded-2xl border border-transparent bg-white p-0 text-base max-md:[&_[data-section-help]]:text-xs sm:max-w-[calc(100vw-24px)]',
-          full
-            ? 'h-[calc(100dvh-20px)] max-h-[calc(100dvh-20px)] w-[calc(100vw-20px)] max-w-[calc(100vw-20px)] md:h-[calc(100dvh-32px)] md:max-h-[calc(100dvh-32px)] md:w-[calc(100vw-32px)] md:max-w-[1600px]'
-            : wide
-              ? 'w-[calc(100vw-20px)] max-w-[calc(100vw-20px)] md:w-[min(1080px,calc(100vw-32px))] md:max-w-[1080px]'
-              : 'max-w-[calc(100vw-24px)] md:max-w-[530px]',
+          full && maximized
+            ? 'h-dvh max-h-dvh w-screen max-w-none rounded-none sm:max-w-none md:max-w-none'
+            : full
+              ? 'h-[calc(100dvh-20px)] max-h-[calc(100dvh-20px)] w-[calc(100vw-20px)] max-w-[calc(100vw-20px)] md:h-[calc(100dvh-32px)] md:max-h-[calc(100dvh-32px)] md:w-[calc(100vw-32px)] md:max-w-[1600px]'
+              : wide
+                ? 'w-[calc(100vw-20px)] max-w-[calc(100vw-20px)] md:w-[min(1080px,calc(100vw-32px))] md:max-w-[1080px]'
+                : 'max-w-[calc(100vw-24px)] md:max-w-[530px]',
         )}
       >
         <DialogHeader
           className={cn(
             'shrink-0 pt-[23px] text-left md:pt-[29px]',
             gutter,
-            'pr-14 md:pr-14',
+            full ? 'pr-20 md:pr-20' : 'pr-14 md:pr-14',
           )}
         >
           <DialogTitle className="text-[23px] leading-[1.3] md:text-[25px] font-semibold tracking-[-0.7px]">
@@ -73,6 +78,23 @@ export function CounterDialog({
         >
           {children}
         </div>
+        {full && (
+          <button
+            type="button"
+            onClick={() => setMaximized((value) => !value)}
+            aria-pressed={maximized}
+            className="absolute top-4 right-11 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:outline-2 focus:outline-offset-2"
+          >
+            {maximized ? (
+              <Minimize2Icon className="size-4" />
+            ) : (
+              <Maximize2Icon className="size-4" />
+            )}
+            <span className="sr-only">
+              {maximized ? 'Restaurar tamaño' : 'Maximizar ventana'}
+            </span>
+          </button>
+        )}
         <DialogClose className="absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:outline-2 focus:outline-offset-2">
           <XIcon className="size-4" />
           <span className="sr-only">Cerrar</span>

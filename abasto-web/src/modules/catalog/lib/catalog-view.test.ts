@@ -11,10 +11,10 @@ describe('catalogViewOf', () => {
     expect(catalogViewOf('table')).toBe('table')
   })
 
-  test('falls back to the table for missing or unknown values', () => {
-    expect(defaultCatalogView).toBe('table')
-    expect(catalogViewOf(null)).toBe('table')
-    expect(catalogViewOf('grid')).toBe('table')
+  test('falls back to the cards for missing or unknown values', () => {
+    expect(defaultCatalogView).toBe('cards')
+    expect(catalogViewOf(null)).toBe('cards')
+    expect(catalogViewOf('grid')).toBe('cards')
   })
 })
 

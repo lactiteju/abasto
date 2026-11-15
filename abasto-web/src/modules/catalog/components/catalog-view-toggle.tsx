@@ -5,8 +5,8 @@ import { cn } from '#/lib/utils/cn'
 import type { CatalogView } from '#/modules/catalog/lib/catalog-view'
 
 const options = [
-  { value: 'table', label: 'Tabla', Icon: TableIcon },
   { value: 'cards', label: 'Tarjetas', Icon: LayoutGridIcon },
+  { value: 'table', label: 'Tabla', Icon: TableIcon },
 ] as const
 
 type CatalogViewToggleProps = {
