@@ -74,6 +74,16 @@ jobs:
       - name: Trigger the Dokploy staging deploy
         env:
           DOKPLOY_WEBHOOK_URL: ${{ secrets.DOKPLOY_WEBHOOK_URL || vars.DOKPLOY_WEBHOOK_URL }}
+        # The staging app's source is GitHub: Dokploy deploys only a GitHub push
+        # event (header + payload with the branch and changed files), and answers
+        # 301 "Branch Not Match" to anything else, so the push payload is forwarded
+        # as is and anything but 200 fails the job.
         run: |
           test -n "$DOKPLOY_WEBHOOK_URL" || { echo 'DOKPLOY_WEBHOOK_URL is not set'; exit 1; }
-          curl --fail --silent --show-error --max-time 30 -X POST "$DOKPLOY_WEBHOOK_URL" -o /dev/null
+          status=$(curl --silent --show-error --max-time 30 -o response.json -w '%{http_code}' \
+            -X POST "$DOKPLOY_WEBHOOK_URL" \
+            -H 'Content-Type: application/json' \
+            -H 'X-GitHub-Event: push' \
+            --data-binary @"$GITHUB_EVENT_PATH")
+          echo "Dokploy answered $status: $(cat response.json)"
+          test "$status" = 200
