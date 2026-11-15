@@ -66,6 +66,10 @@ jobs:
       id-token: write
       contents: read
     steps:
+      # Full history so the changed files of the push can be listed.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - uses: tailscale/github-action@v4
         with:
           oauth-client-id: ${{ vars.TS_OAUTH_CLIENT_ID }}
@@ -77,15 +81,24 @@ jobs:
         # The staging app's source is GitHub: Dokploy deploys only a GitHub push
         # event (header + payload with the branch and changed files), and answers
         # 301 "Branch Not Match" to anything else, so the push payload is forwarded
-        # as is; 200 deploys, a push outside the app's watch paths is skipped, and
+        # (with the changed files added); 200 deploys, a push outside the app's watch paths is skipped, and
         # anything else fails the job.
         run: |
           test -n "$DOKPLOY_WEBHOOK_URL" || { echo 'DOKPLOY_WEBHOOK_URL is not set'; exit 1; }
+          # The Actions push payload carries no file lists in its commits, which
+          # Dokploy needs to match its watch paths: add the files the push changed.
+          before=$(jq -r .before "$GITHUB_EVENT_PATH")
+          git cat-file -e "$before^{commit}" 2>/dev/null || before=$(git rev-parse HEAD~1)
+          git diff --name-only "$before" HEAD | jq -R . | jq -s . > files.json
+          echo "Files changed by the push: $(jq length files.json)"
+          jq --slurpfile files files.json \
+            '.commits = [{id: .after, message: (.head_commit.message // ""), added: [], removed: [], modified: $files[0]}]' \
+            "$GITHUB_EVENT_PATH" > payload.json
           status=$(curl --silent --show-error --max-time 30 -o response.json -w '%{http_code}' \
             -X POST "$DOKPLOY_WEBHOOK_URL" \
             -H 'Content-Type: application/json' \
             -H 'X-GitHub-Event: push' \
-            --data-binary @"$GITHUB_EVENT_PATH")
+            --data-binary @payload.json)
           echo "Dokploy answered $status: $(cat response.json)"
           # The app's watch paths decide what deploys: a push outside them is skipped on purpose.
           if [ "$status" = 301 ] && grep -q 'Watch Paths Not Match' response.json; then
