@@ -81,6 +81,25 @@ export function SuppliersDialog({
               onChange={(event) => patch({ name: event.target.value })}
             />
           </Field>
+          <Field label="Clave de folio">
+            <TextInput
+              aria-label="Clave de folio"
+              value={draft.folioPrefix}
+              maxLength={3}
+              placeholder={editor.id ? '' : 'Automática: la inicial del nombre'}
+              onChange={(event) =>
+                patch({
+                  folioPrefix: event.target.value
+                    .toUpperCase()
+                    .replace(/[^A-Z]/g, ''),
+                })
+              }
+            />
+            <p className="mt-1 text-xs text-[#9f8f94]">
+              De 1 a 3 letras. Los folios de sus pedidos empiezan con ella, por
+              ejemplo A00001. Si la cambias, los folios anteriores no cambian.
+            </p>
+          </Field>
           <div className="grid grid-cols-1 gap-[15px] md:grid-cols-2">
             <Field label="Contacto">
               <TextInput
@@ -149,7 +168,10 @@ export function SuppliersDialog({
                 >
                   <div className="min-w-0">
                     <strong className="block truncate text-sm">
-                      {supplier.name}
+                      {supplier.name}{' '}
+                      <span className="font-normal text-[#9f8f94]">
+                        · {supplier.folioPrefix}
+                      </span>
                     </strong>
                     <span className="block truncate text-xs text-[#9f8f94]">
                       {[supplier.contact, supplier.phone]

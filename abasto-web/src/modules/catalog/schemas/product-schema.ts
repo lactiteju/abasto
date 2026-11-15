@@ -47,6 +47,7 @@ export const supplierInput = z.object({
   contact: z.string().optional(),
   phone: z.string().optional(),
   notes: z.string().optional(),
+  folioPrefix: z.string().optional(),
 })
 export const supplierPatchInput = supplierInput
   .partial()

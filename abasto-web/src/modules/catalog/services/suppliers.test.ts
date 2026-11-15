@@ -123,3 +123,92 @@ describe('updateSupplier', () => {
     expect((await listSuppliers(owner))[0]?.name).toBe('Lala')
   })
 })
+
+describe('supplier folio prefix', () => {
+  test('defaults to the initial of the name', async () => {
+    const { owner } = await setupActors()
+    const alpura = await createSupplier(owner, { name: 'Alpura' })
+    expect(alpura.folioPrefix).toBe('A')
+  })
+
+  test('another supplier with the same initial gets a different key', async () => {
+    const { owner } = await setupActors()
+    await createSupplier(owner, { name: 'Alpura' })
+    const second = await createSupplier(owner, { name: 'Abarrotes del Sur' })
+    const third = await createSupplier(owner, { name: 'Acme' })
+    expect(second.folioPrefix).toBe('AB')
+    expect(third.folioPrefix).toBe('AC')
+  })
+
+  test('an explicit key is normalized to uppercase', async () => {
+    const { owner } = await setupActors()
+    const lala = await createSupplier(owner, {
+      name: 'LALA',
+      folioPrefix: ' l ',
+    })
+    expect(lala.folioPrefix).toBe('L')
+  })
+
+  test('rejects an invalid key and stores nothing', async () => {
+    const { owner } = await setupActors()
+    const error = await errorOf(() =>
+      createSupplier(owner, { name: 'Alpura', folioPrefix: 'A1' }),
+    )
+    expect(error.code).toBe('invalid')
+    expect(error.message).toBe(
+      'La clave de folio son de 1 a 3 letras de la A a la Z.',
+    )
+    expect((await counts()).suppliers).toBe(0)
+  })
+
+  test('rejects a duplicate key regardless of case and keeps the data', async () => {
+    const { owner } = await setupActors()
+    await createSupplier(owner, { name: 'Alpura' })
+    const error = await errorOf(() =>
+      createSupplier(owner, { name: 'Otro', folioPrefix: 'a' }),
+    )
+    expect(error.code).toBe('conflict')
+    expect(error.message).toBe('Ya hay un proveedor con esa clave de folio.')
+    expect((await counts()).suppliers).toBe(1)
+  })
+
+  test('a name conflict still reports the name', async () => {
+    const { owner } = await setupActors()
+    await createSupplier(owner, { name: 'Alpura' })
+    const error = await errorOf(() =>
+      createSupplier(owner, { name: 'alpura', folioPrefix: 'Z' }),
+    )
+    expect(error.message).toBe('Ya existe un proveedor con ese nombre.')
+  })
+
+  test('the key can be edited; a duplicate or invalid edit changes nothing', async () => {
+    const { owner } = await setupActors()
+    const alpura = await createSupplier(owner, { name: 'Alpura' })
+    const lala = await createSupplier(owner, { name: 'LALA' })
+    const updated = await updateSupplier(owner, alpura.id, {
+      folioPrefix: 'alp',
+    })
+    expect(updated.folioPrefix).toBe('ALP')
+    const clash = await errorOf(() =>
+      updateSupplier(owner, alpura.id, { folioPrefix: 'l' }),
+    )
+    expect(clash.message).toBe('Ya hay un proveedor con esa clave de folio.')
+    const bad = await errorOf(() =>
+      updateSupplier(owner, alpura.id, { folioPrefix: '' }),
+    )
+    expect(bad.code).toBe('invalid')
+    const stored = await listSuppliers(owner)
+    expect(stored.map((s) => [s.name, s.folioPrefix])).toEqual([
+      ['Alpura', 'ALP'],
+      ['LALA', lala.folioPrefix],
+    ])
+  })
+
+  test('renaming a supplier keeps its key', async () => {
+    const { owner } = await setupActors()
+    const lala = await createSupplier(owner, { name: 'Grupo Lala' })
+    const renamed = await updateSupplier(owner, lala.id, { name: 'LALA' })
+    expect(renamed.name).toBe('LALA')
+    expect(renamed.folioPrefix).toBe(lala.folioPrefix)
+  })
+})

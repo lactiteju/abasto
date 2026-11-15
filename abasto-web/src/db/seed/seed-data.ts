@@ -32,7 +32,7 @@ export const staffSeed: Array<SeedStaff> = [
 ]
 
 export const supplierSeed = [
-  { key: 'lala', name: 'Grupo Lala', contact: 'Ventas mayoreo', phone: '' },
+  { key: 'lala', name: 'LALA', contact: 'Ventas mayoreo', phone: '' },
   { key: 'alpura', name: 'Alpura', contact: 'Ventas mayoreo', phone: '' },
 ] as const
 export type SupplierKey = (typeof supplierSeed)[number]['key']

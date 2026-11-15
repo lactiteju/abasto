@@ -18,11 +18,18 @@ export const suppliers = pgTable(
     contact: text('contact').notNull().default(''),
     phone: text('phone').notNull().default(''),
     notes: text('notes').notNull().default(''),
+    /** 1–3 uppercase letters that start the supplier's order folios (`A00001`). */
+    folioPrefix: text('folio_prefix').notNull(),
     active: boolean('active').notNull().default(true),
     createdAt: timestamp('created_at').defaultNow().notNull(),
   },
   (table) => [
     uniqueIndex('suppliers_name_unique').on(sql`lower(${table.name})`),
+    uniqueIndex('suppliers_folio_prefix_unique').on(table.folioPrefix),
+    check(
+      'suppliers_folio_prefix_check',
+      sql`${table.folioPrefix} ~ '^[A-Z]{1,3}$'`,
+    ),
   ],
 )
 

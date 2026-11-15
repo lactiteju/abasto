@@ -56,6 +56,8 @@ export type SupplierDraft = {
   contact: string
   phone: string
   notes: string
+  /** Folio key; empty on a new supplier means "use the default". */
+  folioPrefix: string
   active: boolean
 }
 

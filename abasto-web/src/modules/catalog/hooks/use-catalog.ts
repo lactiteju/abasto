@@ -107,7 +107,10 @@ export function useCatalogActions() {
         () =>
           supplierId
             ? updateSupplierFn({ data: { id: supplierId, patch: draft } })
-            : createSupplierFn({ data: draft }),
+            : createSupplierFn({
+                // Blank means "pick the default key from the name".
+                data: { ...draft, folioPrefix: draft.folioPrefix || undefined },
+              }),
         'Proveedor guardado.',
       ),
     /**

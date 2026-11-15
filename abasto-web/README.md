@@ -102,7 +102,7 @@ Better Auth stores users and sessions in Postgres (`src/db/auth-schema.ts`). Pub
 
 ## Seed data
 
-`bun run db:seed` loads a sample business into the development database through the real services: four warehouses (Tejupilco, Arcelia, Luvianos, Amatepec) each with its own manager, suppliers Grupo Lala and Alpura, eighteen dairy products with official brand photos and per-warehouse prices, lots with expiry dates, customers with credit and commercial rules, orders in every state, open and closed cash drawers, an abono, a pending credit authorization, an overdue balance and transfers.
+`bun run db:seed` loads a sample business into the development database through the real services: four warehouses (Tejupilco, Arcelia, Luvianos, Amatepec) each with its own manager, suppliers LALA (folio key L) and Alpura (folio key A), eighteen dairy products with official brand photos and per-warehouse prices, lots with expiry dates, customers with credit and commercial rules, orders in every state, open and closed cash drawers, an abono, a pending credit authorization, an overdue balance and transfers.
 
 - It only runs on an empty database. An owner created with `auth:create-owner` is reused; otherwise it creates `dueno@abasto.local`.
 - Every seeded user gets the password in `SEED_PASSWORD` (default `abasto-2026`); the command prints the users.

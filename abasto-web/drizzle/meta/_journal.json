@@ -267,6 +267,13 @@
       "when": 1794608581274,
       "tag": "0037_remove_prepared_status",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1794701369248,
+      "tag": "0038_supplier_folio_prefix",
+      "breakpoints": true
     }
   ]
 }

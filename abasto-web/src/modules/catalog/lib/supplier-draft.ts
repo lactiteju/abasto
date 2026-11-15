@@ -8,6 +8,7 @@ export const emptySupplierDraft = (): SupplierDraft => ({
   contact: '',
   phone: '',
   notes: '',
+  folioPrefix: '',
   active: true,
 })
 
@@ -18,5 +19,6 @@ export const draftFromSupplier = (
   contact: supplier.contact,
   phone: supplier.phone,
   notes: supplier.notes,
+  folioPrefix: supplier.folioPrefix,
   active: supplier.active,
 })
