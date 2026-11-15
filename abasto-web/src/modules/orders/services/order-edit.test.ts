@@ -1,7 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { db } from '#/db'
 import { resetDatabase } from '#/db/testing'
-import { cancelOrder } from '#/modules/orders/services/order-actions'
+import {
+  cancelOrder,
+  pickupOrder,
+} from '#/modules/orders/services/order-actions'
 import { addToReservedOrder } from '#/modules/orders/services/order-edit'
 import { getOrder } from '#/modules/orders/services/order-reads'
 import { createOrder } from '#/modules/orders/services/orders'
@@ -9,6 +12,7 @@ import {
   advance,
   errorOf,
   orderState,
+  payCash,
   receive,
   setupOrders,
   useClock,
@@ -236,5 +240,28 @@ describe('addToReservedOrder', () => {
       'not_found',
       'No encontramos ese pedido.',
     )
+  })
+
+  test('cancel after an edit releases every reserved unit, pickup consumes them all', async () => {
+    const fx = await setupOrders()
+    const lot = await receive(fx, { productId: fx.milkBox.id, quantity: 48 })
+    const reserved = async () =>
+      (await orderState()).lots.find((l) => l.id === lot.id)
+    const cancelled = await place(fx, [line(fx.boxId, 1)])
+    await addToReservedOrder(fx.staffA, {
+      orderId: cancelled.id,
+      lines: [line(fx.boxId, 1)],
+    })
+    expect(await reserved()).toMatchObject({ onHand: 48, reserved: 24 })
+    await cancelOrder(fx.staffA, cancelled.id)
+    expect(await reserved()).toMatchObject({ onHand: 48, reserved: 0 })
+
+    const picked = await place(fx, [line(fx.boxId, 1)])
+    await addToReservedOrder(fx.staffA, {
+      orderId: picked.id,
+      lines: [line(fx.boxId, 2)],
+    })
+    await pickupOrder(fx.staffA, picked.id, payCash)
+    expect(await reserved()).toMatchObject({ onHand: 12, reserved: 0 })
   })
 })
