@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { ActionButton } from '#/modules/counter/components/action-button'
+import { OrderAddProducts } from '#/modules/counter/components/order-add-products'
 import { CounterDialog } from '#/modules/counter/components/counter-dialog'
 import {
   CellNote,
@@ -25,12 +26,15 @@ import {
   chargeGate,
   statusHint,
 } from '#/modules/counter/lib/order-status'
+import type { SellableOption } from '#/modules/counter/lib/sellable'
 import type { PickupWithReceipt } from '#/modules/counter/server/pickup'
 import { formatCents } from '#/modules/pricing/lib/money'
 import type { OrderDetail } from '#/modules/orders/services/order-reads'
 
 type OrderViewDialogProps = {
   orderId: string
+  /** Products with stock, for adding to a reserved order. */
+  sellable: Array<SellableOption>
   now: Date
   /** The warehouse's drawer is open, so cash can be collected. */
   drawerOpen: boolean
@@ -40,6 +44,7 @@ type OrderViewDialogProps = {
 /** One order with frozen prices, the rule applied, lot allocations and its actions. */
 export function OrderViewDialog({
   orderId,
+  sellable,
   now,
   drawerOpen,
   onClose,
@@ -50,6 +55,7 @@ export function OrderViewDialog({
   const [busy, setBusy] = useState(false)
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [paying, setPaying] = useState(false)
+  const [adding, setAdding] = useState(false)
   const [receipt, setReceipt] = useState<PickupWithReceipt>()
 
   useEffect(() => {
@@ -168,6 +174,16 @@ export function OrderViewDialog({
             No, volver
           </ActionButton>
         </div>
+      ) : adding ? (
+        <OrderAddProducts
+          order={order}
+          sellable={sellable}
+          onSaved={(updated) => {
+            setOrder(updated)
+            setAdding(false)
+          }}
+          onCancel={() => setAdding(false)}
+        />
       ) : paying ? (
         <PaymentStep
           order={order}
@@ -190,6 +206,11 @@ export function OrderViewDialog({
             <p role="status" className="text-sm text-[#a1372e]">
               {gate.notice}
             </p>
+          )}
+          {allowed.pickup && (
+            <ActionButton disabled={busy} onClick={() => setAdding(true)}>
+              Agregar productos
+            </ActionButton>
           )}
           {allowed.cancel && (
             <ActionButton

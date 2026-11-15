@@ -8,6 +8,7 @@ import { messageOf, useActionRunner } from '#/hooks/use-action-runner'
 import { unwrap } from '#/lib/boundary'
 import type { OrderInput } from '#/modules/counter/lib/order-draft'
 import {
+  addToOrderFn,
   cancelOrderFn,
   createOrderFn,
   orderDetailFn,
@@ -49,6 +50,14 @@ export function useOrderActions() {
         return { ok: false, message: messageOf(failure) }
       }
     },
+    addToOrder: (
+      orderId: string,
+      lines: Array<{ presentationId: string; quantity: number }>,
+    ) =>
+      run(
+        () => addToOrderFn({ data: { orderId, lines } }),
+        'Pedido actualizado.',
+      ),
     cancel: (orderId: string) =>
       run(() => cancelOrderFn({ data: { orderId } }), 'Pedido cancelado.'),
     setHours: (hours: number) =>

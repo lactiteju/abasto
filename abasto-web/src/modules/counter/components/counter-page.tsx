@@ -141,6 +141,7 @@ export function CounterPage({ overview, onSelectWarehouse }: CounterPageProps) {
         <OrderViewDialog
           key={openId}
           orderId={openId}
+          sellable={overview.sellable}
           now={overview.now}
           drawerOpen={overview.cash !== null}
           onClose={() => setOpenId(undefined)}

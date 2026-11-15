@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
   addLine,
+  draftToAddLines,
   draftToOrderInput,
   removeLine,
   setLineQuantity,
@@ -98,5 +99,20 @@ describe('typeLineQuantity', () => {
   test('clearing the row removes the line; clearing an empty row changes nothing', () => {
     expect(typeLineQuantity(lines, 'a', ' ')).toEqual([])
     expect(typeLineQuantity(lines, 'b', '')).toBe(lines)
+  })
+})
+
+describe('draft to add lines', () => {
+  test('keeps whole quantities', () => {
+    expect(
+      draftToAddLines([{ presentationId: 'p1', quantity: ' 2 ' }]),
+    ).toEqual({ ok: true, value: [{ presentationId: 'p1', quantity: 2 }] })
+  })
+
+  test('refuses an empty draft and bad quantities', () => {
+    expect(draftToAddLines([]).ok).toBe(false)
+    expect(draftToAddLines([{ presentationId: 'p1', quantity: '0' }]).ok).toBe(
+      false,
+    )
   })
 })

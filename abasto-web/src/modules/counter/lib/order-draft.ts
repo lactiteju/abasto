@@ -89,3 +89,21 @@ export function draftToOrderInput(draft: OrderDraft): Parsed<OrderInput> {
     },
   }
 }
+
+/** Units typed to add to a reserved order: whole quantities, at least one line. */
+export function draftToAddLines(
+  lines: Array<DraftLine>,
+): Parsed<OrderInput['lines']> {
+  if (!lines.length) return fail('Escribe cuántas cajas o piezas agregar.')
+  const parsedLines: OrderInput['lines'] = []
+  for (const line of lines) {
+    const quantity = parseQuantity(line.quantity)
+    if (quantity === null) {
+      return fail(
+        'La cantidad de cada producto debe ser un entero mayor que cero.',
+      )
+    }
+    parsedLines.push({ presentationId: line.presentationId, quantity })
+  }
+  return { ok: true, value: parsedLines }
+}
