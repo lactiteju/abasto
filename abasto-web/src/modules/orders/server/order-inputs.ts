@@ -11,6 +11,11 @@ export const createOrderInput = z.object({
 
 export const orderIdInput = z.object({ orderId: id })
 
+/** Units to add to a reserved order, per presentation. */
+export const addToOrderInput = orderIdInput.extend({
+  lines: z.array(z.object({ presentationId: id, quantity: z.number().int() })),
+})
+
 /** Payment is optional here so the service answers with its own message. */
 export const pickupOrderInput = orderIdInput.extend({
   payment: z

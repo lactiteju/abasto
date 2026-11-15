@@ -5,10 +5,12 @@ import {
   cancelOrder,
   pickupOrder,
 } from '#/modules/orders/services/order-actions'
+import { addToReservedOrder } from '#/modules/orders/services/order-edit'
 import { getOrder } from '#/modules/orders/services/order-reads'
 import { createOrder } from '#/modules/orders/services/orders'
 import { setReservationHours } from '#/modules/orders/services/reservation-settings'
 import {
+  addToOrderInput,
   createOrderInput,
   orderIdInput,
   pickupOrderInput,
@@ -28,6 +30,14 @@ export const createOrderFn = createServerFn({ method: 'POST' })
   .handler(({ data }) =>
     runWithActor((actor) =>
       createOrder(actor, parseInput(createOrderInput, data)),
+    ),
+  )
+
+export const addToOrderFn = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => data)
+  .handler(({ data }) =>
+    runWithActor((actor) =>
+      addToReservedOrder(actor, parseInput(addToOrderInput, data)),
     ),
   )
 
