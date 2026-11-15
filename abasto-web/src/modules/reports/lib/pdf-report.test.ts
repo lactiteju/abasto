@@ -211,7 +211,7 @@ describe('buildPdfReport', () => {
     expect(report.heading).toBe(
       'Cierre del día · viernes 13 de noviembre de 2026',
     )
-    expect(report.filename).toBe('abasto-reporte-dia-2026-11-13.pdf')
+    expect(report.filename).toBe('tejulacteos-reporte-dia-2026-11-13.pdf')
     expect(report.lines).toEqual([
       'Distribuidora del Sur · Todo el negocio · 2 almacenes',
       'Generado 13 nov 2026, 20:29 por Marco Reyes',
@@ -269,7 +269,7 @@ describe('buildPdfReport', () => {
   test('the week report compares with the week before and lists each day', () => {
     const report = build('week', '2026-11-09', '2026-11-13')
     expect(report.heading).toBe('Reporte semanal · 9 al 13 nov 2026')
-    expect(report.filename).toBe('abasto-reporte-semana-2026-11-09.pdf')
+    expect(report.filename).toBe('tejulacteos-reporte-semana-2026-11-09.pdf')
     expect(report.lines[1]).toBe('Comparado con 1 al 13 oct')
     expect(titles(report)).toEqual([
       '1. Resultado',
@@ -314,7 +314,7 @@ describe('buildPdfReport', () => {
   test('the month report groups sales by week and lists every product', () => {
     const report = build('month', '2026-11-01', '2026-11-13')
     expect(report.heading).toBe('Reporte mensual · Noviembre 2026')
-    expect(report.filename).toBe('abasto-reporte-mes-2026-11.pdf')
+    expect(report.filename).toBe('tejulacteos-reporte-mes-2026-11.pdf')
     expect(report.lines[1]).toBe(
       'Datos del 1 al 13 nov 2026 · Comparado con 1 al 13 oct',
     )

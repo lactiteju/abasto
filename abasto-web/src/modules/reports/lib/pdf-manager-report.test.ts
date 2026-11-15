@@ -113,7 +113,7 @@ describe('buildManagerPdfReport', () => {
 
   test('the week of one warehouse, without the owner-only sections', () => {
     const pdf = buildManagerPdfReport('week', sold, meta)
-    expect(pdf.filename).toBe('abasto-reporte-semana-2026-11-09.pdf')
+    expect(pdf.filename).toBe('tejulacteos-reporte-semana-2026-11-09.pdf')
     expect(pdf.lines[0]).toBe('Distribuidora del Sur · Almacén Arcelia')
     expect(pdf.lines[1]).toBe('Comparado con 2 al 6 nov')
     expect(titles(pdf.sections)).toEqual([
@@ -148,7 +148,7 @@ describe('buildManagerPdfReport', () => {
 
   test('the day is a closing sheet; the month lists every product', () => {
     const day = buildManagerPdfReport('day', sold, meta)
-    expect(day.filename).toBe('abasto-reporte-dia-2026-11-13.pdf')
+    expect(day.filename).toBe('tejulacteos-reporte-dia-2026-11-13.pdf')
     expect(titles(day.sections)).not.toContain('2. Ventas por día')
     expect(day.sections[3].head).toEqual([
       'Cerró',
@@ -157,7 +157,7 @@ describe('buildManagerPdfReport', () => {
       'Diferencia',
     ])
     const month = buildManagerPdfReport('month', sold, meta)
-    expect(month.filename).toBe('abasto-reporte-mes-2026-11.pdf')
+    expect(month.filename).toBe('tejulacteos-reporte-mes-2026-11.pdf')
     expect(titles(month.sections)).toContain(
       '4. Productos, de mayor a menor venta',
     )

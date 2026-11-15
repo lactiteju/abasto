@@ -417,13 +417,13 @@ function assemble({
     ...section,
     title: `${index + 1}. ${section.title}`,
   }))
-  const shared = { kind, footer: `Abasto · ${meta.business}`, sections }
+  const shared = { kind, footer: `Tejulacteos · ${meta.business}`, sections }
   if (kind === 'day') {
     return {
       ...shared,
       heading: `Cierre del día · ${longDay(range.to)}`,
       lines: [scope, generated],
-      filename: `abasto-reporte-dia-${range.to}.pdf`,
+      filename: `tejulacteos-reporte-dia-${range.to}.pdf`,
     }
   }
   if (kind === 'week') {
@@ -431,7 +431,7 @@ function assemble({
       ...shared,
       heading: `Reporte semanal · ${longRangeLabel(range)}`,
       lines: [scope, compared, generated],
-      filename: `abasto-reporte-semana-${range.from}.pdf`,
+      filename: `tejulacteos-reporte-semana-${range.from}.pdf`,
     }
   }
   return {
@@ -442,7 +442,7 @@ function assemble({
       `Datos del ${longRangeLabel(range)} · ${compared}`,
       generated,
     ],
-    filename: `abasto-reporte-mes-${range.from.slice(0, 7)}.pdf`,
+    filename: `tejulacteos-reporte-mes-${range.from.slice(0, 7)}.pdf`,
   }
 }
 

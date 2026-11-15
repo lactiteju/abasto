@@ -123,7 +123,7 @@ export function OwnerReportsPage({
                 ? () =>
                     downloadText(
                       salesCsv('day', data.sales.byDay),
-                      `abasto-ventas-day-${data.sales.range.from}-${data.sales.range.to}.csv`,
+                      `tejulacteos-ventas-day-${data.sales.range.from}-${data.sales.range.to}.csv`,
                     )
                 : undefined
             }

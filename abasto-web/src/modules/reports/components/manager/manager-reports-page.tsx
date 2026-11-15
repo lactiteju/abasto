@@ -113,7 +113,7 @@ export function ManagerReportsPage({
               onCsv={() =>
                 downloadText(
                   salesCsv('day', dashboard.sales.byDay),
-                  `abasto-ventas-day-${dashboard.sales.range.from}-${dashboard.sales.range.to}.csv`,
+                  `tejulacteos-ventas-day-${dashboard.sales.range.from}-${dashboard.sales.range.to}.csv`,
                 )
               }
             />

@@ -37,7 +37,7 @@ export const importTemplate = (mode: ImportMode) =>
   `\uFEFF${importHeaders[mode].join(',')}\r\n${exampleRow[mode]}\r\n`
 
 export const templateFilename = (mode: ImportMode) =>
-  `abarroteros-plantilla-${mode === 'catalog' ? 'catalogo' : 'existencias'}.csv`
+  `tejulacteos-plantilla-${mode === 'catalog' ? 'catalogo' : 'existencias'}.csv`
 
 /** Triggers a browser download of a text file. */
 export function downloadText(content: string, filename: string) {

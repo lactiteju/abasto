@@ -53,7 +53,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'Operación mayorista · Abarroteros',
+        title: 'Operación mayorista · Tejulacteos',
       },
       {
         name: 'description',
