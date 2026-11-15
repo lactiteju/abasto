@@ -1,8 +1,11 @@
 name: Web CI
 
-# Deployment is owned by Dokploy (GitHub provider, autodeploy):
-#   dev  -> staging app, main -> production app.
-# This workflow only checks the code and that the production image builds.
+# Dokploy builds and runs the app: dev -> staging app, main -> production app.
+# Dokploy is reachable only inside the Tailscale tailnet, so GitHub cannot call
+# its webhook directly: after the image builds, a push to dev joins the tailnet
+# as an ephemeral `tag:ci` node (OIDC workload identity, no stored Tailscale
+# secret; the tailnet policy lets tag:ci reach only Dokploy's port 3000) and
+# calls the staging app's deploy webhook.
 on:
   pull_request:
     paths:
@@ -53,3 +56,24 @@ jobs:
           push: false
           cache-from: type=gha,scope=abasto-web
           cache-to: type=gha,mode=max,scope=abasto-web
+
+  # Staging deploy: only for pushes to dev whose image built.
+  deploy-staging:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    needs: [docker-build]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ vars.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ vars.TS_AUDIENCE }}
+          tags: tag:ci
+      - name: Trigger the Dokploy staging deploy
+        env:
+          DOKPLOY_WEBHOOK_URL: ${{ secrets.DOKPLOY_WEBHOOK_URL || vars.DOKPLOY_WEBHOOK_URL }}
+        run: |
+          test -n "$DOKPLOY_WEBHOOK_URL" || { echo 'DOKPLOY_WEBHOOK_URL is not set'; exit 1; }
+          curl --fail --silent --show-error --max-time 30 -X POST "$DOKPLOY_WEBHOOK_URL" -o /dev/null
