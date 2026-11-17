@@ -18,6 +18,7 @@ import {
   setupOrders,
   useClock,
 } from '#/modules/orders/services/testing'
+import { formatCents } from '#/modules/pricing/lib/money'
 import { setPrices } from '#/modules/pricing/services/prices'
 
 beforeEach(() => resetDatabase(db))
@@ -35,6 +36,7 @@ async function setup(quantity = 20) {
     pieces: number,
     payment: Parameters<typeof sellNow>[2] = payCash,
     actor = fx.staffA,
+    expectedTotalCents = pieces * 1000,
   ) =>
     sellNow(
       actor,
@@ -42,6 +44,7 @@ async function setup(quantity = 20) {
         warehouseId: fx.a.id,
         customerId: fx.customer.id,
         lines: [{ presentationId: fx.pieceId, quantity: pieces }],
+        expectedTotalCents,
       },
       payment,
     )
@@ -114,6 +117,7 @@ describe('sellNow', () => {
           { presentationId: fx.boxId, quantity: 1 },
           { presentationId: fx.pieceId, quantity: 2 },
         ],
+        expectedTotalCents: 14000,
       },
       payCash,
     )
@@ -205,7 +209,12 @@ describe('sellNow refusals roll everything back', () => {
         await errorOf(() =>
           sellNow(
             fx.staffA,
-            { warehouseId: fx.a.id, customerId: '', lines: [] },
+            {
+              warehouseId: fx.a.id,
+              customerId: '',
+              lines: [],
+              expectedTotalCents: 0,
+            },
             payCash,
           ),
         )
@@ -223,6 +232,7 @@ describe('sellNow refusals roll everything back', () => {
                 { presentationId: fx.pieceId, quantity: 1 },
                 { presentationId: fx.pieceId, quantity: 1 },
               ],
+              expectedTotalCents: 2000,
             },
             payCash,
           ),
@@ -231,6 +241,52 @@ describe('sellNow refusals roll everything back', () => {
     ).toBe('invalid')
     expect((await errorOf(() => sell(0))).code).toBe('invalid')
     expect(await paymentState()).toEqual(before)
+  })
+
+  test('a total that changed since the quote is refused with the new total', async () => {
+    const { fx, sell, lotRow } = await setup()
+    await setPrices(fx.owner, {
+      warehouseId: fx.a.id,
+      prices: [{ presentationId: fx.pieceId, priceCents: 1500 }],
+    })
+    const before = await paymentState()
+    const error = await errorOf(() => sell(3, cash(5000)))
+    expect([error.code, error.message]).toEqual([
+      'conflict',
+      `El total cambió a ${formatCents(4500)}. Revisa el cobro.`,
+    ])
+    expect(await paymentState()).toEqual(before)
+    expect(await db.select().from(orders)).toHaveLength(0)
+    expect(await lotRow()).toMatchObject({ onHand: 20, reserved: 0 })
+    expect((await sell(3, cash(5000), fx.staffA, 4500)).totalCents).toBe(4500)
+  })
+
+  test('a line without a price in the warehouse is refused', async () => {
+    const { fx } = await setup()
+    await receive(fx, {
+      productId: fx.milkBox.id,
+      quantity: 10,
+      warehouseId: fx.b.id,
+    })
+    const before = await paymentState()
+    const error = await errorOf(() =>
+      sellNow(
+        fx.owner,
+        {
+          warehouseId: fx.b.id,
+          customerId: fx.customer.id,
+          lines: [{ presentationId: fx.pieceId, quantity: 1 }],
+          expectedTotalCents: 0,
+        },
+        payCash,
+      ),
+    )
+    expect([error.code, error.message]).toEqual([
+      'conflict',
+      'Este producto no tiene precio en este almacén.',
+    ])
+    expect(await paymentState()).toEqual(before)
+    expect(await db.select().from(orders)).toHaveLength(0)
   })
 
   test('a user without access to the warehouse is forbidden and nothing changes', async () => {

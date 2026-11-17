@@ -50,6 +50,7 @@ const sell = (fx: Fx, pieces: number) =>
       warehouseId: fx.a.id,
       customerId: fx.customer.id,
       lines: [line(fx.pieceId, pieces)],
+      expectedTotalCents: pieces * 1000,
     },
     payCash,
   )

@@ -84,7 +84,12 @@ export function NewOrderDialog({
     () => customers.map(({ id, name }) => ({ id, name, sku: '' })),
     [customers],
   )
-  const quote = useOrderQuote(warehouseId, customerId, lines)
+  const [quoteVersion, setQuoteVersion] = useState(0)
+  const quote = useOrderQuote(warehouseId, customerId, lines, quoteVersion)
+  // A line the warehouse cannot price would be charged as 0 in the total.
+  const hasUnpriced =
+    quote.status === 'ready' &&
+    quote.quote.lines.some((line) => line.lineTotalCents === null)
   const optionOf = new Map(
     sellable.map((option) => [option.presentationId, option]),
   )
@@ -162,6 +167,12 @@ export function NewOrderDialog({
       toast.error(parsed.message)
       return
     }
+    if (hasUnpriced) {
+      toast.error(
+        'Hay productos sin precio en este almacén. Quítalos para vender.',
+      )
+      return
+    }
     setPaying(true)
   }
 
@@ -183,7 +194,7 @@ export function NewOrderDialog({
     )
   }
   const sale = draftToOrderInput({ warehouseId, customerId, notes, lines })
-  if (paying && sale.ok && quote.status === 'ready') {
+  if (paying && sale.ok && quote.status === 'ready' && !hasUnpriced) {
     return (
       <CounterDialog
         title="Cobrar venta"
@@ -193,7 +204,17 @@ export function NewOrderDialog({
         <PaymentStep
           totalCents={quote.quote.totalCents}
           drawerOpen={drawerOpen}
-          confirm={(payment) => actions.sell(sale.value, payment)}
+          confirm={async (payment) => {
+            const outcome = await actions.sell(
+              sale.value,
+              payment,
+              quote.quote.totalCents,
+            )
+            // A refusal may come from a changed price: re-quote so the step
+            // shows the current total and change.
+            if (!outcome.ok) setQuoteVersion((current) => current + 1)
+            return outcome
+          }}
           onPaid={setReceipt}
           onBack={() => setPaying(false)}
         />
@@ -398,6 +419,11 @@ export function NewOrderDialog({
                   ? formatCents(quote.quote.totalCents)
                   : '—'}
               </strong>
+              {hasUnpriced && (
+                <small role="alert" className="block text-xs text-[#a1372e]">
+                  Hay productos sin precio en este almacén; no se pueden vender.
+                </small>
+              )}
               <small className="block text-xs text-[#9c898f]">
                 Cotización con el precio actual del almacén y las condiciones
                 del cliente. El pedido guarda el precio al vender o reservar.
@@ -415,7 +441,10 @@ export function NewOrderDialog({
           <ActionButton
             tone="primary"
             disabled={
-              actions.pending || shortages.size > 0 || quote.status !== 'ready'
+              actions.pending ||
+              shortages.size > 0 ||
+              quote.status !== 'ready' ||
+              hasUnpriced
             }
             onClick={startSale}
           >

@@ -59,12 +59,15 @@ export function useOrderActions() {
     sell: async (
       order: OrderInput,
       payment: PickupPayment,
+      expectedTotalCents: number,
     ): Promise<
       { ok: true; data: PickupWithReceipt } | { ok: false; message: string }
     > => {
       try {
         const data = unwrap(
-          await counterSellFn({ data: { ...order, payment } }),
+          await counterSellFn({
+            data: { ...order, expectedTotalCents, payment },
+          }),
         )
         await router.invalidate()
         toast.success('Venta registrada.')

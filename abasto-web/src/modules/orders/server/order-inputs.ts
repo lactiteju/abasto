@@ -42,7 +42,11 @@ export const reservationHoursInput = z.object({ hours: z.number().int() })
 /** Same lines as an order, without notes: a read-only price quote. */
 export const quoteOrderInput = createOrderInput.omit({ notes: true })
 
-/** A counter sale: the order lines plus how it is paid (checked by the service). */
+/**
+ * A counter sale: the order lines, the total the cashier saw, and how it is
+ * paid (checked by the service).
+ */
 export const sellOrderInput = createOrderInput.extend({
+  expectedTotalCents: z.number().int(),
   payment: pickupOrderInput.shape.payment,
 })

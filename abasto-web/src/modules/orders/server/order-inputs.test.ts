@@ -115,19 +115,26 @@ describe('order server function inputs', () => {
 describe('sell input', () => {
   test('takes the order and an optional payment (the service judges it)', () => {
     const payment = { terms: 'contado' as const, tenderedCents: 3000 }
-    expect(parseInput(sellOrderInput, { ...order, payment })).toEqual({
-      ...order,
+    const sale = { ...order, expectedTotalCents: 3000 }
+    expect(parseInput(sellOrderInput, { ...sale, payment })).toEqual({
+      ...sale,
       payment,
     })
-    expect(parseInput(sellOrderInput, order).payment).toBeUndefined()
+    expect(parseInput(sellOrderInput, sale).payment).toBeUndefined()
   })
 
   test('rejects malformed shapes', () => {
-    expect(fails(sellOrderInput, { ...order, customerId: undefined })).toBe(
+    const sale = { ...order, expectedTotalCents: 3000 }
+    expect(fails(sellOrderInput, { ...sale, customerId: undefined })).toBe(true)
+    expect(
+      fails(sellOrderInput, { ...sale, payment: { terms: 'credito' } }),
+    ).toBe(true)
+    expect(fails(sellOrderInput, order)).toBe(true)
+    expect(fails(sellOrderInput, { ...sale, expectedTotalCents: 30.5 })).toBe(
       true,
     )
     expect(
-      fails(sellOrderInput, { ...order, payment: { terms: 'credito' } }),
+      fails(sellOrderInput, { ...sale, expectedTotalCents: undefined }),
     ).toBe(true)
   })
 })
