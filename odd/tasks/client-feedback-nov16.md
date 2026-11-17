@@ -27,7 +27,7 @@ UI copy is Spanish (es-MX); code and identifiers in English. Workers load the `c
 - [x] T8 — S8 — worker — assignment load edit (lower/remove) + «Editar carga» in the ⋯ menu. Commit 6261455 + extra races; independent verify S8 pass (137 riders tests).
 - [ ] T9 — S7, S8 — independent verify (races), full suite, commits, push dev.
 - [x] T10 — S9 — worker — rider dialogs in the new-order table layout. Commits 4e92bc6 (shared LargeDialog/DataTable), 6f9bb87; full suite 1479 pass / 0 fail. On-screen check not done.
-- [ ] T11 — S10 — worker — atomic sell-now service + server fn + «Vender»/«Reservar» UI.
+- [x] T11 — S10 — worker — atomic sell-now service + server fn + «Vender»/«Reservar» UI. Commits 645eb8b (extract placeOrderInTx/deliverInTx), 0ef7aad, plus total guard (expectedTotalCents, «El total cambió a $X») after verify.
 - [ ] T12 — S10 — independent verify (stock, cash, races), full suite, push dev.
 - [x] T4 — all — full suite 1391 pass / 2 skip / 0 fail, tsc clean, eslint 0 errors (4 old warnings). On-screen check not done.
 
@@ -45,3 +45,4 @@ UI copy is Spanish (es-MX); code and identifiers in English. Workers load the `c
 - L10 — T7/T8 verify minor (non-blocking): supplier-order editor hides lines of archived products (kept on save, but the on-screen total omits them and they cannot be removed there); edit button depends on the selected warehouse's permission (server checks the order's). Assignment edit: «Quitar» enabled on the last line (save refused); a settle prepared before a line was removed is refused with the generic «Revisa las líneas del reparto…» message. Last-line copy changed to point to the ⋯ menu (the dialog's own «Cancelar» only closes it).
 - L11 — User asked S9 with screenshots of «Nuevo reparto» (rider select, supplier select, one picker row + «Agregar producto») vs counter «Nuevo pedido» (search + supplier + «Solo agregados», product table with images, Cajas/Piezas).
 - L12 — Direct sale today = Reservar → open order → «Entregar (recoge el cliente)» → «Cobrar y entregar». User chose two buttons (Vender/Reservar), customer always required.
+- L13 — T11 verify: S10 pass (352 tests incl. 11 forced races). Risk found and fixed: quote total vs server total could differ; sale now sends the shown total and is refused/re-quoted if it changed; unpriced lines block «Vender». Sale movements reuse the «Pedido recogido» reason (no separate label).
