@@ -3,12 +3,14 @@ import {
   assignRiderFn,
   cancelAssignmentFn,
   createRiderFn,
+  editAssignmentLoadFn,
   rechargeAssignmentFn,
   renameRiderFn,
   setRiderActiveFn,
   settleAssignmentFn,
 } from '#/modules/riders/server/riders'
 import type { AssignInput } from '#/modules/riders/lib/assign-draft'
+import type { EditLoadInput } from '#/modules/riders/lib/edit-load-draft'
 
 export type RechargeInput = {
   assignmentId: string
@@ -54,6 +56,8 @@ export function useRiderActions() {
         () => rechargeAssignmentFn({ data: input }),
         'Producto agregado a la ruta. Quedó apartado.',
       ),
+    editLoad: (input: EditLoadInput) =>
+      run(() => editAssignmentLoadFn({ data: input }), 'Carga actualizada.'),
     settle: (input: SettleInput) =>
       run(
         () => settleAssignmentFn({ data: input }),

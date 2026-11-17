@@ -5,17 +5,19 @@ import type {
 import { splitBoxes } from '#/modules/riders/lib/box-quantities'
 import type { AssignmentStatus } from '#/modules/riders/db/schema'
 
-export type RowAction = 'recharge' | 'settle' | 'cancel' | 'prepareNext'
+export type RowAction =
+  'recharge' | 'edit' | 'settle' | 'cancel' | 'prepareNext'
 
 /** Actions the «⋯» menu of an assignment row offers; none means no button. */
 export function rowActionsFor(status: AssignmentStatus): Array<RowAction> {
-  if (status === 'En ruta') return ['recharge', 'settle', 'cancel']
+  if (status === 'En ruta') return ['recharge', 'edit', 'settle', 'cancel']
   if (status === 'Liquidada') return ['prepareNext']
   return []
 }
 
 export const rowActionLabels: Record<RowAction, string> = {
   recharge: 'Recargar',
+  edit: 'Editar carga',
   settle: 'Liquidar',
   cancel: 'Cancelar',
   prepareNext: 'Preparar siguiente reparto',

@@ -14,7 +14,12 @@ const milk = {
 
 describe('rowActionsFor', () => {
   test('actions by state', () => {
-    expect(rowActionsFor('En ruta')).toEqual(['recharge', 'settle', 'cancel'])
+    expect(rowActionsFor('En ruta')).toEqual([
+      'recharge',
+      'edit',
+      'settle',
+      'cancel',
+    ])
     expect(rowActionsFor('Liquidada')).toEqual(['prepareNext'])
     expect(rowActionsFor('Cancelada')).toEqual([])
   })

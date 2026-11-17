@@ -32,3 +32,9 @@ export const rechargeInput = z.object({
   assignmentId: id,
   lines: z.array(z.object({ productId: id, ...boxesAndUnits })),
 })
+
+export const editLoadInput = z.object({
+  assignmentId: id,
+  changes: z.array(z.object({ productId: id, ...boxesAndUnits })),
+  add: z.array(z.object({ productId: id, ...boxesAndUnits })),
+})

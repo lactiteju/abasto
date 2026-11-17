@@ -23,14 +23,14 @@ export type AssignInput = {
   lines: Array<{ productId: string; boxes: number; units: number }>
 }
 
-type Parsed<T> = { ok: true; value: T } | { ok: false; message: string }
+export type Parsed<T> = { ok: true; value: T } | { ok: false; message: string }
 
-const fail = (message: string): Parsed<never> => ({ ok: false, message })
+export const fail = (message: string): Parsed<never> => ({ ok: false, message })
 
-const wholeMessage =
+export const wholeMessage =
   'Las cajas y las unidades deben ser números enteros, cero o más.'
 
-function parseWhole(text: string): number | null {
+export function parseWhole(text: string): number | null {
   const clean = text.trim()
   if (clean === '') return 0
   if (!/^\d+$/.test(clean)) return null

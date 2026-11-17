@@ -1,6 +1,7 @@
 import {
   CheckCheckIcon,
   MoreHorizontalIcon,
+  PencilIcon,
   PackagePlusIcon,
   RotateCcwIcon,
   XIcon,
@@ -27,6 +28,7 @@ const item =
 
 const icons: Record<RowAction, ReactNode> = {
   recharge: <PackagePlusIcon className="size-4 text-[#927981]" />,
+  edit: <PencilIcon className="size-4 text-[#927981]" />,
   settle: <CheckCheckIcon className="size-4 text-[#927981]" />,
   cancel: <XIcon className="size-4 text-[#927981]" />,
   prepareNext: <RotateCcwIcon className="size-4 text-[#927981]" />,

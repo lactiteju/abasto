@@ -5,6 +5,7 @@ import {
   assignInput,
   cancelAssignmentInput,
   createRiderInput,
+  editLoadInput,
   overviewInput,
   rechargeInput,
   renameRiderInput,
@@ -17,6 +18,7 @@ import {
   cancelAssignment,
   settleAssignment,
 } from '#/modules/riders/services/assignments'
+import { editAssignmentLoad } from '#/modules/riders/services/assignment-edit'
 import { rechargeAssignment } from '#/modules/riders/services/recharge'
 import {
   createRider,
@@ -83,5 +85,13 @@ export const rechargeAssignmentFn = createServerFn({ method: 'POST' })
   .handler(({ data }) =>
     runWithActor((actor) =>
       rechargeAssignment(actor, parseInput(rechargeInput, data)),
+    ),
+  )
+
+export const editAssignmentLoadFn = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => data)
+  .handler(({ data }) =>
+    runWithActor((actor) =>
+      editAssignmentLoad(actor, parseInput(editLoadInput, data)),
     ),
   )

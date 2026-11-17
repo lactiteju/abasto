@@ -9,6 +9,7 @@ import { AssignmentsSection } from '#/modules/riders/components/assignments-sect
 import { RidersCatalog } from '#/modules/riders/components/riders-catalog'
 import { AssignDialog } from '#/modules/riders/forms/assign-dialog'
 import { CancelAssignmentDialog } from '#/modules/riders/forms/cancel-assignment-dialog'
+import { EditLoadDialog } from '#/modules/riders/forms/edit-load-dialog'
 import { RiderDialog } from '#/modules/riders/forms/rider-dialog'
 import { SettleDialog } from '#/modules/riders/forms/settle-dialog'
 import {
@@ -31,6 +32,7 @@ type Open =
   | { kind: 'settle'; assignment: AssignmentDetail }
   | { kind: 'cancel'; assignment: AssignmentDetail }
   | { kind: 'recharge'; assignment: AssignmentDetail }
+  | { kind: 'edit'; assignment: AssignmentDetail }
   | { kind: 'next'; assignment: AssignmentDetail }
 
 /** «Nuevo reparto» for the same rider, prefilled with what came back. */
@@ -168,8 +170,7 @@ export function RepartosPage({
             }
             return setOpen({ kind: 'next', assignment })
           }
-          const kind = action === 'recharge' ? 'recharge' : action
-          setOpen({ kind, assignment })
+          setOpen({ kind: action, assignment })
         }}
       />
       <RidersCatalog
@@ -191,6 +192,14 @@ export function RepartosPage({
           riders={[]}
           products={overview.products}
           recharge={open.assignment}
+          onClose={close}
+        />
+      )}
+      {open?.kind === 'edit' && (
+        <EditLoadDialog
+          key={open.assignment.id}
+          assignment={open.assignment}
+          products={overview.products}
           onClose={close}
         />
       )}
