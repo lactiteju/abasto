@@ -377,6 +377,7 @@ export function ReceptionDialog({
                       <ListCell>
                         <FieldInput
                           inputMode="decimal"
+                          maxDecimals={4}
                           aria-label={`Costo por pieza de ${line.productName}`}
                           aria-invalid={issue ? true : undefined}
                           className={`${compact} w-[88px]`}
@@ -597,6 +598,7 @@ export function ReceptionDialog({
                             <ListCell>
                               <FieldInput
                                 inputMode="decimal"
+                                maxDecimals={4}
                                 aria-label={`Costo por pieza de ${line.name} sin pedido`}
                                 aria-invalid={issue ? true : undefined}
                                 className={`${compact} w-[96px]`}

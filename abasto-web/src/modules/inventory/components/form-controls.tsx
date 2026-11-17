@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from 'react'
 
+import { blockNumberSymbols, withNumericChange } from '#/lib/numeric-input'
 import { cn } from '#/lib/utils/cn'
 
 export const fieldControl =
@@ -34,7 +35,14 @@ export function FieldGroup({ label, children }: Omit<FieldProps, 'hint'>) {
   )
 }
 
-export function FieldInput({ className, ...props }: ComponentProps<'input'>) {
+/** `inputMode` numeric/decimal fields drop other characters as they are typed. */
+export function FieldInput({
+  className,
+  maxDecimals,
+  onChange,
+  onKeyDown,
+  ...props
+}: ComponentProps<'input'> & { maxDecimals?: number }) {
   return (
     <input
       className={cn(
@@ -43,6 +51,8 @@ export function FieldInput({ className, ...props }: ComponentProps<'input'>) {
         className,
       )}
       {...props}
+      onChange={withNumericChange(onChange, props.inputMode, maxDecimals)}
+      onKeyDown={blockNumberSymbols(props.type, onKeyDown)}
     />
   )
 }

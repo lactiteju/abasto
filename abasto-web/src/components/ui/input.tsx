@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { blockNumberSymbols, withNumericChange } from '#/lib/numeric-input'
 import { cn } from '#/lib/utils/cn'
 import {
   applySpanishValidity,
@@ -10,8 +11,11 @@ function Input({
   type,
   onInvalid,
   onInput,
+  onChange,
+  onKeyDown,
+  maxDecimals,
   ...props
-}: React.ComponentProps<'input'>) {
+}: React.ComponentProps<'input'> & { maxDecimals?: number }) {
   return (
     <input
       type={type}
@@ -29,6 +33,8 @@ function Input({
         onInput?.(event)
       }}
       {...props}
+      onChange={withNumericChange(onChange, props.inputMode, maxDecimals)}
+      onKeyDown={blockNumberSymbols(type, onKeyDown)}
     />
   )
 }

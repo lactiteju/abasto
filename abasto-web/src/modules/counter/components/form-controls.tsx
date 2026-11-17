@@ -1,5 +1,6 @@
 import type { ComponentProps, ReactNode } from 'react'
 
+import { blockNumberSymbols, withNumericChange } from '#/lib/numeric-input'
 import { cn } from '#/lib/utils/cn'
 
 const fieldControl =
@@ -32,7 +33,14 @@ export function Field({ label, hint, children }: FieldProps) {
   )
 }
 
-export function FieldInput({ className, ...props }: ComponentProps<'input'>) {
+/** `inputMode` numeric/decimal fields drop other characters as they are typed. */
+export function FieldInput({
+  className,
+  maxDecimals,
+  onChange,
+  onKeyDown,
+  ...props
+}: ComponentProps<'input'> & { maxDecimals?: number }) {
   return (
     <input
       className={cn(
@@ -41,6 +49,8 @@ export function FieldInput({ className, ...props }: ComponentProps<'input'>) {
         className,
       )}
       {...props}
+      onChange={withNumericChange(onChange, props.inputMode, maxDecimals)}
+      onKeyDown={blockNumberSymbols(props.type, onKeyDown)}
     />
   )
 }
@@ -68,8 +78,19 @@ export function CompactSelect({
   return <select className={cn(compactControl, className)} {...props} />
 }
 
-export function CompactInput({ className, ...props }: ComponentProps<'input'>) {
-  return <input className={cn(compactControl, className)} {...props} />
+export function CompactInput({
+  className,
+  maxDecimals,
+  onChange,
+  ...props
+}: ComponentProps<'input'> & { maxDecimals?: number }) {
+  return (
+    <input
+      className={cn(compactControl, className)}
+      {...props}
+      onChange={withNumericChange(onChange, props.inputMode, maxDecimals)}
+    />
+  )
 }
 
 /** Checkbox with an inline label (accent-colored like the reference). */

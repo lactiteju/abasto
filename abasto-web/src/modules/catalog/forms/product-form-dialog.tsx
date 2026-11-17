@@ -201,6 +201,7 @@ export function ProductFormDialog({
     <Field label={label}>
       <TextInput
         inputMode="decimal"
+        maxDecimals={4}
         placeholder="0.0000"
         aria-label={label}
         aria-invalid={Boolean(errorOf(key))}
