@@ -5,7 +5,6 @@ import { AppError } from '#/lib/errors'
 import { businessDate } from '#/lib/utils/format'
 import { authorize } from '#/modules/access/lib/policy'
 import type { Actor } from '#/modules/access/lib/policy'
-import { grossLineCents, netLineCents } from '#/lib/utils/supplier-cost'
 import { suppliers } from '#/modules/catalog/db/schema'
 import { purchaseLines, purchases } from '#/modules/inventory/db/schema'
 import { supplierFolio } from '#/modules/inventory/lib/order-code'
@@ -19,8 +18,8 @@ import {
   reopenDiscounts,
 } from '#/modules/inventory/services/supplier-balance'
 import { orderNotFound } from '#/modules/inventory/services/supplier-order-reads'
+import { priceOrderLine } from '#/modules/inventory/services/supplier-order-lines'
 import {
-  fitsInt4,
   isIsoDate,
   isWholeNumber,
   requireSupplier,
@@ -36,6 +35,7 @@ export type {
   SupplierOrderLine,
   SupplierOrderSummary,
 } from '#/modules/inventory/services/supplier-order-reads'
+export { editSupplierOrder } from '#/modules/inventory/services/supplier-order-edit'
 export { receiveSupplierOrder } from '#/modules/inventory/services/supplier-reception'
 
 export type SupplierOrderInput = {
@@ -51,8 +51,6 @@ export type SupplierOrderInput = {
    */
   discounts?: Array<{ pendingId: string }>
 }
-
-const tooBig = () => new AppError('invalid', 'El pedido es demasiado grande.')
 
 function validate(input: SupplierOrderInput) {
   if (input.expectedOn && !isIsoDate(input.expectedOn)) {
@@ -184,30 +182,13 @@ export async function createSupplierOrder(
           'Ese producto no pertenece a este proveedor.',
         )
       }
-      const quantity = line.boxes * product.factor
-      if (!fitsInt4(quantity)) throw tooBig()
-      const grossCostCents = grossLineCents(quantity, product.listPricePerPiece)
-      if (!fitsInt4(grossCostCents)) throw tooBig()
-      const totalCostCents = netLineCents(
-        grossCostCents,
-        quantity,
-        product.fixedDiscountPerPiece,
-        product.promotionPerPiece,
-      )
-      if (totalCostCents < 0) {
-        throw new AppError(
-          'invalid',
-          'El descuento y la promoción no pueden superar el costo por pieza.',
-        )
-      }
+      const priced = priceOrderLine(line.boxes * product.factor, product)
       return {
         productId: line.productId,
-        quantity,
-        totalCostCents,
+        ...priced,
         boxFactor: product.factor,
         listPricePerPiece: product.listPricePerPiece,
         orderedListPricePerPiece: product.listPricePerPiece,
-        grossCostCents,
         fixedDiscountPerPiece: product.fixedDiscountPerPiece,
         promotionPerPiece: product.promotionPerPiece,
       }

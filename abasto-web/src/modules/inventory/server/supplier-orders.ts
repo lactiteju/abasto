@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { parseInput } from '#/lib/boundary'
 import { runWithActor } from '#/lib/server-actor'
 import {
+  editSupplierOrderInput,
   folioPreviewInput,
   orderIdInput,
   pendingsInput,
@@ -14,6 +15,7 @@ import {
 import {
   cancelSupplierOrder,
   createSupplierOrder,
+  editSupplierOrder,
   getSupplierOrder,
   listSupplierOrders,
   previewSupplierFolio,
@@ -30,6 +32,15 @@ export const createSupplierOrderFn = createServerFn({ method: 'POST' })
   .handler(({ data }) =>
     runWithActor((actor) =>
       createSupplierOrder(actor, parseInput(supplierOrderInput, data)),
+    ),
+  )
+
+/** Rewrites the lines of an order still in «Pedido»; it keeps its folio. */
+export const editSupplierOrderFn = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => data)
+  .handler(({ data }) =>
+    runWithActor((actor) =>
+      editSupplierOrder(actor, parseInput(editSupplierOrderInput, data)),
     ),
   )
 

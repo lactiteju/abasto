@@ -43,6 +43,13 @@ import {
   supplierProducts,
 } from '#/modules/inventory/lib/supplier-order-draft'
 import type { OrderDraft } from '#/modules/inventory/lib/supplier-order-draft'
+import {
+  discountReopenNote,
+  draftFromOrder,
+  editInputFromDraft,
+  productsForEdit,
+} from '#/modules/inventory/lib/supplier-order-edit-draft'
+import type { SupplierOrder } from '#/modules/inventory/services/supplier-orders'
 import type {
   CatalogProduct,
   CatalogSupplier,
@@ -64,6 +71,8 @@ type OrderDialogProps = {
   discountable: ReadonlyArray<PendingBalance>
   /** Product to start from, e.g. a low-stock alert: picks its supplier and finds it. */
   initialProductId?: string
+  /** An order in «Pedido» to edit: its lines are prefilled, the supplier is fixed and the folio kept. */
+  order?: SupplierOrder
   onClose: () => void
 }
 
@@ -76,16 +85,21 @@ export function OrderDialog({
   canEditProducts,
   discountable,
   initialProductId,
+  order,
   onClose,
 }: OrderDialogProps) {
   const actions = useInventoryActions()
   const initialProduct = products.find(({ id }) => id === initialProductId)
-  const [draft, setDraft] = useState<OrderDraft>(() => ({
-    supplierId: initialProduct?.supplierId ?? '',
-    warehouseId: initialWarehouseId,
-    expectedOn: '',
-    boxes: {},
-  }))
+  const [draft, setDraft] = useState<OrderDraft>(() =>
+    order
+      ? draftFromOrder(order)
+      : {
+          supplierId: initialProduct?.supplierId ?? '',
+          warehouseId: initialWarehouseId,
+          expectedOn: '',
+          boxes: {},
+        },
+  )
   const [editingId, setEditingId] = useState<string>()
   const [query, setQuery] = useState(initialProduct?.name ?? '')
   const [onlyBoxes, setOnlyBoxes] = useState(false)
@@ -106,7 +120,7 @@ export function OrderDialog({
   useEffect(() => {
     let current = true
     setFolio(undefined)
-    if (draft.supplierId) {
+    if (draft.supplierId && !order) {
       void actions
         .loadFolioPreview(draft.supplierId, draft.warehouseId)
         .then((next) => {
@@ -142,22 +156,31 @@ export function OrderDialog({
     }
   }, [draft.warehouseId])
 
+  // Editing: lines already on the order keep their frozen terms in the figures.
+  const catalog = useMemo(
+    () => (order ? productsForEdit(products, order.lines) : products),
+    [products, order],
+  )
   const own = useMemo(
-    () => supplierProducts(products, draft.supplierId, ''),
-    [products, draft.supplierId],
+    () => supplierProducts(catalog, draft.supplierId, ''),
+    [catalog, draft.supplierId],
   )
   const visible = useMemo(() => {
-    const matching = supplierProducts(products, draft.supplierId, query)
+    const matching = supplierProducts(catalog, draft.supplierId, query)
     const shown = onlyBoxes ? onlyWithBoxes(matching, draft.boxes) : matching
     return sortBelowMinimumFirst(shown, stock)
-  }, [products, draft.supplierId, draft.boxes, query, onlyBoxes, stock])
+  }, [catalog, draft.supplierId, draft.boxes, query, onlyBoxes, stock])
   const total = orderTotalCents(own, draft)
   const owedHere = useMemo(
     () => discountable.filter((row) => row.supplierId === draft.supplierId),
     [discountable, draft.supplierId],
   )
-  const discountCents = discountTotalCents(owedHere, discounted)
-  const tooMuch = discountIssue(total, discountCents)
+  // Editing keeps the discounts already applied; the server reopens the ones that no longer fit.
+  const discountCents = order
+    ? order.discountCents
+    : discountTotalCents(owedHere, discounted)
+  const tooMuch = order ? null : discountIssue(total, discountCents)
+  const reopenNote = order ? discountReopenNote(discountCents, total) : null
 
   /** Brings the failing product on screen: clears the filters that hide it, then the table scrolls to it. */
   function showFailedRow(productId: string) {
@@ -172,6 +195,17 @@ export function OrderDialog({
   }
 
   async function submit() {
+    if (order) {
+      const edited = editInputFromDraft(order.id, draft, own)
+      if (!edited.ok) {
+        if ('productId' in edited) showFailedRow(edited.productId)
+        return setError(edited.message)
+      }
+      setFailed(undefined)
+      setError(null)
+      if (await actions.editOrder(edited.value)) onClose()
+      return
+    }
     const parsed = orderInputFromDraft(draft, own)
     if (!parsed.ok) {
       if ('productId' in parsed) showFailedRow(parsed.productId)
@@ -198,15 +232,22 @@ export function OrderDialog({
   return (
     <>
       <InventoryDialog
-        title="Nuevo pedido al proveedor"
-        eyebrow="POR RECIBIR"
-        description="Elige el proveedor y las cajas de cada producto. No mueve existencias hasta que lo recibas."
+        title={order ? 'Editar pedido' : 'Nuevo pedido al proveedor'}
+        eyebrow={order ? order.supplierName.toUpperCase() : 'POR RECIBIR'}
+        description={
+          order
+            ? `${order.code} · Sube, baja o quita cajas y agrega otros productos del proveedor. Conserva su folio. Para dejarlo sin productos usa «Cancelar pedido».`
+            : 'Elige el proveedor y las cajas de cada producto. No mueve existencias hasta que lo recibas.'
+        }
         size="wide"
         onClose={onClose}
         footer={
           <>
             {(error ?? tooMuch) && (
               <FormError>{error ?? tooMuch ?? ''}</FormError>
+            )}
+            {reopenNote && (
+              <p className="text-xs text-[#7a5a14]">{reopenNote}</p>
             )}
             <DialogActions className="mt-0 border-t-0 pt-0">
               <strong className="text-base text-[#5f4a51]">
@@ -222,7 +263,11 @@ export function OrderDialog({
                   form="order-form"
                   disabled={actions.pending}
                 >
-                  {actions.pending ? 'Guardando…' : 'Registrar pedido'}
+                  {actions.pending
+                    ? 'Guardando…'
+                    : order
+                      ? 'Guardar cambios'
+                      : 'Registrar pedido'}
                 </ActionButton>
               </span>
             </DialogActions>
@@ -240,6 +285,7 @@ export function OrderDialog({
           <FormGrid>
             <Field label="Proveedor">
               <FieldSelect
+                disabled={Boolean(order)}
                 value={draft.supplierId}
                 onChange={(event) => {
                   setQuery('')
@@ -261,7 +307,7 @@ export function OrderDialog({
                   ))}
               </FieldSelect>
             </Field>
-            {hasWarehouseChoice(warehouses) && (
+            {!order && hasWarehouseChoice(warehouses) && (
               <Field label="Almacén que recibe">
                 <FieldSelect
                   value={draft.warehouseId}
@@ -280,6 +326,7 @@ export function OrderDialog({
             <Field label="Fecha esperada de entrega (opcional)">
               <FieldInput
                 type="date"
+                disabled={Boolean(order)}
                 value={draft.expectedOn}
                 onChange={(event) =>
                   setDraft({ ...draft, expectedOn: event.target.value })
@@ -292,9 +339,11 @@ export function OrderDialog({
               readOnly
               aria-readonly
               value={
-                !draft.supplierId
-                  ? 'Elige un proveedor para ver su folio'
-                  : (folio ?? 'Calculando…')
+                order
+                  ? order.code
+                  : !draft.supplierId
+                    ? 'Elige un proveedor para ver su folio'
+                    : (folio ?? 'Calculando…')
               }
               className="text-[#907e84]"
             />
@@ -306,7 +355,7 @@ export function OrderDialog({
           </Field>
           {draft.supplierId ? (
             <>
-              {owedHere.length > 0 && (
+              {!order && owedHere.length > 0 && (
                 <section className="grid gap-2.5">
                   <h3 className="text-sm font-[650] text-[#5f4a51]">
                     Faltantes y descuentos a favor

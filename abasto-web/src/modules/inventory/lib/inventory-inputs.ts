@@ -54,6 +54,12 @@ export const supplierOrderInput = z.object({
   discounts: z.array(z.object({ pendingId: id })).optional(),
 })
 
+/** Edit of a pending order: the full set of lines it ends with. */
+export const editSupplierOrderInput = z.object({
+  purchaseId: id,
+  lines: z.array(z.object({ productId: id, boxes: whole })),
+})
+
 export const folioPreviewInput = z.object({ supplierId: id, warehouseId: id })
 
 export const orderIdInput = z.object({ purchaseId: id })

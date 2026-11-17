@@ -27,13 +27,19 @@ import type {
 
 type OrderDetailDialogProps = {
   order: SupplierOrderSummary
+  /** Opens the editor with the loaded order; absent for users who cannot manage the warehouse. */
+  onEdit?: (order: SupplierOrder) => void
   onClose: () => void
 }
 
 const priceTone = { up: 'text-[#b26a00]', down: 'text-[#2e7d4f]' } as const
 
 /** Read-only view of an order: what was ordered, what arrived and the price charged. */
-export function OrderDetailDialog({ order, onClose }: OrderDetailDialogProps) {
+export function OrderDetailDialog({
+  order,
+  onEdit,
+  onClose,
+}: OrderDetailDialogProps) {
   const actions = useInventoryActions()
   const [detail, setDetail] = useState<SupplierOrder>()
 
@@ -153,6 +159,11 @@ export function OrderDetailDialog({ order, onClose }: OrderDetailDialogProps) {
           </p>
 
           <DialogActions>
+            {onEdit && detail.status === 'Pedido' && (
+              <ActionButton type="button" onClick={() => onEdit(detail)}>
+                Editar pedido
+              </ActionButton>
+            )}
             <ActionButton type="button" tone="primary" onClick={onClose}>
               Cerrar
             </ActionButton>

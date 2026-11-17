@@ -34,6 +34,7 @@ export type OrderDraft = {
   boxes: Readonly<Record<string, string | undefined>>
 }
 
+export const NO_BOXES_MESSAGE = 'Escribe las cajas de al menos un producto.'
 export const PRICE_BELOW_COST_MESSAGE =
   'El costo por caja supera el precio estándar. Actualiza el precio estándar del producto en el catálogo.'
 export const NO_STANDARD_PRICE_MESSAGE = 'Sin precio estándar en este almacén'
@@ -192,7 +193,7 @@ export function orderInputFromDraft(
     }
     lines.push({ productId: product.id, boxes: boxes.value })
   }
-  if (!lines.length) return fail('Escribe las cajas de al menos un producto.')
+  if (!lines.length) return fail(NO_BOXES_MESSAGE)
   return {
     ok: true,
     value: {

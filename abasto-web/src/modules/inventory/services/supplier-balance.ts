@@ -210,25 +210,54 @@ export async function discountBalance(
   return valueCents
 }
 
-/** Reopens, with mirror entries, the balances a cancelled order had discounted. */
-export async function reopenDiscounts(
+type PendingEntry = typeof supplierPendings.$inferSelect
+
+/**
+ * Discounts of an order still in force: `discounted` entries without a
+ * `reopened` mirror yet, oldest first. A balance counts once per discount, so
+ * reopening twice (an edit, then a cancel) can never mirror an entry twice.
+ */
+export async function activeDiscounts(
   tx: Tx,
   purchaseId: string,
-  actorId: string,
-) {
-  const discounted = await tx
+): Promise<Array<PendingEntry>> {
+  const entries = await tx
     .select()
     .from(supplierPendings)
     .where(
       and(
         eq(supplierPendings.purchaseId, purchaseId),
-        eq(supplierPendings.type, 'discounted'),
+        inArray(supplierPendings.type, ['discounted', 'reopened']),
       ),
     )
     .orderBy(asc(supplierPendings.createdAt), asc(supplierPendings.id))
-  if (!discounted.length) return
+  const reopened = new Map<string, number>()
+  for (const entry of entries) {
+    if (entry.type === 'reopened' && entry.settlesId) {
+      reopened.set(entry.settlesId, (reopened.get(entry.settlesId) ?? 0) + 1)
+    }
+  }
+  return entries.filter((entry) => {
+    if (entry.type !== 'discounted' || !entry.settlesId) return false
+    const left = reopened.get(entry.settlesId) ?? 0
+    if (left > 0) {
+      reopened.set(entry.settlesId, left - 1)
+      return false
+    }
+    return true
+  })
+}
+
+/** Appends the mirror entries that give the discounted balances back. */
+export async function reopenEntries(
+  tx: Tx,
+  purchaseId: string,
+  entries: Array<PendingEntry>,
+  actorId: string,
+) {
+  if (!entries.length) return
   await tx.insert(supplierPendings).values(
-    discounted.map((entry) => ({
+    entries.map((entry) => ({
       supplierId: entry.supplierId,
       productId: entry.productId,
       purchaseId,
@@ -238,5 +267,19 @@ export async function reopenDiscounts(
       valueCents: -entry.valueCents,
       actorId,
     })),
+  )
+}
+
+/** Reopens, with mirror entries, the balances a cancelled order still had discounted. */
+export async function reopenDiscounts(
+  tx: Tx,
+  purchaseId: string,
+  actorId: string,
+) {
+  await reopenEntries(
+    tx,
+    purchaseId,
+    await activeDiscounts(tx, purchaseId),
+    actorId,
   )
 }

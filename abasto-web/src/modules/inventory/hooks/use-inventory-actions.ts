@@ -13,6 +13,7 @@ import {
 import {
   cancelSupplierOrderFn,
   createSupplierOrderFn,
+  editSupplierOrderFn,
   receiveSupplierOrderFn,
   returnPendingsFn,
   scrapPendingsFn,
@@ -25,6 +26,7 @@ import type {
   ReturnRequest,
   ScrapRequest,
 } from '#/modules/inventory/lib/pending-return'
+import type { SupplierOrderEditInput } from '#/modules/inventory/services/supplier-order-edit'
 import type { ReceptionInput } from '#/modules/inventory/services/supplier-reception'
 import type {
   SupplierOrder,
@@ -47,6 +49,15 @@ export function useInventoryActions() {
         () => createSupplierOrderFn({ data: input }),
         'Pedido registrado. Quedó en «Por recibir».',
       ),
+    editOrder: (input: SupplierOrderEditInput) =>
+      run(() => editSupplierOrderFn({ data: input }), {
+        onSuccess: ({ reopened }) =>
+          toast.success(
+            reopened > 0
+              ? `Pedido actualizado. Se reabrieron ${reopened} descuento${reopened === 1 ? '' : 's'} que ya no cabían en el total.`
+              : 'Pedido actualizado.',
+          ),
+      }),
     cancelOrder: (purchaseId: string) =>
       run(
         () => cancelSupplierOrderFn({ data: { purchaseId } }),

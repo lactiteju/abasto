@@ -54,7 +54,10 @@ import type {
   CatalogSupplier,
 } from '#/modules/catalog/lib/catalog-types'
 import type { ProductStock } from '#/modules/inventory/services/stock-reads'
-import type { SupplierOrderSummary } from '#/modules/inventory/services/supplier-orders'
+import type {
+  SupplierOrder,
+  SupplierOrderSummary,
+} from '#/modules/inventory/services/supplier-orders'
 import type {
   PendingBalance,
   PendingEntry,
@@ -100,6 +103,7 @@ const headingButton =
 type Dialog =
   | { kind: 'order'; productId?: string }
   | { kind: 'orderDetail'; order: SupplierOrderSummary }
+  | { kind: 'editOrder'; order: SupplierOrder }
   | { kind: 'receiveOrder'; order: SupplierOrderSummary }
   | { kind: 'cancelOrder'; order: SupplierOrderSummary }
   | { kind: 'return'; pending: PendingBalance }
@@ -381,6 +385,23 @@ export function InventoryPage({
       {dialog?.kind === 'orderDetail' && (
         <OrderDetailDialog
           order={dialog.order}
+          onEdit={
+            canManage
+              ? (order) => setDialog({ kind: 'editOrder', order })
+              : undefined
+          }
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog?.kind === 'editOrder' && (
+        <OrderDialog
+          order={dialog.order}
+          warehouses={managed}
+          initialWarehouseId={dialog.order.warehouseId}
+          suppliers={suppliers}
+          products={pickable}
+          canEditProducts={canEditProducts}
+          discountable={[]}
           onClose={() => setDialog(null)}
         />
       )}
