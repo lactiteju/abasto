@@ -1,7 +1,8 @@
 import { PlusIcon, Trash2Icon } from 'lucide-react'
-import { useId, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 
 import { ProductPicker } from '#/components/product-picker'
+import { SupplierSelect } from '#/components/supplier-select'
 import { ActionButton } from '#/modules/inventory/components/action-button'
 import {
   Field,
@@ -22,6 +23,11 @@ import type {
   AssignableProduct,
   AssignDraftLine,
 } from '#/modules/riders/lib/assign-draft'
+import {
+  assignableSuppliers,
+  defaultSupplierId,
+  filterBySupplier,
+} from '#/modules/riders/lib/assign-supplier-filter'
 import { describeQuantity } from '#/modules/riders/lib/box-quantities'
 import type { Rider } from '#/modules/riders/services/riders'
 
@@ -44,6 +50,10 @@ export function AssignDialog({ riders, products, onClose }: AssignDialogProps) {
   const idPrefix = useId()
   const [riderId, setRiderId] = useState(riders.at(0)?.id ?? '')
   const [lines, setLines] = useState<Array<AssignDraftLine>>([emptyLine()])
+  const suppliers = useMemo(() => assignableSuppliers(products), [products])
+  const [supplierId, setSupplierId] = useState(() =>
+    defaultSupplierId(suppliers),
+  )
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
@@ -92,6 +102,13 @@ export function AssignDialog({ riders, products, onClose }: AssignDialogProps) {
         <SectionHelp className="my-0">
           Escribe cajas, unidades o ambas, por ejemplo 40 cajas y 20 unidades.
         </SectionHelp>
+        <Field label="Proveedor">
+          <SupplierSelect
+            suppliers={suppliers}
+            value={supplierId}
+            onChange={setSupplierId}
+          />
+        </Field>
         {lines.map((line, index) => {
           const product = products.find((p) => p.productId === line.productId)
           const taken = new Set(
@@ -108,7 +125,11 @@ export function AssignDialog({ riders, products, onClose }: AssignDialogProps) {
                   <ProductPicker
                     label="Producto"
                     value={line.productId}
-                    products={products
+                    products={filterBySupplier(
+                      products,
+                      supplierId,
+                      lines.map((l) => l.productId),
+                    )
                       .filter((p) => !taken.has(p.productId))
                       .map((p) => ({
                         id: p.productId,

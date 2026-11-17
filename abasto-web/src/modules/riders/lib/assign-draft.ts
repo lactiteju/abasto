@@ -3,6 +3,9 @@ export type AssignableProduct = {
   name: string
   /** Searchable alongside the name; blank when the source does not provide it. */
   sku?: string
+  /** Catalog supplier; null when the product has none. */
+  supplierId?: string | null
+  supplierName?: string | null
   /** Base units in the product's largest active presentation ("caja"). */
   boxFactor: number
   /** Base units free to assign in the warehouse. */

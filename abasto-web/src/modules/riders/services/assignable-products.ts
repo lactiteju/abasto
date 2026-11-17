@@ -42,6 +42,8 @@ export async function listAssignableProducts(
       productId: product.productId,
       name: product.name,
       sku: product.sku,
+      supplierId: product.supplierId,
+      supplierName: product.supplierName,
       boxFactor: boxOf.get(product.productId) ?? 1,
       available: product.available,
     }))

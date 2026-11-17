@@ -21,6 +21,8 @@ describe('listAssignableProducts', () => {
         productId: fx.milkBox.id,
         name: expect.any(String),
         sku: fx.milkBox.sku,
+        supplierId: expect.any(String),
+        supplierName: 'Alpura',
         boxFactor: 12,
         available: 100,
       },
