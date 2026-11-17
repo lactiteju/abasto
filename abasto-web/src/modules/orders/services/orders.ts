@@ -57,72 +57,86 @@ export async function reserveOrder(
 ): Promise<OrderDetail> {
   validateLines(input.lines)
   return db.transaction(async (tx) => {
-    await requireWarehouse(tx, input.warehouseId)
-    await expireOverdueOrders(tx, input.warehouseId)
-    const customer = (
-      await tx
-        .select({ active: customers.active })
-        .from(customers)
-        .where(eq(customers.id, input.customerId))
-    ).at(0)
-    if (!customer) throw customerNotFound()
-    if (!customer.active) {
-      throw new AppError('conflict', 'Este cliente está inactivo.')
-    }
-    if (origin.source === 'store') {
-      await requirePublished(tx, input.lines)
-    }
-    const quotes = await quoteLines(tx, input, input.lines)
-    const allocations = await reserveAllocations(tx, quotes)
-    const createdAt = now()
-    const hours = await readReservationHours(tx)
-    const [order] = await tx
-      .insert(orders)
-      .values({
-        warehouseId: input.warehouseId,
-        customerId: input.customerId,
-        status: 'Reservado',
-        notes: input.notes?.trim() ?? '',
-        totalCents: quotes.reduce((sum, q) => sum + q.lineTotalCents, 0),
-        source: origin.source,
-        createdBy: origin.createdBy,
-        createdAt,
-        expiresAt: new Date(createdAt.getTime() + hours * 3_600_000),
-      })
-      .returning({ id: orders.id })
-    const lines = await tx
-      .insert(orderLines)
-      .values(
-        quotes.map((q) => ({
-          orderId: order.id,
-          productId: q.productId,
-          presentationId: q.presentationId,
-          quantity: q.quantity,
-          baseQuantity: q.baseQuantity,
-          listPriceCents: q.listPriceCents,
-          ruleMinQuantity: q.rule?.minQuantity ?? null,
-          ruleDiscountBps: q.rule?.discountBps ?? null,
-          rulePriceCents: q.rule?.priceCents ?? null,
-          unitPriceCents: q.unitPriceCents,
-          lineTotalCents: q.lineTotalCents,
-        })),
-      )
-      .returning({
-        id: orderLines.id,
-        presentationId: orderLines.presentationId,
-      })
-    const lineIdOf = new Map(lines.map((l) => [l.presentationId, l.id]))
-    await tx.insert(orderAllocations).values(
-      quotes.flatMap((q, index) =>
-        allocations[index].map((a) => ({
-          orderLineId: lineIdOf.get(q.presentationId)!,
-          lotId: a.lotId,
-          quantity: a.quantity,
-        })),
-      ),
-    )
-    return readOrder(tx, order.id)
+    const id = await placeOrderInTx(tx, origin, input)
+    return readOrder(tx, id)
   })
+}
+
+/**
+ * Creates the Reservado order inside the caller's transaction and returns its
+ * id: warehouse stock lock first, then lots, customer rules and prices. Lines
+ * must be validated and the actor authorized by the caller.
+ */
+export async function placeOrderInTx(
+  tx: Tx,
+  origin: { createdBy: string; source: OrderSource },
+  input: CreateOrderInput,
+): Promise<string> {
+  await requireWarehouse(tx, input.warehouseId)
+  await expireOverdueOrders(tx, input.warehouseId)
+  const customer = (
+    await tx
+      .select({ active: customers.active })
+      .from(customers)
+      .where(eq(customers.id, input.customerId))
+  ).at(0)
+  if (!customer) throw customerNotFound()
+  if (!customer.active) {
+    throw new AppError('conflict', 'Este cliente está inactivo.')
+  }
+  if (origin.source === 'store') {
+    await requirePublished(tx, input.lines)
+  }
+  const quotes = await quoteLines(tx, input, input.lines)
+  const allocations = await reserveAllocations(tx, quotes)
+  const createdAt = now()
+  const hours = await readReservationHours(tx)
+  const [order] = await tx
+    .insert(orders)
+    .values({
+      warehouseId: input.warehouseId,
+      customerId: input.customerId,
+      status: 'Reservado',
+      notes: input.notes?.trim() ?? '',
+      totalCents: quotes.reduce((sum, q) => sum + q.lineTotalCents, 0),
+      source: origin.source,
+      createdBy: origin.createdBy,
+      createdAt,
+      expiresAt: new Date(createdAt.getTime() + hours * 3_600_000),
+    })
+    .returning({ id: orders.id })
+  const lines = await tx
+    .insert(orderLines)
+    .values(
+      quotes.map((q) => ({
+        orderId: order.id,
+        productId: q.productId,
+        presentationId: q.presentationId,
+        quantity: q.quantity,
+        baseQuantity: q.baseQuantity,
+        listPriceCents: q.listPriceCents,
+        ruleMinQuantity: q.rule?.minQuantity ?? null,
+        ruleDiscountBps: q.rule?.discountBps ?? null,
+        rulePriceCents: q.rule?.priceCents ?? null,
+        unitPriceCents: q.unitPriceCents,
+        lineTotalCents: q.lineTotalCents,
+      })),
+    )
+    .returning({
+      id: orderLines.id,
+      presentationId: orderLines.presentationId,
+    })
+  const lineIdOf = new Map(lines.map((l) => [l.presentationId, l.id]))
+  await tx.insert(orderAllocations).values(
+    quotes.flatMap((q, index) =>
+      allocations[index].map((a) => ({
+        orderLineId: lineIdOf.get(q.presentationId)!,
+        lotId: a.lotId,
+        quantity: a.quantity,
+      })),
+    ),
+  )
+  return order.id
 }
 
 /** Store lines may only name presentations of published products. */

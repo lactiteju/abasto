@@ -101,9 +101,52 @@ export const cancelOrder = (actor: Actor, orderId: string) =>
 export type PickupResult = OrderDetail & { payment: PickupReceipt }
 
 /**
- * Reservado → Recogido (whole order), paid in cash: settles the
- * payment, appends one `sale` movement per allocation and lowers `on_hand`
- * and `reserved` together, all in one transaction.
+ * Delivers a Reservado order inside the caller's transaction (warehouse stock
+ * lock already taken): settles the cash payment, appends one `sale` movement
+ * per allocation, lowers `on_hand` and `reserved` together and marks the
+ * order Recogido. Shared by the pickup and the sell-now path.
+ */
+export async function deliverInTx(
+  tx: Tx,
+  order: Order,
+  payment: PickupPayment | undefined,
+  actorId: string,
+): Promise<PickupReceipt> {
+  if (await hasExpiredLot(tx, order.id)) {
+    throw new AppError(
+      'conflict',
+      'Un lote de este pedido ya caducó. Cancélalo y crea un pedido nuevo.',
+    )
+  }
+  const receipt = await settlePickup(tx, order, payment, actorId)
+  const allocations = await allocationsOf(tx, order.id)
+  const locked = await lockLotsInOrder(
+    tx,
+    allocations.map((a) => a.lotId),
+  )
+  for (const { lotId, quantity } of allocations) {
+    await appendMovement(
+      tx,
+      locked.get(lotId)!,
+      {
+        type: 'sale',
+        quantity: -quantity,
+        reason: 'Pedido recogido',
+        reference: order.id,
+        actorId,
+      },
+      { fromReserved: true },
+    )
+  }
+  await tx
+    .update(orders)
+    .set({ status: 'Recogido', closedAt: now() })
+    .where(eq(orders.id, order.id))
+  return receipt
+}
+
+/**
+ * Reservado → Recogido (whole order), paid in cash, in one transaction.
  */
 export async function pickupOrder(
   actor: Actor,
@@ -117,36 +160,7 @@ export async function pickupOrder(
     ['Reservado'],
     'Solo se puede entregar un pedido reservado.',
     async (tx, order) => {
-      if (await hasExpiredLot(tx, orderId)) {
-        throw new AppError(
-          'conflict',
-          'Un lote de este pedido ya caducó. Cancélalo y crea un pedido nuevo.',
-        )
-      }
-      receipt = await settlePickup(tx, order, payment, actor.userId)
-      const allocations = await allocationsOf(tx, orderId)
-      const locked = await lockLotsInOrder(
-        tx,
-        allocations.map((a) => a.lotId),
-      )
-      for (const { lotId, quantity } of allocations) {
-        await appendMovement(
-          tx,
-          locked.get(lotId)!,
-          {
-            type: 'sale',
-            quantity: -quantity,
-            reason: 'Pedido recogido',
-            reference: orderId,
-            actorId: actor.userId,
-          },
-          { fromReserved: true },
-        )
-      }
-      await tx
-        .update(orders)
-        .set({ status: 'Recogido', closedAt: now() })
-        .where(eq(orders.id, orderId))
+      receipt = await deliverInTx(tx, order, payment, actor.userId)
     },
   )
   return { ...detail, payment: receipt! }
