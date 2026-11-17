@@ -6,6 +6,8 @@ export type AssignableProduct = {
   /** Catalog supplier; null when the product has none. */
   supplierId?: string | null
   supplierName?: string | null
+  /** Photo for the product table; null/absent shows the placeholder. */
+  imageUrl?: string | null
   /** Base units in the product's largest active presentation ("caja"). */
   boxFactor: number
   /** Base units free to assign in the warehouse. */
