@@ -293,7 +293,8 @@ describe('editReservedOrder under unforced contention', () => {
       expiresOn: '2099-01-01',
     })
     const placed = []
-    for (let i = 0; i < 6; i++) placed.push(await place(fx, [line(fx.pieceId, 6)]))
+    for (let i = 0; i < 6; i++)
+      placed.push(await place(fx, [line(fx.pieceId, 6)]))
     const ops: Array<Promise<unknown>> = [
       edit(fx, placed[0].id, [line(fx.pieceId, 1)]),
       edit(fx, placed[1].id, [line(fx.pieceId, 12)]),
