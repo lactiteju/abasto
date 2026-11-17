@@ -20,17 +20,14 @@ type RidersCatalogProps = {
   riders: ReadonlyArray<Rider>
   /** Riders with an assignment "En ruta": they cannot get a new one. */
   onRouteIds: ReadonlySet<string>
-  /** Only users with `warehouse.manage` edit the catalog. */
-  canManage: boolean
   onNew: () => void
   onRename: (rider: Rider) => void
 }
 
-/** The warehouse's riders: add, rename, activate or deactivate. */
+/** The warehouse's riders (owner only): add, rename, activate or deactivate. */
 export function RidersCatalog({
   riders,
   onRouteIds,
-  canManage,
   onNew,
   onRename,
 }: RidersCatalogProps) {
@@ -41,12 +38,10 @@ export function RidersCatalog({
         title="Repartidores"
         description="Quién puede recibir producto en este almacén. Un repartidor inactivo no recibe repartos nuevos."
         action={
-          canManage ? (
-            <ActionButton onClick={onNew}>
-              <PlusIcon size={19} />
-              Nuevo repartidor
-            </ActionButton>
-          ) : undefined
+          <ActionButton onClick={onNew}>
+            <PlusIcon size={19} />
+            Nuevo repartidor
+          </ActionButton>
         }
       />
       {riders.length ? (
@@ -74,32 +69,30 @@ export function RidersCatalog({
                     )}
                   </ListCell>
                   <ListCell>
-                    {canManage && (
-                      <span className="flex justify-end">
-                        <RowActionsMenu
-                          label={`Acciones de ${rider.name}`}
-                          items={[
-                            {
-                              key: 'rename',
-                              label: 'Renombrar',
-                              icon: (
-                                <PencilIcon className="size-4 text-[#927981]" />
-                              ),
-                              onSelect: () => onRename(rider),
-                            },
-                            {
-                              key: 'active',
-                              label: rider.active ? 'Desactivar' : 'Activar',
-                              icon: <PowerIcon className="size-4" />,
-                              destructive: rider.active,
-                              disabled: actions.pending,
-                              onSelect: () =>
-                                void actions.setActive(rider.id, !rider.active),
-                            },
-                          ]}
-                        />
-                      </span>
-                    )}
+                    <span className="flex justify-end">
+                      <RowActionsMenu
+                        label={`Acciones de ${rider.name}`}
+                        items={[
+                          {
+                            key: 'rename',
+                            label: 'Renombrar',
+                            icon: (
+                              <PencilIcon className="size-4 text-[#927981]" />
+                            ),
+                            onSelect: () => onRename(rider),
+                          },
+                          {
+                            key: 'active',
+                            label: rider.active ? 'Desactivar' : 'Activar',
+                            icon: <PowerIcon className="size-4" />,
+                            destructive: rider.active,
+                            disabled: actions.pending,
+                            onSelect: () =>
+                              void actions.setActive(rider.id, !rider.active),
+                          },
+                        ]}
+                      />
+                    </span>
                   </ListCell>
                 </ListRow>
               ))}
@@ -110,11 +103,7 @@ export function RidersCatalog({
         <EmptyPanel
           icon={UserRoundIcon}
           title="Aún no hay repartidores"
-          description={
-            canManage
-              ? 'Agrega a quien reparte para poder asignarle producto.'
-              : 'Pide al encargado del almacén que agregue a los repartidores.'
-          }
+          description="Agrega a quien reparte para poder asignarle producto."
         />
       )}
     </section>

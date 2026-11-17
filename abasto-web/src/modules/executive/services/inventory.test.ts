@@ -126,7 +126,7 @@ describe('non-moving capital', () => {
 
   test('a settled rider delivery counts as a sale of its product', async () => {
     const fx = await stocked()
-    const rider = await createRider(fx.managerA, {
+    const rider = await createRider(fx.owner, {
       warehouseId: fx.a.id,
       name: 'Luis',
     })

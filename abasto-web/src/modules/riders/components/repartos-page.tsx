@@ -175,13 +175,14 @@ export function RepartosPage({
           setOpen({ kind: action, assignment })
         }}
       />
-      <RidersCatalog
-        riders={overview.riders}
-        onRouteIds={onRoute}
-        canManage={overview.canManage}
-        onNew={() => setOpen({ kind: 'rider' })}
-        onRename={(rider) => setOpen({ kind: 'rider', rider })}
-      />
+      {overview.canManageRiders && (
+        <RidersCatalog
+          riders={overview.riders}
+          onRouteIds={onRoute}
+          onNew={() => setOpen({ kind: 'rider' })}
+          onRename={(rider) => setOpen({ kind: 'rider', rider })}
+        />
+      )}
       {open?.kind === 'view' && (
         <AssignmentProductsDialog
           key={open.assignment.id}

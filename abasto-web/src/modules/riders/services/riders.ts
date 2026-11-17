@@ -45,7 +45,7 @@ export async function createRider(
   actor: Actor,
   input: { warehouseId: string; name: string },
 ): Promise<Rider> {
-  authorize(actor, 'warehouse.manage', input.warehouseId)
+  authorize(actor, 'riders.manage')
   requireWarehouseId(input.warehouseId)
   const name = cleanName(input.name)
   try {
@@ -72,7 +72,8 @@ async function update(
   riderId: string,
   changes: Partial<Pick<Rider, 'name' | 'active'>>,
 ): Promise<Rider> {
-  authorize(actor, 'warehouse.manage', await warehouseOfRider(riderId))
+  authorize(actor, 'riders.manage')
+  await warehouseOfRider(riderId)
   try {
     const [rider] = await db
       .update(riders)

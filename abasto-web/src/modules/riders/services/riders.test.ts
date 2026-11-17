@@ -19,9 +19,9 @@ describe('riders catalog', () => {
       name: '  Pedro  ',
     })
     expect(created).toMatchObject({ name: 'Pedro', active: true })
-    await renameRider(fx.managerA, { riderId: created.id, name: 'Pedro R.' })
-    await setRiderActive(fx.managerA, { riderId: created.id, active: false })
-    await createRider(fx.managerB, { warehouseId: fx.b.id, name: 'Otro' })
+    await renameRider(fx.owner, { riderId: created.id, name: 'Pedro R.' })
+    await setRiderActive(fx.owner, { riderId: created.id, active: false })
+    await createRider(fx.owner, { warehouseId: fx.b.id, name: 'Otro' })
     const listed = await listRiders(fx.managerA, { warehouseId: fx.a.id })
     expect(listed.map((r) => [r.name, r.active])).toEqual([
       ['Luis', true],
@@ -61,13 +61,25 @@ describe('riders catalog', () => {
     await createRider(fx.owner, { warehouseId: fx.b.id, name: 'Luis' })
   })
 
-  test('access: managers only in their warehouse, customers nothing', async () => {
+  test('access: only the owner edits the catalog; managers only list their warehouse, customers nothing', async () => {
     const fx = await setupRiders()
     const denied = (run: () => Promise<unknown>) =>
       errorOf(run).then((error) => error.code)
+    for (const manager of [fx.managerA, fx.managerB]) {
+      expect(
+        await denied(() =>
+          createRider(manager, { warehouseId: fx.a.id, name: 'X' }),
+        ),
+      ).toBe('forbidden')
+    }
     expect(
       await denied(() =>
-        createRider(fx.managerB, { warehouseId: fx.a.id, name: 'X' }),
+        renameRider(fx.managerA, { riderId: fx.rider.id, name: 'X' }),
+      ),
+    ).toBe('forbidden')
+    expect(
+      await denied(() =>
+        setRiderActive(fx.managerA, { riderId: fx.rider.id, active: false }),
       ),
     ).toBe('forbidden')
     expect(

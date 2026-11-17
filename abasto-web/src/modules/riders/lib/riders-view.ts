@@ -12,8 +12,8 @@ export type RidersOverview = {
   selectedId: string | null
   /** Server time, so dates render the same on server and client. */
   now: Date
-  /** Only the owner and the warehouse's manager edit the riders catalog. */
-  canManage: boolean
+  /** Only the owner sees and edits the riders catalog. */
+  canManageRiders: boolean
   riders: Array<Rider>
   /** The warehouse's open drawer; settling needs it. */
   cash: CashSessionDetail | null

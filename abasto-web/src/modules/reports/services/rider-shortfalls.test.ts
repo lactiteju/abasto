@@ -27,11 +27,11 @@ const today = { period: { preset: 'today' as const } }
 async function scenario() {
   const fx = await setupReports()
   await receive(fx, { productId: fx.milkBox.id, quantity: 100 })
-  const luis = await createRider(fx.managerA, {
+  const luis = await createRider(fx.owner, {
     warehouseId: fx.a.id,
     name: 'Luis',
   })
-  const marta = await createRider(fx.managerA, {
+  const marta = await createRider(fx.owner, {
     warehouseId: fx.a.id,
     name: 'Marta',
   })

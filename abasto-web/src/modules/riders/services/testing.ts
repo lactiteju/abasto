@@ -22,11 +22,11 @@ export { errorOf, receive }
 /** Orders fixture (piece price 1000, box of 12, open drawer in A) plus riders. */
 export async function setupRiders() {
   const fx = await setupOrders()
-  const rider = await createRider(fx.managerA, {
+  const rider = await createRider(fx.owner, {
     warehouseId: fx.a.id,
     name: 'Luis',
   })
-  const other = await createRider(fx.managerA, {
+  const other = await createRider(fx.owner, {
     warehouseId: fx.a.id,
     name: 'Marta',
   })

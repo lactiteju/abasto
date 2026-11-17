@@ -39,7 +39,7 @@ describe('sales report with rider deliveries', () => {
       salePriceCents: 900,
     })
     await fx.sell({ at: '2026-11-02T18:00:00Z', quantity: 3 })
-    const rider = await createRider(fx.managerA, {
+    const rider = await createRider(fx.owner, {
       warehouseId: fx.a.id,
       name: 'Luis',
     })
@@ -95,11 +95,11 @@ describe('sales report with rider deliveries', () => {
       quantity: 100,
       salePriceCents: 900,
     })
-    const rider = await createRider(fx.managerA, {
+    const rider = await createRider(fx.owner, {
       warehouseId: fx.a.id,
       name: 'Luis',
     })
-    const other = await createRider(fx.managerA, {
+    const other = await createRider(fx.owner, {
       warehouseId: fx.a.id,
       name: 'Marta',
     })
@@ -133,7 +133,7 @@ describe('sales report with rider deliveries', () => {
   test('a delivery settled outside the period or in a hidden warehouse is left out', async () => {
     const fx = await setupReports()
     await receive(fx, { productId: fx.milkBox.id, quantity: 100 })
-    const rider = await createRider(fx.managerA, {
+    const rider = await createRider(fx.owner, {
       warehouseId: fx.a.id,
       name: 'Luis',
     })

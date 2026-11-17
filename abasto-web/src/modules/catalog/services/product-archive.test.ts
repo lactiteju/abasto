@@ -232,7 +232,7 @@ describe('archiveProduct', () => {
   test('refuses with a rider delivery en ruta', async () => {
     const { fx, product, archivedAtOf, emptyLots } = await setup()
     await receive(fx, { productId: product.id, quantity: 50 })
-    const rider = await createRider(fx.managerA, {
+    const rider = await createRider(fx.owner, {
       warehouseId: fx.a.id,
       name: 'Luis',
     })

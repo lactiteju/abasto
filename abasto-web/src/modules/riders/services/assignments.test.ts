@@ -150,7 +150,7 @@ describe('assignRider', () => {
     expect((await errorOf(() => assign(1, 0))).message).toBe(
       'Este repartidor ya tiene un reparto en ruta.',
     )
-    await setRiderActive(fx.managerA, { riderId: fx.other.id, active: false })
+    await setRiderActive(fx.owner, { riderId: fx.other.id, active: false })
     expect((await errorOf(() => assign(1, 0, fx.other.id))).message).toBe(
       'Este repartidor está inactivo.',
     )

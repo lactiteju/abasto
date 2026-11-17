@@ -22,7 +22,7 @@ describe('getRidersOverview', () => {
     const view = await getRidersOverview(fx.managerA)
     expect(view.warehouses).toEqual([{ id: fx.a.id, name: 'Almacén A' }])
     expect(view.selectedId).toBe(fx.a.id)
-    expect(view.canManage).toBe(true)
+    expect(view.canManageRiders).toBe(false)
     expect(view.riders.map((r) => r.name)).toEqual(['Luis', 'Marta'])
     expect(view.cash?.session.warehouseId).toBe(fx.a.id)
     expect(view.assignments.map((a) => [a.id, a.status])).toEqual([
@@ -50,6 +50,7 @@ describe('getRidersOverview', () => {
   test('the owner picks a warehouse; an unknown one falls back to the first', async () => {
     const fx = await setupRiders()
     const both = await getRidersOverview(fx.owner)
+    expect(both.canManageRiders).toBe(true)
     expect(both.warehouses.map((w) => w.id).sort()).toEqual(
       [fx.a.id, fx.b.id].sort(),
     )
@@ -66,7 +67,7 @@ describe('getRidersOverview', () => {
     const view = await getRidersOverview(fx.managerB, fx.a.id)
     expect(view.selectedId).toBe(fx.b.id)
     expect(view.riders).toEqual([])
-    expect(view.canManage).toBe(true)
+    expect(view.canManageRiders).toBe(false)
     const none = await getRidersOverview(fx.customerActor)
     expect(none).toMatchObject({
       warehouses: [],
