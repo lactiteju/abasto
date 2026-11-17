@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 import { PageHeading } from '#/components/page-heading'
 import { FieldSelect } from '#/modules/counter/components/form-controls'
@@ -10,6 +11,10 @@ import { AssignDialog } from '#/modules/riders/forms/assign-dialog'
 import { CancelAssignmentDialog } from '#/modules/riders/forms/cancel-assignment-dialog'
 import { RiderDialog } from '#/modules/riders/forms/rider-dialog'
 import { SettleDialog } from '#/modules/riders/forms/settle-dialog'
+import {
+  prefillFromSettlement,
+  prepareNextBlock,
+} from '#/modules/riders/lib/next-assignment'
 import { newAssignmentBlock } from '#/modules/riders/lib/assign-availability'
 import type { RidersOverview } from '#/modules/riders/lib/riders-view'
 import type { AssignmentDetail } from '#/modules/riders/services/assignment-reads'
@@ -25,6 +30,44 @@ type Open =
   | { kind: 'rider'; rider?: Rider }
   | { kind: 'settle'; assignment: AssignmentDetail }
   | { kind: 'cancel'; assignment: AssignmentDetail }
+  | { kind: 'recharge'; assignment: AssignmentDetail }
+  | { kind: 'next'; assignment: AssignmentDetail }
+
+/** «Nuevo reparto» for the same rider, prefilled with what came back. */
+function NextAssignmentDialog({
+  assignment,
+  riders,
+  products,
+  onClose,
+}: {
+  assignment: AssignmentDetail
+  riders: ReadonlyArray<Rider>
+  products: RidersOverview['products']
+  onClose: () => void
+}) {
+  const prefill = prefillFromSettlement(assignment.lines, products)
+  const notices = [
+    ...(prefill.capped.length
+      ? [`Se ajustó a lo disponible: ${prefill.capped.join(', ')}.`]
+      : []),
+    ...(prefill.unavailable.length
+      ? [
+          `Sin existencia ahora, no se incluyó: ${prefill.unavailable.join(', ')}.`,
+        ]
+      : []),
+  ]
+  return (
+    <AssignDialog
+      key={assignment.id}
+      riders={riders}
+      products={products}
+      initialRiderId={assignment.riderId}
+      initialLines={prefill.lines}
+      notices={notices}
+      onClose={onClose}
+    />
+  )
+}
 
 /** Repartos: stock loaned to delivery riders for the day, settled at night. */
 export function RepartosPage({
@@ -108,8 +151,26 @@ export function RepartosPage({
         canAssign={blockedReason === null}
         blockedReason={blockedReason}
         onNew={() => setOpen({ kind: 'assign' })}
-        onSettle={(assignment) => setOpen({ kind: 'settle', assignment })}
-        onCancel={(assignment) => setOpen({ kind: 'cancel', assignment })}
+        onAction={(action, assignment) => {
+          if (action === 'prepareNext') {
+            const block = prepareNextBlock(
+              assignment.riderId,
+              onRoute,
+              overview.riders.some(
+                (rider) => rider.id === assignment.riderId && rider.active,
+              ),
+            )
+            if (block) return toast.error(block)
+            if (!overview.products.length) {
+              return toast.error(
+                'No hay producto disponible en este almacén para repartir.',
+              )
+            }
+            return setOpen({ kind: 'next', assignment })
+          }
+          const kind = action === 'recharge' ? 'recharge' : action
+          setOpen({ kind, assignment })
+        }}
       />
       <RidersCatalog
         riders={overview.riders}
@@ -119,6 +180,23 @@ export function RepartosPage({
       />
       {open?.kind === 'assign' && (
         <AssignDialog
+          riders={freeRiders}
+          products={overview.products}
+          onClose={close}
+        />
+      )}
+      {open?.kind === 'recharge' && (
+        <AssignDialog
+          key={open.assignment.id}
+          riders={[]}
+          products={overview.products}
+          recharge={open.assignment}
+          onClose={close}
+        />
+      )}
+      {open?.kind === 'next' && (
+        <NextAssignmentDialog
+          assignment={open.assignment}
           riders={freeRiders}
           products={overview.products}
           onClose={close}

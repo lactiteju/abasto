@@ -1,6 +1,7 @@
-import { CheckCheckIcon, PlusIcon, TruckIcon, XIcon } from 'lucide-react'
+import { PlusIcon, TruckIcon } from 'lucide-react'
 
 import { StatusBadge } from '#/components/status-badge'
+import { AssignmentActionsMenu } from '#/modules/riders/components/assignment-actions-menu'
 import { ActionButton } from '#/modules/inventory/components/action-button'
 import { EmptyPanel } from '#/modules/inventory/components/empty-panel'
 import { dateLabel, timeLabel } from '#/modules/inventory/lib/format'
@@ -19,6 +20,7 @@ import {
   differenceLabel,
   statusTone,
 } from '#/modules/riders/lib/assignment-view'
+import type { RowAction } from '#/modules/riders/lib/next-assignment'
 import type { AssignmentDetail } from '#/modules/riders/services/assignment-reads'
 
 type AssignmentsSectionProps = {
@@ -28,8 +30,7 @@ type AssignmentsSectionProps = {
   /** Why "Nuevo reparto" is unavailable, shown next to the button. */
   blockedReason?: string | null
   onNew: () => void
-  onSettle: (assignment: AssignmentDetail) => void
-  onCancel: (assignment: AssignmentDetail) => void
+  onAction: (action: RowAction, assignment: AssignmentDetail) => void
 }
 
 /** Open assignments ("En ruta") and the ones settled or cancelled today. */
@@ -38,8 +39,7 @@ export function AssignmentsSection({
   canAssign,
   blockedReason,
   onNew,
-  onSettle,
-  onCancel,
+  onAction,
 }: AssignmentsSectionProps) {
   return (
     <section aria-label="Repartos" className="mb-9">
@@ -81,8 +81,7 @@ export function AssignmentsSection({
                 <AssignmentRow
                   key={assignment.id}
                   assignment={assignment}
-                  onSettle={onSettle}
-                  onCancel={onCancel}
+                  onAction={onAction}
                 />
               ))}
             </ListBody>
@@ -105,12 +104,10 @@ export function AssignmentsSection({
 
 function AssignmentRow({
   assignment,
-  onSettle,
-  onCancel,
+  onAction,
 }: {
   assignment: AssignmentDetail
-  onSettle: (assignment: AssignmentDetail) => void
-  onCancel: (assignment: AssignmentDetail) => void
+  onAction: (action: RowAction, assignment: AssignmentDetail) => void
 }) {
   const settled = assignment.status === 'Liquidada'
   const when = new Date(
@@ -156,25 +153,9 @@ function AssignmentRow({
         <small className="block text-[#907e84]">{timeLabel(when)}</small>
       </ListCell>
       <ListCell>
-        {assignment.status === 'En ruta' && (
-          <span className="flex flex-wrap justify-end gap-2">
-            <ActionButton
-              tone="primary"
-              className="min-h-9 px-3"
-              onClick={() => onSettle(assignment)}
-            >
-              <CheckCheckIcon size={17} />
-              Liquidar
-            </ActionButton>
-            <ActionButton
-              className="min-h-9 px-3"
-              onClick={() => onCancel(assignment)}
-            >
-              <XIcon size={17} />
-              Cancelar
-            </ActionButton>
-          </span>
-        )}
+        <span className="flex justify-end">
+          <AssignmentActionsMenu assignment={assignment} onAction={onAction} />
+        </span>
       </ListCell>
     </ListRow>
   )

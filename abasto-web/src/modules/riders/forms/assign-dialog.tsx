@@ -12,6 +12,7 @@ import {
 import {
   FormError,
   SectionHelp,
+  WarningInline,
 } from '#/modules/inventory/components/info-blocks'
 import {
   DialogActions,
@@ -29,6 +30,7 @@ import {
   filterBySupplier,
 } from '#/modules/riders/lib/assign-supplier-filter'
 import { describeQuantity } from '#/modules/riders/lib/box-quantities'
+import type { AssignmentDetail } from '#/modules/riders/services/assignment-reads'
 import type { Rider } from '#/modules/riders/services/riders'
 
 type AssignDialogProps = {
@@ -36,6 +38,14 @@ type AssignDialogProps = {
   riders: ReadonlyArray<Rider>
   products: ReadonlyArray<AssignableProduct>
   onClose: () => void
+  /** Rider chosen when it opens (e.g. preparing their next assignment). */
+  initialRiderId?: string
+  /** Lines the form starts with; editable and removable. */
+  initialLines?: ReadonlyArray<AssignDraftLine>
+  /** Heads-up shown above the lines (what was capped or left out). */
+  notices?: ReadonlyArray<string>
+  /** «Recargar»: add to this «En ruta» assignment instead of creating one. */
+  recharge?: AssignmentDetail
 }
 
 const emptyLine = (): AssignDraftLine => ({
@@ -45,11 +55,23 @@ const emptyLine = (): AssignDraftLine => ({
 })
 
 /** Hands product to a rider: pick the rider, then boxes and/or units per product. */
-export function AssignDialog({ riders, products, onClose }: AssignDialogProps) {
+export function AssignDialog({
+  riders,
+  products,
+  onClose,
+  initialRiderId,
+  initialLines,
+  notices = [],
+  recharge,
+}: AssignDialogProps) {
   const actions = useRiderActions()
   const idPrefix = useId()
-  const [riderId, setRiderId] = useState(riders.at(0)?.id ?? '')
-  const [lines, setLines] = useState<Array<AssignDraftLine>>([emptyLine()])
+  const [riderId, setRiderId] = useState(
+    recharge?.riderId ?? initialRiderId ?? riders.at(0)?.id ?? '',
+  )
+  const [lines, setLines] = useState<Array<AssignDraftLine>>(
+    initialLines?.length ? [...initialLines] : [emptyLine()],
+  )
   const suppliers = useMemo(() => assignableSuppliers(products), [products])
   const [supplierId, setSupplierId] = useState(() =>
     defaultSupplierId(suppliers),
@@ -67,15 +89,26 @@ export function AssignDialog({ riders, products, onClose }: AssignDialogProps) {
     if (!parsed.ok) return setError(parsed.message)
     setError(null)
     setPending(true)
-    const result = await actions.assign(parsed.value)
+    const result = recharge
+      ? await actions.recharge({
+          assignmentId: recharge.id,
+          lines: parsed.value.lines,
+        })
+      : await actions.assign(parsed.value)
     setPending(false)
     if (result) onClose()
   }
 
   return (
     <InventoryDialog
-      title="Nuevo reparto"
-      description="El producto se aparta del almacén y queda en ruta. No se vende ni se cobra hasta liquidar."
+      title={
+        recharge ? `Recargar reparto de ${recharge.riderName}` : 'Nuevo reparto'
+      }
+      description={
+        recharge
+          ? 'El producto se aparta del almacén y se suma a este mismo reparto. No se vende ni se cobra hasta liquidar.'
+          : 'El producto se aparta del almacén y queda en ruta. No se vende ni se cobra hasta liquidar.'
+      }
       onClose={onClose}
       size="count"
     >
@@ -86,19 +119,33 @@ export function AssignDialog({ riders, products, onClose }: AssignDialogProps) {
           void submit()
         }}
       >
-        <Field label="Repartidor">
-          <FieldSelect
-            value={riderId}
-            onChange={(event) => setRiderId(event.target.value)}
-          >
-            <option value="">Elige al repartidor</option>
-            {riders.map((rider) => (
-              <option key={rider.id} value={rider.id}>
-                {rider.name}
-              </option>
-            ))}
-          </FieldSelect>
-        </Field>
+        {recharge ? (
+          <p className="flex flex-col gap-[7px] text-[13px] font-medium text-[#513f45]">
+            Repartidor
+            <span className="text-sm font-[650] text-[#442460]">
+              {recharge.riderName}
+            </span>
+          </p>
+        ) : (
+          <Field label="Repartidor">
+            <FieldSelect
+              value={riderId}
+              onChange={(event) => setRiderId(event.target.value)}
+            >
+              <option value="">Elige al repartidor</option>
+              {riders.map((rider) => (
+                <option key={rider.id} value={rider.id}>
+                  {rider.name}
+                </option>
+              ))}
+            </FieldSelect>
+          </Field>
+        )}
+        {notices.map((notice) => (
+          <WarningInline key={notice} className="my-0">
+            {notice}
+          </WarningInline>
+        ))}
         <SectionHelp className="my-0">
           Escribe cajas, unidades o ambas, por ejemplo 40 cajas y 20 unidades.
         </SectionHelp>
@@ -197,7 +244,7 @@ export function AssignDialog({ riders, products, onClose }: AssignDialogProps) {
             Cancelar
           </ActionButton>
           <ActionButton tone="primary" type="submit" disabled={pending}>
-            Asignar reparto
+            {recharge ? 'Agregar a la ruta' : 'Asignar reparto'}
           </ActionButton>
         </DialogActions>
       </form>
