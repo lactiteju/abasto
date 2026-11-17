@@ -25,7 +25,7 @@ UI copy is Spanish (es-MX); code and identifiers in English. Workers load the `c
 - [x] T7 — S7 — worker — supplier order edit service + server fn + UI. Commit cd9a392; independent verify S7 pass incl. 11 forced races (discount ledger consistent). Also fixed: cancel after edit no longer reopens a discount twice (activeDiscounts).
 - [x] T8 — S8 — worker — assignment load edit (lower/remove) + «Editar carga» in the ⋯ menu. Commit 6261455 + extra races; independent verify S8 pass (137 riders tests).
 - [ ] T9 — S7, S8 — independent verify (races), full suite, commits, push dev.
-- [ ] T10 — S9 — worker — rider dialogs in the new-order table layout.
+- [x] T10 — S9 — worker — rider dialogs in the new-order table layout. Commits 4e92bc6 (shared LargeDialog/DataTable), 6f9bb87; full suite 1479 pass / 0 fail. On-screen check not done.
 - [x] T4 — all — full suite 1391 pass / 2 skip / 0 fail, tsc clean, eslint 0 errors (4 old warnings). On-screen check not done.
 
 ## Log
