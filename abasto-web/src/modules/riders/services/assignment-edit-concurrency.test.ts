@@ -14,6 +14,7 @@ import {
 } from '#/modules/orders/db/schema'
 import { lockWarehouseStock } from '#/modules/orders/services/expiry'
 import { createOrder } from '#/modules/orders/services/orders'
+import { setPrices } from '#/modules/pricing/services/prices'
 import {
   riderAllocations,
   riderAssignmentLines,
@@ -317,6 +318,135 @@ describe('editAssignmentLoad under forced races', () => {
       .from(riderAssignmentLines)
       .where(eq(riderAssignmentLines.assignmentId, assigned.id))
     expect(line.assignedQuantity).toBe(10)
+  }, 30_000)
+
+  test('removing a line vs a settle prepared before it, both orders of arrival', async () => {
+    for (const editFirst of [true, false]) {
+      await resetDatabase(db)
+      const { fx, assigned, lotRow, assignment } = await setup()
+      await receive(fx, { productId: fx.cola.id, quantity: 50 })
+      await setPrices(fx.owner, {
+        warehouseId: fx.a.id,
+        prices: [{ presentationId: fx.piece(fx.cola).id, priceCents: 800 }],
+      })
+      // Recharge adds the cola line so the settle below knows both lines.
+      const withCola = await rechargeAssignment(fx.staffA, {
+        assignmentId: assigned.id,
+        lines: [{ productId: fx.cola.id, boxes: 0, units: 30 }],
+      })
+      const remove = () =>
+        editAssignmentLoad(fx.staffA, {
+          assignmentId: assigned.id,
+          changes: [{ productId: fx.cola.id, boxes: 0, units: 0 }],
+          add: [],
+        })
+      const settle = () =>
+        settleAssignment(fx.staffA, {
+          assignmentId: assigned.id,
+          deliveredCents: 0,
+          lines: withCola.lines.map((line) => ({
+            lineId: line.id,
+            boxes: 0,
+            units: 0,
+          })),
+        })
+      const results = await forced(
+        fx,
+        editFirst ? [remove, settle] : [settle, remove],
+      )
+      expect(deadlocks(results)).toEqual([])
+      await expectConsistent()
+      const lines = await db
+        .select()
+        .from(riderAssignmentLines)
+        .where(eq(riderAssignmentLines.assignmentId, assigned.id))
+      if (editFirst) {
+        // The stale settle names a line that is gone: refused, edit stands.
+        expect(results.map(messageOf)).toEqual([
+          'ok',
+          'Revisa las líneas del reparto: cada producto va una sola vez.',
+        ])
+        expect((await assignment()).status).toBe('En ruta')
+        expect(lines).toHaveLength(1)
+        expect(await lotRow()).toMatchObject({ onHand: 100, reserved: 50 })
+      } else {
+        expect(results.map(messageOf)).toEqual([
+          'ok',
+          'Este reparto ya no está en ruta.',
+        ])
+        expect((await assignment()).status).toBe('Liquidada')
+        expect(lines).toHaveLength(2)
+        // Nothing came back: the 50 milk (and the cola) were sold.
+        expect(await lotRow()).toMatchObject({ onHand: 50, reserved: 0 })
+      }
+    }
+  }, 30_000)
+
+  test('lowering vs a settle whose returned quantity is now too big', async () => {
+    for (const editFirst of [true, false]) {
+      await resetDatabase(db)
+      const { fx, assigned, lower, lotRow, assignment } = await setup()
+      const settle = () =>
+        settleAssignment(fx.staffA, {
+          assignmentId: assigned.id,
+          deliveredCents: 0,
+          lines: [{ lineId: assigned.lines[0].id, boxes: 0, units: 30 }],
+        })
+      const results = await forced(
+        fx,
+        editFirst ? [lower(20), settle] : [settle, lower(20)],
+      )
+      expect(deadlocks(results)).toEqual([])
+      await expectConsistent()
+      if (editFirst) {
+        expect(results.map(messageOf)).toEqual([
+          'ok',
+          'Lo que regresó no puede ser más de lo que se asignó.',
+        ])
+        expect((await assignment()).status).toBe('En ruta')
+        expect(await lotRow()).toMatchObject({ onHand: 100, reserved: 20 })
+      } else {
+        expect(results.map(messageOf)).toEqual([
+          'ok',
+          'Este reparto ya no está en ruta.',
+        ])
+        expect((await assignment()).status).toBe('Liquidada')
+        // 50 assigned, 30 back: 20 sold.
+        expect(await lotRow()).toMatchObject({ onHand: 80, reserved: 0 })
+      }
+    }
+  }, 30_000)
+
+  test('an edit adding a new product vs a counter order on its only lot', async () => {
+    for (const editFirst of [true, false]) {
+      await resetDatabase(db)
+      const { fx, assigned, assignment } = await setup()
+      const cola = await receive(fx, { productId: fx.cola.id, quantity: 100 })
+      await setPrices(fx.owner, {
+        warehouseId: fx.a.id,
+        prices: [{ presentationId: fx.piece(fx.cola).id, priceCents: 800 }],
+      })
+      // 100 free: both want 60, only the first fits.
+      const add = () =>
+        editAssignmentLoad(fx.staffA, {
+          assignmentId: assigned.id,
+          changes: [],
+          add: [{ productId: fx.cola.id, boxes: 0, units: 60 }],
+        })
+      const order = () =>
+        createOrder(fx.staffA, {
+          warehouseId: fx.a.id,
+          customerId: fx.customer.id,
+          lines: [{ presentationId: fx.piece(fx.cola).id, quantity: 60 }],
+        })
+      const results = await forced(fx, editFirst ? [add, order] : [order, add])
+      expect(deadlocks(results)).toEqual([])
+      expect(results.map((r) => r.status)).toEqual(['fulfilled', 'rejected'])
+      expect((await assignment()).status).toBe('En ruta')
+      await expectConsistent()
+      const [lot] = await db.select().from(lots).where(eq(lots.id, cola.id))
+      expect(lot).toMatchObject({ onHand: 100, reserved: 60 })
+    }
   }, 30_000)
 
   test('unforced mix (edits, recarga, order, other rider, settle) never deadlocks or oversells', async () => {
