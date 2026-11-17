@@ -11,6 +11,7 @@ import {
   Th,
 } from '#/modules/counter/components/data-table'
 import { PaymentStep } from '#/modules/counter/components/payment-step'
+import { RemissionNoteButton } from '#/modules/counter/components/remission-note-button'
 import { ReceiptView } from '#/modules/counter/components/receipt-view'
 import { StatusBadge } from '#/modules/counter/components/status-badge'
 import { messageOf } from '#/hooks/use-action-runner'
@@ -36,6 +37,7 @@ type OrderViewDialogProps = {
   /** Products with stock, for adding to a reserved order. */
   sellable: Array<SellableOption>
   now: Date
+  warehouseName: string
   /** The warehouse's drawer is open, so cash can be collected. */
   drawerOpen: boolean
   onClose: () => void
@@ -46,6 +48,7 @@ export function OrderViewDialog({
   orderId,
   sellable,
   now,
+  warehouseName,
   drawerOpen,
   onClose,
 }: OrderViewDialogProps) {
@@ -212,6 +215,13 @@ export function OrderViewDialog({
             <ActionButton disabled={busy} onClick={() => setAdding(true)}>
               Editar pedido
             </ActionButton>
+          )}
+          {order.status === 'Recogido' && (
+            <RemissionNoteButton
+              orderId={order.id}
+              order={order}
+              warehouseName={warehouseName}
+            />
           )}
           {allowed.cancel && (
             <ActionButton

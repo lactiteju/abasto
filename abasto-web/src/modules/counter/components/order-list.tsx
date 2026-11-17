@@ -7,6 +7,7 @@ import {
 } from '#/modules/counter/components/data-table'
 import { EmptyState } from '#/modules/counter/components/empty-state'
 import { ActionButton } from '#/modules/counter/components/action-button'
+import { RemissionNoteButton } from '#/modules/counter/components/remission-note-button'
 import { StatusBadge } from '#/modules/counter/components/status-badge'
 import { expiryLabel, orderCode } from '#/modules/counter/lib/order-format'
 import { formatCents } from '#/modules/pricing/lib/money'
@@ -16,10 +17,16 @@ type OrderListProps = {
   orders: ReadonlyArray<OrderSummary>
   /** Server time the expiry labels are computed against. */
   now: Date
+  warehouseName: string
   onOpen: (orderId: string) => void
 }
 
-export function OrderList({ orders, now, onOpen }: OrderListProps) {
+export function OrderList({
+  orders,
+  now,
+  warehouseName,
+  onOpen,
+}: OrderListProps) {
   if (orders.length === 0) {
     return <EmptyState>No hay pedidos con este filtro.</EmptyState>
   }
@@ -49,9 +56,17 @@ export function OrderList({ orders, now, onOpen }: OrderListProps) {
                   <CellNote>{expiryLabel(order.expiresAt, now)}</CellNote>
                 )}
               </div>
-              <ActionButton onClick={() => onOpen(order.id)}>
-                Ver pedido
-              </ActionButton>
+              <div className="flex flex-wrap justify-end gap-2">
+                {order.status === 'Recogido' && (
+                  <RemissionNoteButton
+                    orderId={order.id}
+                    warehouseName={warehouseName}
+                  />
+                )}
+                <ActionButton onClick={() => onOpen(order.id)}>
+                  Ver pedido
+                </ActionButton>
+              </div>
             </div>
           </li>
         ))}
@@ -88,9 +103,17 @@ export function OrderList({ orders, now, onOpen }: OrderListProps) {
                   {formatCents(order.totalCents)}
                 </Td>
                 <Td className="text-right">
-                  <ActionButton onClick={() => onOpen(order.id)}>
-                    Ver pedido
-                  </ActionButton>
+                  <div className="flex justify-end gap-2">
+                    {order.status === 'Recogido' && (
+                      <RemissionNoteButton
+                        orderId={order.id}
+                        warehouseName={warehouseName}
+                      />
+                    )}
+                    <ActionButton onClick={() => onOpen(order.id)}>
+                      Ver pedido
+                    </ActionButton>
+                  </div>
                 </Td>
               </tr>
             ))}

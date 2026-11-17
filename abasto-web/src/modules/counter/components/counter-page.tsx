@@ -124,7 +124,12 @@ export function CounterPage({ overview, onSelectWarehouse }: CounterPageProps) {
           hours={overview.reservationHours}
         />
       )}
-      <OrderList orders={orders} now={overview.now} onOpen={setOpenId} />
+      <OrderList
+        orders={orders}
+        now={overview.now}
+        warehouseName={selected.name}
+        onOpen={setOpenId}
+      />
       {composing && (
         <NewOrderDialog
           key={selected.id}
@@ -144,6 +149,7 @@ export function CounterPage({ overview, onSelectWarehouse }: CounterPageProps) {
           orderId={openId}
           sellable={overview.sellable}
           now={overview.now}
+          warehouseName={selected.name}
           drawerOpen={overview.cash !== null}
           onClose={() => setOpenId(undefined)}
         />
