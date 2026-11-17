@@ -15,13 +15,15 @@ const milk = {
 describe('rowActionsFor', () => {
   test('actions by state', () => {
     expect(rowActionsFor('En ruta')).toEqual([
+      'view',
       'recharge',
       'edit',
       'settle',
       'cancel',
     ])
-    expect(rowActionsFor('Liquidada')).toEqual(['prepareNext'])
-    expect(rowActionsFor('Cancelada')).toEqual([])
+    expect(rowActionsFor('Liquidada')).toEqual(['view', 'prepareNext'])
+    // A cancelled one still shows what it carried.
+    expect(rowActionsFor('Cancelada')).toEqual(['view'])
   })
 })
 

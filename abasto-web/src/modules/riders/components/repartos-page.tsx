@@ -5,6 +5,7 @@ import { PageHeading } from '#/components/page-heading'
 import { FieldSelect } from '#/modules/counter/components/form-controls'
 import { WarningInline } from '#/modules/inventory/components/info-blocks'
 import { hasWarehouseChoice } from '#/modules/warehouses/lib/warehouse-choice'
+import { AssignmentProductsDialog } from '#/modules/riders/components/assignment-products-dialog'
 import { AssignmentsSection } from '#/modules/riders/components/assignments-section'
 import { RidersCatalog } from '#/modules/riders/components/riders-catalog'
 import { AssignDialog } from '#/modules/riders/forms/assign-dialog'
@@ -29,6 +30,7 @@ type RepartosPageProps = {
 type Open =
   | { kind: 'assign' }
   | { kind: 'rider'; rider?: Rider }
+  | { kind: 'view'; assignment: AssignmentDetail }
   | { kind: 'settle'; assignment: AssignmentDetail }
   | { kind: 'cancel'; assignment: AssignmentDetail }
   | { kind: 'recharge'; assignment: AssignmentDetail }
@@ -135,7 +137,7 @@ export function RepartosPage({
         ) : (
           <p className="flex min-w-[220px] flex-col gap-[7px] text-[13px] font-medium text-[#513f45]">
             Almacén
-            <span className="text-sm font-[650] text-[#442460]">
+            <span className="text-[15px] font-semibold text-[#2f2328]">
               {selected.name}
             </span>
           </p>
@@ -175,10 +177,18 @@ export function RepartosPage({
       />
       <RidersCatalog
         riders={overview.riders}
+        onRouteIds={onRoute}
         canManage={overview.canManage}
         onNew={() => setOpen({ kind: 'rider' })}
         onRename={(rider) => setOpen({ kind: 'rider', rider })}
       />
+      {open?.kind === 'view' && (
+        <AssignmentProductsDialog
+          key={open.assignment.id}
+          assignment={open.assignment}
+          onClose={close}
+        />
+      )}
       {open?.kind === 'assign' && (
         <AssignDialog
           riders={freeRiders}

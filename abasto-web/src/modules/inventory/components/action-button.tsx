@@ -13,7 +13,7 @@ const base =
 
 const tones = {
   primary:
-    'bg-primary text-brand-ink shadow-[0_2px_3px_#c81d4e0a] hover:bg-brand-hover hover:shadow-[0_3px_9px_#c81d4e1c]',
+    'bg-primary text-brand-ink shadow-[0_2px_3px_#c81d4e0a] hover:bg-brand-hover hover:shadow-[0_3px_9px_#c81d4e1c] disabled:bg-[#ece6e2] disabled:text-[#8f7f85] disabled:opacity-100 disabled:shadow-none',
   secondary: 'border-[#e8e1e3] bg-white text-[#503f45] hover:bg-[#faf6f1]',
 }
 

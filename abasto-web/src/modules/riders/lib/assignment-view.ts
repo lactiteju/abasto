@@ -19,6 +19,48 @@ export function differenceLabel(differenceCents: number) {
     : `Sobrante ${formatCents(differenceCents)}`
 }
 
+export type DifferenceTone = 'shortage' | 'surplus' | 'exact'
+
+/** How loud a settlement difference should read. */
+export function differenceTone(differenceCents: number): DifferenceTone {
+  if (differenceCents < 0) return 'shortage'
+  return differenceCents > 0 ? 'surplus' : 'exact'
+}
+
+const plural = (count: number, one: string, many: string) =>
+  `${count} ${count === 1 ? one : many}`
+
+/**
+ * One-line view of a load so a row keeps its height however many products
+ * it carries: the first product, how many more, and the total in base units.
+ */
+export function loadSummary(
+  lines: ReadonlyArray<{ productName: string; assignedQuantity: number }>,
+) {
+  if (!lines.length) return { lead: 'Sin productos', extra: 0, detail: '' }
+  const units = lines.reduce((sum, line) => sum + line.assignedQuantity, 0)
+  return {
+    lead: lines[0].productName,
+    extra: lines.length - 1,
+    detail: `${plural(lines.length, 'producto', 'productos')} · ${plural(units, 'unidad', 'unidades')}`,
+  }
+}
+
+const verbs: Record<AssignmentStatus, string> = {
+  'En ruta': 'Salió',
+  Liquidada: 'Se liquidó',
+  Cancelada: 'Se canceló',
+}
+
+/** What happened to an assignment and whether it was today (business day). */
+export function whenLabel(
+  status: AssignmentStatus,
+  at: Date | string,
+  today: string,
+) {
+  return { verb: verbs[status], today: businessDate(new Date(at)) === today }
+}
+
 /**
  * What Repartos shows by default: everything still "En ruta" (however old)
  * plus what was created or closed today in the business time zone.

@@ -14,11 +14,12 @@ import {
   ListTable,
 } from '#/modules/inventory/components/list-panel'
 import { SectionRow } from '#/modules/inventory/components/section-row'
-import { formatCents } from '#/modules/pricing/lib/money'
-import { describeQuantity } from '#/modules/riders/lib/box-quantities'
+import { businessDate } from '#/modules/orders/services/clock'
+import { DifferenceText } from '#/modules/riders/components/difference-text'
 import {
-  differenceLabel,
+  loadSummary,
   statusTone,
+  whenLabel,
 } from '#/modules/riders/lib/assignment-view'
 import type { RowAction } from '#/modules/riders/lib/next-assignment'
 import type { AssignmentDetail } from '#/modules/riders/services/assignment-reads'
@@ -41,6 +42,7 @@ export function AssignmentsSection({
   onNew,
   onAction,
 }: AssignmentsSectionProps) {
+  const today = businessDate()
   return (
     <section aria-label="Repartos" className="mb-9">
       <SectionRow
@@ -81,6 +83,7 @@ export function AssignmentsSection({
                 <AssignmentRow
                   key={assignment.id}
                   assignment={assignment}
+                  today={today}
                   onAction={onAction}
                 />
               ))}
@@ -104,52 +107,56 @@ export function AssignmentsSection({
 
 function AssignmentRow({
   assignment,
+  today,
   onAction,
 }: {
   assignment: AssignmentDetail
+  today: string
   onAction: (action: RowAction, assignment: AssignmentDetail) => void
 }) {
   const settled = assignment.status === 'Liquidada'
   const when = new Date(
     assignment.closedAt ?? assignment.createdAt,
   ).toISOString()
+  const happened = whenLabel(assignment.status, when, today)
+  const summary = loadSummary(assignment.lines)
   return (
     <ListRow>
       <ListCell>
         <strong className="text-[#5f4a51]">{assignment.riderName}</strong>
       </ListCell>
       <ListCell>
-        {assignment.lines.map((line) => (
-          <span key={line.id} className="block">
-            <strong>{line.productName}</strong>{' '}
-            {describeQuantity(line.assignedQuantity, line.boxFactor)}
-            {settled && line.soldQuantity !== null && (
-              <small className="block text-[#907e84]">
-                Vendió {describeQuantity(line.soldQuantity, line.boxFactor)} ·
-                regresó{' '}
-                {describeQuantity(line.leftoverQuantity ?? 0, line.boxFactor)}
-              </small>
+        <button
+          type="button"
+          className="group block max-w-[340px] text-left"
+          aria-label={`Ver productos de ${assignment.riderName}`}
+          onClick={() => onAction('view', assignment)}
+        >
+          <span className="flex items-baseline gap-1.5">
+            <strong className="truncate group-hover:underline">
+              {summary.lead}
+            </strong>
+            {summary.extra > 0 && (
+              <span className="shrink-0 text-[#7a5f69] group-hover:underline">
+                +{summary.extra} más
+              </span>
             )}
           </span>
-        ))}
+          <small className="block text-[#907e84]">{summary.detail}</small>
+        </button>
       </ListCell>
       <ListCell>
         <StatusBadge tone={statusTone(assignment.status)}>
           {assignment.status}
         </StatusBadge>
-        {settled && assignment.expectedCents !== null && (
-          <small className="block">
-            Esperado {formatCents(assignment.expectedCents)} · entregó{' '}
-            {formatCents(assignment.deliveredCents ?? 0)}
-            <span className="block font-semibold">
-              {differenceLabel(assignment.differenceCents ?? 0)}
-            </span>
+        {settled && assignment.differenceCents !== null && (
+          <small className="mt-1 block">
+            <DifferenceText cents={assignment.differenceCents} />
           </small>
         )}
       </ListCell>
       <ListCell>
-        {assignment.status === 'En ruta' ? 'Salió ' : 'Cerró '}
-        {dateLabel(when)}
+        {happened.verb} {happened.today ? 'hoy' : dateLabel(when)}
         <small className="block text-[#907e84]">{timeLabel(when)}</small>
       </ListCell>
       <ListCell>

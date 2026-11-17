@@ -3,7 +3,10 @@ import { describe, expect, test } from 'bun:test'
 import {
   currentAssignments,
   differenceLabel,
+  differenceTone,
+  loadSummary,
   statusTone,
+  whenLabel,
 } from './assignment-view'
 
 const at = (iso: string) => new Date(iso)
@@ -62,6 +65,68 @@ describe('differenceLabel', () => {
     expect(differenceLabel(-1500)).toContain('15.00')
     expect(differenceLabel(250)).toContain('Sobrante')
     expect(differenceLabel(250)).toContain('2.50')
+  })
+})
+
+describe('differenceTone', () => {
+  test('shortage warns, surplus notes, exact is calm', () => {
+    expect(differenceTone(-100)).toBe('shortage')
+    expect(differenceTone(100)).toBe('surplus')
+    expect(differenceTone(0)).toBe('exact')
+  })
+})
+
+describe('loadSummary', () => {
+  const line = (productName: string, assignedQuantity: number) => ({
+    productName,
+    assignedQuantity,
+  })
+
+  test('one product: its name and its units', () => {
+    expect(loadSummary([line('Leche', 1)])).toEqual({
+      lead: 'Leche',
+      extra: 0,
+      detail: '1 producto · 1 unidad',
+    })
+  })
+
+  test('many products: the first, how many more and the total units', () => {
+    expect(
+      loadSummary([line('Crema', 10), line('Leche', 30), line('Queso', 5)]),
+    ).toEqual({ lead: 'Crema', extra: 2, detail: '3 productos · 45 unidades' })
+  })
+
+  test('no lines', () => {
+    expect(loadSummary([])).toEqual({
+      lead: 'Sin productos',
+      extra: 0,
+      detail: '',
+    })
+  })
+})
+
+describe('whenLabel', () => {
+  // 2026-11-17T04:54Z is 22:54 of the 16th in Mexico City.
+  const departed = '2026-11-17T04:54:00Z'
+
+  test('today reads as "hoy" and keeps the time apart', () => {
+    expect(whenLabel('En ruta', departed, '2026-11-16')).toEqual({
+      verb: 'Salió',
+      today: true,
+    })
+  })
+
+  test('another day is not today', () => {
+    expect(whenLabel('En ruta', departed, '2026-11-17').today).toBe(false)
+  })
+
+  test('each closing state names what happened', () => {
+    expect(whenLabel('Liquidada', departed, '2026-11-16').verb).toBe(
+      'Se liquidó',
+    )
+    expect(whenLabel('Cancelada', departed, '2026-11-16').verb).toBe(
+      'Se canceló',
+    )
   })
 })
 
