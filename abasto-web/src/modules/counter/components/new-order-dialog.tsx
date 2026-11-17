@@ -21,6 +21,8 @@ import {
   FieldInput,
   FieldTextarea,
 } from '#/modules/counter/components/form-controls'
+import { PaymentStep } from '#/modules/counter/components/payment-step'
+import { ReceiptView } from '#/modules/counter/components/receipt-view'
 import { useOrderActions } from '#/modules/counter/hooks/use-order-actions'
 import { useOrderQuote } from '#/modules/counter/hooks/use-order-quote'
 import {
@@ -41,6 +43,7 @@ import {
 } from '#/modules/counter/lib/sellable'
 import { formatCents } from '#/modules/pricing/lib/money'
 import type { DraftLine } from '#/modules/counter/lib/order-draft'
+import type { PickupWithReceipt } from '#/modules/counter/server/pickup'
 import type { SellableOption } from '#/modules/counter/lib/sellable'
 import type { CounterOverview } from '#/modules/counter/types/counter-view'
 
@@ -50,6 +53,8 @@ type NewOrderDialogProps = {
   customers: CounterOverview['customers']
   sellable: CounterOverview['sellable']
   reservationHours: number
+  /** The warehouse's drawer is open, so a sale can take cash. */
+  drawerOpen: boolean
   onClose: () => void
   /** Called with the new order's id once it is reserved, after closing. */
   onCreated: (orderId: string) => void
@@ -61,6 +66,7 @@ export function NewOrderDialog({
   customers,
   sellable,
   reservationHours,
+  drawerOpen,
   onClose,
   onCreated,
 }: NewOrderDialogProps) {
@@ -71,6 +77,8 @@ export function NewOrderDialog({
   const [query, setQuery] = useState('')
   const [supplierId, setSupplierId] = useState('')
   const [onlyAdded, setOnlyAdded] = useState(false)
+  const [paying, setPaying] = useState(false)
+  const [receipt, setReceipt] = useState<PickupWithReceipt>()
   // The shared searchable picker filters by name and SKU; customers have no SKU.
   const customerItems = useMemo(
     () => customers.map(({ id, name }) => ({ id, name, sku: '' })),
@@ -147,11 +155,57 @@ export function NewOrderDialog({
     }
   }
 
+  /** «Vender»: the payment step opens for the quoted total; the sale is made on confirm. */
+  function startSale() {
+    const parsed = draftToOrderInput({ warehouseId, customerId, notes, lines })
+    if (!parsed.ok) {
+      toast.error(parsed.message)
+      return
+    }
+    setPaying(true)
+  }
+
+  if (receipt) {
+    return (
+      <CounterDialog
+        title="Venta registrada"
+        description="Resumen del cobro."
+        onClose={onClose}
+      >
+        <ReceiptView
+          result={receipt}
+          customerName={
+            customers.find(({ id }) => id === customerId)?.name ?? ''
+          }
+          onDone={onClose}
+        />
+      </CounterDialog>
+    )
+  }
+  const sale = draftToOrderInput({ warehouseId, customerId, notes, lines })
+  if (paying && sale.ok && quote.status === 'ready') {
+    return (
+      <CounterDialog
+        title="Cobrar venta"
+        description={`${warehouseName}. El pedido se crea y se entrega al confirmar el cobro.`}
+        onClose={onClose}
+      >
+        <PaymentStep
+          totalCents={quote.quote.totalCents}
+          drawerOpen={drawerOpen}
+          confirm={(payment) => actions.sell(sale.value, payment)}
+          onPaid={setReceipt}
+          onBack={() => setPaying(false)}
+        />
+      </CounterDialog>
+    )
+  }
+
   return (
     <CounterDialog
       full
-      title="Nuevo pedido"
-      description={`${warehouseName}. Reserva el producto por ${reservationHours} h y fija el precio al reservar.`}
+      title="Nueva venta"
+      description={`${warehouseName}. Vende ahora o reserva el producto por ${reservationHours} h; el precio se fija al guardar.`}
       onClose={onClose}
     >
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -346,18 +400,28 @@ export function NewOrderDialog({
               </strong>
               <small className="block text-xs text-[#9c898f]">
                 Cotización con el precio actual del almacén y las condiciones
-                del cliente. El pedido guarda el precio al reservar.
+                del cliente. El pedido guarda el precio al vender o reservar.
               </small>
             </>
           )}
         </div>
-        <ActionButton
-          tone="primary"
-          disabled={actions.pending || shortages.size > 0}
-          onClick={submit}
-        >
-          {actions.pending ? 'Reservando…' : 'Reservar pedido'}
-        </ActionButton>
+        <div className="flex flex-wrap items-center gap-3">
+          <ActionButton
+            disabled={actions.pending || shortages.size > 0}
+            onClick={submit}
+          >
+            {actions.pending ? 'Reservando…' : 'Reservar'}
+          </ActionButton>
+          <ActionButton
+            tone="primary"
+            disabled={
+              actions.pending || shortages.size > 0 || quote.status !== 'ready'
+            }
+            onClick={startSale}
+          >
+            Vender
+          </ActionButton>
+        </div>
       </div>
     </CounterDialog>
   )

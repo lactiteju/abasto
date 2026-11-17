@@ -36,12 +36,12 @@ export function CounterPage({ overview, onSelectWarehouse }: CounterPageProps) {
   const heading = (
     <PageHeading
       title="Ventas"
-      description="Reserva y entrega los pedidos de tus clientes."
+      description="Vende o reserva producto a tus clientes y entrega sus pedidos."
       actions={
         selected && (
           <ActionButton tone="primary" onClick={() => setComposing(true)}>
             <PlusIcon size={19} />
-            Nuevo pedido
+            Nueva venta
           </ActionButton>
         )
       }
@@ -133,6 +133,7 @@ export function CounterPage({ overview, onSelectWarehouse }: CounterPageProps) {
           customers={overview.customers}
           sellable={overview.sellable}
           reservationHours={overview.reservationHours}
+          drawerOpen={overview.cash !== null}
           onClose={() => setComposing(false)}
           onCreated={setOpenId}
         />

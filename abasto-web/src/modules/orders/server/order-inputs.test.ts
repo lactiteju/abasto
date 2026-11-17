@@ -7,6 +7,7 @@ import {
   orderIdInput,
   pickupOrderInput,
   quoteOrderInput,
+  sellOrderInput,
   reservationHoursInput,
 } from '#/modules/orders/server/order-inputs'
 
@@ -107,6 +108,26 @@ describe('order server function inputs', () => {
         ...edit,
         changes: [{ presentationId: 'p1', quantity: 1.5 }],
       }),
+    ).toBe(true)
+  })
+})
+
+describe('sell input', () => {
+  test('takes the order and an optional payment (the service judges it)', () => {
+    const payment = { terms: 'contado' as const, tenderedCents: 3000 }
+    expect(parseInput(sellOrderInput, { ...order, payment })).toEqual({
+      ...order,
+      payment,
+    })
+    expect(parseInput(sellOrderInput, order).payment).toBeUndefined()
+  })
+
+  test('rejects malformed shapes', () => {
+    expect(fails(sellOrderInput, { ...order, customerId: undefined })).toBe(
+      true,
+    )
+    expect(
+      fails(sellOrderInput, { ...order, payment: { terms: 'credito' } }),
     ).toBe(true)
   })
 })

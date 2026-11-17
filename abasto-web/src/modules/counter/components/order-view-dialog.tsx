@@ -186,8 +186,9 @@ export function OrderViewDialog({
         />
       ) : paying ? (
         <PaymentStep
-          order={order}
+          totalCents={order.totalCents}
           drawerOpen={drawerOpen}
+          confirm={(payment) => actions.pickup(order.id, payment)}
           onPaid={setReceipt}
           onBack={() => setPaying(false)}
         />

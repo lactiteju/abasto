@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 
 import { counterPickupFn } from '#/modules/counter/server/pickup'
 import type { PickupWithReceipt } from '#/modules/counter/server/pickup'
+import { counterSellFn } from '#/modules/counter/server/sell'
 import type { PickupPayment } from '#/modules/orders/services/pickup-gate'
 import { messageOf, useActionRunner } from '#/hooks/use-action-runner'
 import { unwrap } from '#/lib/boundary'
@@ -45,6 +46,28 @@ export function useOrderActions() {
         )
         await router.invalidate()
         toast.success('Pedido entregado.')
+        return { ok: true, data }
+      } catch (failure) {
+        await router.invalidate()
+        return { ok: false, message: messageOf(failure) }
+      }
+    },
+    /**
+     * Creates the order and delivers it paid in one step. Like `pickup`, the
+     * refusal comes back to the payment step instead of a toast.
+     */
+    sell: async (
+      order: OrderInput,
+      payment: PickupPayment,
+    ): Promise<
+      { ok: true; data: PickupWithReceipt } | { ok: false; message: string }
+    > => {
+      try {
+        const data = unwrap(
+          await counterSellFn({ data: { ...order, payment } }),
+        )
+        await router.invalidate()
+        toast.success('Venta registrada.')
         return { ok: true, data }
       } catch (failure) {
         await router.invalidate()
