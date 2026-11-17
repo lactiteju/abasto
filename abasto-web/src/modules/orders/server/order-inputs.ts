@@ -16,6 +16,17 @@ export const addToOrderInput = orderIdInput.extend({
   lines: z.array(z.object({ presentationId: id, quantity: z.number().int() })),
 })
 
+/**
+ * Edit of a reserved order: new total quantity per existing line (0 removes
+ * it) and units to add of other products.
+ */
+export const editOrderInput = orderIdInput.extend({
+  changes: z.array(
+    z.object({ presentationId: id, quantity: z.number().int() }),
+  ),
+  add: z.array(z.object({ presentationId: id, quantity: z.number().int() })),
+})
+
 /** Payment is optional here so the service answers with its own message. */
 export const pickupOrderInput = orderIdInput.extend({
   payment: z

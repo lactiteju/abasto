@@ -11,6 +11,7 @@ import {
   addToOrderFn,
   cancelOrderFn,
   createOrderFn,
+  editOrderFn,
   orderDetailFn,
   setReservationHoursFn,
 } from '#/modules/orders/server/orders'
@@ -56,6 +57,16 @@ export function useOrderActions() {
     ) =>
       run(
         () => addToOrderFn({ data: { orderId, lines } }),
+        'Pedido actualizado.',
+      ),
+    /** `changes` are the new totals of lines in the order (0 removes); `add` the units to add. */
+    editOrder: (
+      orderId: string,
+      changes: Array<{ presentationId: string; quantity: number }>,
+      add: Array<{ presentationId: string; quantity: number }>,
+    ) =>
+      run(
+        () => editOrderFn({ data: { orderId, changes, add } }),
         'Pedido actualizado.',
       ),
     cancel: (orderId: string) =>

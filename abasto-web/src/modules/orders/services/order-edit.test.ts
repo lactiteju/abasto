@@ -5,7 +5,10 @@ import {
   cancelOrder,
   pickupOrder,
 } from '#/modules/orders/services/order-actions'
-import { addToReservedOrder } from '#/modules/orders/services/order-edit'
+import {
+  addToReservedOrder,
+  editReservedOrder,
+} from '#/modules/orders/services/order-edit'
 import { getOrder } from '#/modules/orders/services/order-reads'
 import { createOrder } from '#/modules/orders/services/orders'
 import {
@@ -263,5 +266,249 @@ describe('addToReservedOrder', () => {
     })
     await pickupOrder(fx.staffA, picked.id, payCash)
     expect(await reserved()).toMatchObject({ onHand: 12, reserved: 0 })
+  })
+})
+
+describe('editReservedOrder', () => {
+  const edit = (
+    fx: Fx,
+    orderId: string,
+    changes: Array<ReturnType<typeof line>>,
+    add: Array<ReturnType<typeof line>> = [],
+  ) => editReservedOrder(fx.staffA, { orderId, changes, add })
+  const reservedOf = async (lotId: string) =>
+    (await orderState()).lots.find((l) => l.id === lotId)?.reserved
+
+  /** lots.reserved equals the units of the Reservado allocations. */
+  async function expectConsistent() {
+    const state = await orderState()
+    for (const lot of state.lots) {
+      let held = 0
+      for (const o of state.orders) {
+        if (o.status !== 'Reservado') continue
+        const detail = await getOrder(fx0!, o.id)
+        for (const l of detail.lines) {
+          for (const a of l.allocations)
+            if (a.lotId === lot.id) held += a.quantity
+        }
+      }
+      expect(lot.reserved).toBe(held)
+    }
+  }
+  let fx0: Awaited<ReturnType<typeof setupOrders>>['staffA'] | undefined
+  beforeEach(() => {
+    fx0 = undefined
+  })
+
+  test('lowers a line: releases newest lot first, keeps the frozen price, total follows', async () => {
+    const fx = await setupOrders()
+    fx0 = fx.staffA
+    const first = await receive(fx, { productId: fx.milkBox.id, quantity: 24 })
+    const second = await receive(fx, {
+      productId: fx.milkBox.id,
+      quantity: 24,
+      expiresOn: '2099-01-01',
+    })
+    const order = await place(fx, [line(fx.boxId, 3)]) // 36: 24 first, 12 second
+    const edited = await edit(fx, order.id, [line(fx.boxId, 2)]) // 24 left
+    expect(edited.lines[0]).toMatchObject({
+      quantity: 2,
+      baseQuantity: 24,
+      unitPriceCents: 12000,
+      lineTotalCents: 24000,
+    })
+    expect(edited.totalCents).toBe(24000)
+    expect(await reservedOf(first.id)).toBe(24)
+    expect(await reservedOf(second.id)).toBe(0)
+    expect(edited.lines[0].allocations).toEqual([
+      expect.objectContaining({ lotId: first.id, quantity: 24 }),
+    ])
+    await edit(fx, order.id, [line(fx.boxId, 1)])
+    expect(await reservedOf(first.id)).toBe(12)
+    await expectConsistent()
+    expect(await getOrder(fx.staffA, order.id)).toMatchObject({
+      totalCents: 12000,
+    })
+  })
+
+  test('lowers by pieces', async () => {
+    const fx = await setupOrders()
+    fx0 = fx.staffA
+    const lot = await receive(fx, { productId: fx.milkBox.id, quantity: 50 })
+    const order = await place(fx, [line(fx.pieceId, 5)])
+    const edited = await edit(fx, order.id, [line(fx.pieceId, 2)])
+    expect(edited.lines[0]).toMatchObject({ quantity: 2, lineTotalCents: 2000 })
+    expect(await reservedOf(lot.id)).toBe(2)
+  })
+
+  test('quantity 0 removes the line and its allocations', async () => {
+    const fx = await setupOrders()
+    fx0 = fx.staffA
+    const milk = await receive(fx, { productId: fx.milkBox.id, quantity: 50 })
+    const cola = await receive(fx, { productId: fx.cola.id, quantity: 30 })
+    const colaPiece = fx.piece(fx.cola).id
+    await setPrices(fx.owner, {
+      warehouseId: fx.a.id,
+      prices: [{ presentationId: colaPiece, priceCents: 700 }],
+    })
+    const order = await place(fx, [line(fx.pieceId, 4), line(colaPiece, 5)])
+    const edited = await edit(fx, order.id, [line(colaPiece, 0)])
+    expect(edited.lines).toHaveLength(1)
+    expect(edited.lines[0].presentationId).toBe(fx.pieceId)
+    expect(edited.totalCents).toBe(4000)
+    expect(await reservedOf(cola.id)).toBe(0)
+    expect(await reservedOf(milk.id)).toBe(4)
+    await expectConsistent()
+  })
+
+  test('rejects removing the last line and changes nothing', async () => {
+    const fx = await setupOrders()
+    await receive(fx, { productId: fx.milkBox.id, quantity: 50 })
+    const order = await place(fx, [line(fx.pieceId, 4)])
+    await rejects(
+      () => edit(fx, order.id, [line(fx.pieceId, 0)]),
+      'invalid',
+      'El pedido no puede quedar sin productos. Usa «Cancelar pedido» si ya no lo quieren.',
+    )
+  })
+
+  test('removing a line while adding another is allowed', async () => {
+    const fx = await setupOrders()
+    fx0 = fx.staffA
+    const milk = await receive(fx, { productId: fx.milkBox.id, quantity: 50 })
+    const cola = await receive(fx, { productId: fx.cola.id, quantity: 30 })
+    const colaPiece = fx.piece(fx.cola).id
+    await setPrices(fx.owner, {
+      warehouseId: fx.a.id,
+      prices: [{ presentationId: colaPiece, priceCents: 700 }],
+    })
+    const order = await place(fx, [line(fx.pieceId, 4)])
+    const edited = await edit(
+      fx,
+      order.id,
+      [line(fx.pieceId, 0)],
+      [line(colaPiece, 2)],
+    )
+    expect(edited.lines.map((l) => l.presentationId)).toEqual([colaPiece])
+    expect(edited.totalCents).toBe(1400)
+    expect(await reservedOf(milk.id)).toBe(0)
+    expect(await reservedOf(cola.id)).toBe(2)
+    await expectConsistent()
+  })
+
+  test('raise, lower and add in one edit; freed units can cover a raise', async () => {
+    const fx = await setupOrders()
+    fx0 = fx.staffA
+    const lot = await receive(fx, { productId: fx.milkBox.id, quantity: 20 })
+    const cola = await receive(fx, { productId: fx.cola.id, quantity: 30 })
+    const colaPiece = fx.piece(fx.cola).id
+    await setPrices(fx.owner, {
+      warehouseId: fx.a.id,
+      prices: [{ presentationId: colaPiece, priceCents: 700 }],
+    })
+    const order = await place(fx, [line(fx.pieceId, 15), line(colaPiece, 4)])
+    const edited = await edit(
+      fx,
+      order.id,
+      [line(fx.pieceId, 10), line(colaPiece, 8)],
+      [],
+    )
+    expect(edited.totalCents).toBe(10000 + 8 * 700)
+    expect(await reservedOf(lot.id)).toBe(10)
+    expect(await reservedOf(cola.id)).toBe(8)
+    await expectConsistent()
+  })
+
+  test('a shortage on a raise rolls back an earlier lowering', async () => {
+    const fx = await setupOrders()
+    const lot = await receive(fx, { productId: fx.milkBox.id, quantity: 20 })
+    await receive(fx, { productId: fx.cola.id, quantity: 3 })
+    const colaPiece = fx.piece(fx.cola).id
+    await setPrices(fx.owner, {
+      warehouseId: fx.a.id,
+      prices: [{ presentationId: colaPiece, priceCents: 700 }],
+    })
+    const order = await place(fx, [line(fx.pieceId, 10), line(colaPiece, 2)])
+    await rejects(
+      () => edit(fx, order.id, [line(fx.pieceId, 5), line(colaPiece, 9)]),
+      'conflict',
+      'No hay suficiente existencia disponible de Cola 600ml.',
+    )
+    expect(await reservedOf(lot.id)).toBe(10)
+  })
+
+  test('rejects a change for a product not in the order, and duplicates', async () => {
+    const fx = await setupOrders()
+    await receive(fx, { productId: fx.milkBox.id, quantity: 50 })
+    await receive(fx, { productId: fx.cola.id, quantity: 30 })
+    const colaPiece = fx.piece(fx.cola).id
+    const order = await place(fx, [line(fx.pieceId, 4)])
+    await rejects(
+      () => edit(fx, order.id, [line(colaPiece, 1)]),
+      'invalid',
+      'Ese producto no está en el pedido. Agrégalo con el buscador.',
+    )
+    await rejects(
+      () => edit(fx, order.id, [line(fx.pieceId, 2)], [line(fx.pieceId, 1)]),
+      'invalid',
+      'No repitas la misma presentación en el pedido.',
+    )
+    await rejects(
+      () => edit(fx, order.id, [line(fx.pieceId, -1)]),
+      'invalid',
+      'La cantidad de cada producto debe ser un entero de cero o más.',
+    )
+    await rejects(
+      () => edit(fx, order.id, []),
+      'invalid',
+      'No hay cambios que guardar.',
+    )
+  })
+
+  test('only Reservado orders, unexpired, with permission', async () => {
+    const fx = await setupOrders()
+    await receive(fx, { productId: fx.milkBox.id, quantity: 50 })
+    const order = await place(fx, [line(fx.pieceId, 4), line(fx.boxId, 1)])
+    await rejects(
+      () =>
+        editReservedOrder(fx.managerB, {
+          orderId: order.id,
+          changes: [line(fx.pieceId, 1)],
+          add: [],
+        }),
+      'forbidden',
+      'No tienes permiso para esta acción.',
+    )
+    const cancelled = await place(fx, [line(fx.pieceId, 2), line(fx.boxId, 1)])
+    await cancelOrder(fx.staffA, cancelled.id)
+    await rejects(
+      () => edit(fx, cancelled.id, [line(fx.pieceId, 1)]),
+      'conflict',
+      'Solo se puede editar un pedido reservado.',
+    )
+    advance(48)
+    const error = await errorOf(() => edit(fx, order.id, [line(fx.pieceId, 1)]))
+    expect(error.message).toBe(
+      'El pedido venció y se liberó el producto. Crea un pedido nuevo.',
+    )
+    expect((await orderState()).lots[0].reserved).toBe(0)
+  })
+
+  test('cancel after lowering releases the rest, pickup sells only what remains', async () => {
+    const fx = await setupOrders()
+    const lot = await receive(fx, { productId: fx.milkBox.id, quantity: 48 })
+    const cancelled = await place(fx, [line(fx.boxId, 2)])
+    await edit(fx, cancelled.id, [line(fx.boxId, 1)])
+    expect(await reservedOf(lot.id)).toBe(12)
+    await cancelOrder(fx.staffA, cancelled.id)
+    expect(await reservedOf(lot.id)).toBe(0)
+
+    const picked = await place(fx, [line(fx.boxId, 3), line(fx.pieceId, 5)])
+    await edit(fx, picked.id, [line(fx.boxId, 1), line(fx.pieceId, 0)])
+    expect(await reservedOf(lot.id)).toBe(12)
+    await pickupOrder(fx.staffA, picked.id, payCash)
+    expect(
+      (await orderState()).lots.find((l) => l.id === lot.id),
+    ).toMatchObject({ onHand: 36, reserved: 0 })
   })
 })

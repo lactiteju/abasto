@@ -3,6 +3,7 @@ import { parseInput } from '#/lib/boundary'
 import { AppError } from '#/lib/errors'
 import {
   createOrderInput,
+  editOrderInput,
   orderIdInput,
   pickupOrderInput,
   quoteOrderInput,
@@ -91,5 +92,21 @@ describe('order server function inputs', () => {
       expect(fails(pickupOrderInput, { orderId: 'o1', payment })).toBe(true)
     }
     expect(fails(pickupOrderInput, { payment: cash })).toBe(true)
+  })
+
+  test('edit takes new totals (0 allowed) and units to add, whole numbers only', () => {
+    const edit = {
+      orderId: 'o1',
+      changes: [{ presentationId: 'p1', quantity: 0 }],
+      add: [{ presentationId: 'p2', quantity: 2 }],
+    }
+    expect(parseInput(editOrderInput, edit)).toEqual(edit)
+    expect(fails(editOrderInput, { ...edit, add: undefined })).toBe(true)
+    expect(
+      fails(editOrderInput, {
+        ...edit,
+        changes: [{ presentationId: 'p1', quantity: 1.5 }],
+      }),
+    ).toBe(true)
   })
 })

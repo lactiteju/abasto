@@ -14,11 +14,18 @@ import {
 } from '#/modules/counter/components/data-table'
 import { FieldInput } from '#/modules/counter/components/form-controls'
 import { useOrderActions } from '#/modules/counter/hooks/use-order-actions'
-import {
-  draftToAddLines,
-  typeLineQuantity,
-} from '#/modules/counter/lib/order-draft'
+import { typeLineQuantity } from '#/modules/counter/lib/order-draft'
 import type { DraftLine } from '#/modules/counter/lib/order-draft'
+import {
+  draftToEdit,
+  initialEdits,
+  isChanged,
+  isRemoved,
+  removeEdit,
+  restoreEdit,
+  setEditQuantity,
+  stockBalance,
+} from '#/modules/counter/lib/order-edit-draft'
 import {
   findStockShortages,
   stockShortageMessage,
@@ -40,8 +47,9 @@ type OrderAddProductsProps = {
 }
 
 /**
- * Edit mode of a reserved order: search products and type the boxes or pieces
- * to ADD (to an existing line or as a new one). Saving reserves them.
+ * Edit mode of a reserved order: change the boxes or pieces of each line
+ * (lower, raise or remove it) and search other products to add. Saving
+ * releases or reserves the difference in one step.
  */
 export function OrderAddProducts({
   order,
@@ -50,17 +58,32 @@ export function OrderAddProducts({
   onCancel,
 }: OrderAddProductsProps) {
   const actions = useOrderActions()
+  const [edits, setEdits] = useState(() => initialEdits(order.lines))
   const [lines, setLines] = useState<Array<DraftLine>>([])
   const [query, setQuery] = useState('')
   const [supplierId, setSupplierId] = useState('')
-  const optionOf = new Map(
-    sellable.map((option) => [option.presentationId, option]),
-  )
   const lineOf = new Map(lines.map((line) => [line.presentationId, line]))
   const inOrder = new Map(
     order.lines.map((line) => [line.presentationId, line.quantity]),
   )
-  const shortages = findStockShortages(lines, optionOf)
+  // Units freed by lowering lines can cover what is added; raises use stock too.
+  const balance = stockBalance(edits)
+  const adjusted = new Map(
+    sellable.map((option) => [
+      option.presentationId,
+      {
+        ...option,
+        availableBase:
+          option.availableBase + (balance.get(option.productId) ?? 0),
+      },
+    ]),
+  )
+  const shortages = findStockShortages(lines, adjusted)
+  const availableOf = new Map(
+    sellable.map((option) => [option.productId, option.availableBase]),
+  )
+  const raisedShort = (productId: string) =>
+    (availableOf.get(productId) ?? 0) + (balance.get(productId) ?? 0) < 0
   const suppliers = useMemo(() => sellableSuppliers(sellable), [sellable])
   const products = useMemo(() => groupSellable(sellable), [sellable])
   const visible = filterSellable(products, { query, supplierId })
@@ -79,7 +102,7 @@ export function OrderAddProducts({
           aria-label={`Agregar ${label.toLowerCase()} de ${productName}`}
           placeholder="0"
           className="w-20"
-          disabled={!option || blocked}
+          disabled={!option || blocked || inOrder.has(option.presentationId)}
           value={
             option ? (lineOf.get(option.presentationId)?.quantity ?? '') : ''
           }
@@ -102,25 +125,111 @@ export function OrderAddProducts({
   }
 
   async function save() {
-    const parsed = draftToAddLines(lines)
+    const parsed = draftToEdit(edits, lines)
     if (!parsed.ok) {
       toast.error(parsed.message)
       return
     }
-    const result = await actions.addToOrder(order.id, parsed.value)
+    const result = await actions.editOrder(
+      order.id,
+      parsed.value.changes,
+      parsed.value.add,
+    )
     if (result) onSaved(result.data)
   }
 
   return (
     <section
-      aria-label="Agregar productos"
+      aria-label="Editar pedido"
       className="grid gap-3 rounded-xl border border-[#f1ebe5] p-3"
     >
       <p className="text-sm">
-        Escribe las cajas o piezas que quieres <strong>agregar</strong>. Lo que
-        ya está en el pedido conserva su precio; un producto nuevo se cotiza al
-        precio actual.
+        Cambia las cajas o piezas de cada línea (con 0 o «Quitar» sale del
+        pedido) o agrega otro producto con el buscador. Lo que ya está en el
+        pedido conserva su precio; un producto nuevo se cotiza al precio actual.
       </p>
+      <TableWrap className="rounded-xl border border-[#f1ebe5]">
+        <DataTable>
+          <thead>
+            <tr>
+              <Th>En el pedido</Th>
+              <Th>Cantidad</Th>
+              <Th>
+                <span className="sr-only">Quitar</span>
+              </Th>
+            </tr>
+          </thead>
+          <tbody>
+            {edits.map((edit, index) => {
+              const detail = order.lines[index]
+              const removed = isRemoved(edit)
+              return (
+                <tr key={edit.presentationId}>
+                  <Td>
+                    <span className={removed ? 'line-through' : undefined}>
+                      {detail.productName}
+                    </span>
+                    <CellNote>{detail.presentationName}</CellNote>
+                    {removed && (
+                      <CellNote>Se quitará del pedido al guardar.</CellNote>
+                    )}
+                    {raisedShort(edit.productId) && !removed && (
+                      <p role="alert" className="mt-1 text-xs text-[#a1372e]">
+                        No hay suficiente existencia disponible para subir esta
+                        cantidad.
+                      </p>
+                    )}
+                  </Td>
+                  <Td>
+                    <FieldInput
+                      inputMode="numeric"
+                      aria-label={`Cantidad de ${detail.productName} (${detail.presentationName})`}
+                      className="w-20"
+                      value={edit.quantity}
+                      onChange={(event) =>
+                        setEdits((current) =>
+                          setEditQuantity(
+                            current,
+                            edit.presentationId,
+                            event.target.value,
+                          ),
+                        )
+                      }
+                    />
+                  </Td>
+                  <Td>
+                    {removed || isChanged(edit) ? (
+                      <ActionButton
+                        disabled={actions.pending}
+                        onClick={() =>
+                          setEdits((current) =>
+                            restoreEdit(current, edit.presentationId),
+                          )
+                        }
+                      >
+                        Deshacer
+                      </ActionButton>
+                    ) : null}
+                    {!removed && (
+                      <ActionButton
+                        disabled={actions.pending}
+                        aria-label={`Quitar ${detail.productName} (${detail.presentationName})`}
+                        onClick={() =>
+                          setEdits((current) =>
+                            removeEdit(current, edit.presentationId),
+                          )
+                        }
+                      >
+                        Quitar
+                      </ActionButton>
+                    )}
+                  </Td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </DataTable>
+      </TableWrap>
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex min-w-[240px] flex-1">
           <SearchBox
@@ -143,7 +252,7 @@ export function OrderAddProducts({
           <thead className="sticky top-0 z-10">
             <tr>
               <Th>Producto</Th>
-              <Th>Agregar</Th>
+              <Th>Agregar otro producto</Th>
             </tr>
           </thead>
           <tbody>
@@ -204,7 +313,12 @@ export function OrderAddProducts({
       <div className="flex flex-wrap items-center gap-3">
         <ActionButton
           tone="primary"
-          disabled={actions.pending || lines.length === 0 || shortages.size > 0}
+          disabled={
+            actions.pending ||
+            (lines.length === 0 && !edits.some(isChanged)) ||
+            shortages.size > 0 ||
+            edits.some((e) => !isRemoved(e) && raisedShort(e.productId))
+          }
           onClick={save}
         >
           {actions.pending ? 'Guardando…' : 'Guardar cambios'}

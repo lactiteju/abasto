@@ -209,7 +209,7 @@ export function OrderViewDialog({
           )}
           {allowed.pickup && (
             <ActionButton disabled={busy} onClick={() => setAdding(true)}>
-              Agregar productos
+              Editar pedido
             </ActionButton>
           )}
           {allowed.cancel && (
