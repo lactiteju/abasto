@@ -27,3 +27,8 @@ export const settleInput = z.object({
 })
 
 export const cancelAssignmentInput = z.object({ assignmentId: id })
+
+export const rechargeInput = z.object({
+  assignmentId: id,
+  lines: z.array(z.object({ productId: id, ...boxesAndUnits })),
+})

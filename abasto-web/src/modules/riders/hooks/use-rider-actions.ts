@@ -3,11 +3,17 @@ import {
   assignRiderFn,
   cancelAssignmentFn,
   createRiderFn,
+  rechargeAssignmentFn,
   renameRiderFn,
   setRiderActiveFn,
   settleAssignmentFn,
 } from '#/modules/riders/server/riders'
 import type { AssignInput } from '#/modules/riders/lib/assign-draft'
+
+export type RechargeInput = {
+  assignmentId: string
+  lines: AssignInput['lines']
+}
 
 type SettleInput = {
   assignmentId: string
@@ -42,6 +48,11 @@ export function useRiderActions() {
       run(
         () => assignRiderFn({ data: input }),
         'Reparto asignado. El producto quedó apartado.',
+      ),
+    recharge: (input: RechargeInput) =>
+      run(
+        () => rechargeAssignmentFn({ data: input }),
+        'Producto agregado a la ruta. Quedó apartado.',
       ),
     settle: (input: SettleInput) =>
       run(

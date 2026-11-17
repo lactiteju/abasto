@@ -56,7 +56,7 @@ const notEnRoute = () =>
  * Locks the assignment row and checks it is still "En ruta". The status guard
  * under the lock is what makes settle and cancel run at most once, together.
  */
-async function lockOpenAssignment(tx: Tx, assignmentId: string) {
+export async function lockOpenAssignment(tx: Tx, assignmentId: string) {
   const assignment = (
     await tx
       .select()
@@ -69,7 +69,7 @@ async function lockOpenAssignment(tx: Tx, assignmentId: string) {
   return assignment
 }
 
-function validateAssignLines(lines: ReadonlyArray<AssignLineInput>) {
+export function validateAssignLines(lines: ReadonlyArray<AssignLineInput>) {
   if (!lines.length) {
     throw new AppError('invalid', 'Agrega al menos un producto al reparto.')
   }
@@ -81,7 +81,7 @@ function validateAssignLines(lines: ReadonlyArray<AssignLineInput>) {
   }
 }
 
-type ProductInfo = {
+export type ProductInfo = {
   name: string
   boxFactor: number
   defaultPresentationId: string | null
@@ -90,7 +90,7 @@ type ProductInfo = {
 }
 
 /** Name, box (largest active presentation) and default presentation of each product. */
-async function readProducts(tx: Tx, productIds: Array<string>) {
+export async function readProducts(tx: Tx, productIds: Array<string>) {
   const rows = await tx
     .select({
       productId: products.id,
@@ -125,6 +125,66 @@ async function readProducts(tx: Tx, productIds: Array<string>) {
     info.set(row.productId, current)
   }
   return info
+}
+
+export type Pricing = {
+  standard: Map<string, number | null>
+  /** Only a price set for the piece itself counts. */
+  ownPiece: Map<string, number | null>
+}
+
+/** Warehouse prices by presentation; without an own piece price the piece is the prorated box price. */
+export async function readPricing(
+  tx: Tx,
+  warehouseId: string,
+): Promise<Pricing> {
+  const prices = await readWarehousePrices(tx, warehouseId)
+  return {
+    standard: new Map(
+      prices.map((row) => [row.presentationId, row.priceCents]),
+    ),
+    ownPiece: new Map(
+      prices
+        .filter((row) => row.origin === 'own')
+        .map((row) => [row.presentationId, row.priceCents]),
+    ),
+  }
+}
+
+/** Allocation rows of one line with the sale prices frozen now. */
+export function allocationRows(
+  lineId: string,
+  product: ProductInfo,
+  allocation: ReadonlyArray<{ lotId: string; quantity: number }>,
+  lotById: Map<string, { salePriceCents: number | null }>,
+  { standard, ownPiece }: Pricing,
+) {
+  return allocation.map(({ lotId, quantity }) => {
+    const priceCents =
+      lotById.get(lotId)?.salePriceCents ??
+      (product.defaultPresentationId
+        ? standard.get(product.defaultPresentationId)
+        : null)
+    if (priceCents == null) {
+      throw new AppError(
+        'conflict',
+        `${product.name} no tiene precio en este almacén.`,
+      )
+    }
+    // A product sold by the piece by default has one price already.
+    const pieceCents =
+      product.defaultFactor > 1 && product.pieceId
+        ? (ownPiece.get(product.pieceId) ?? null)
+        : null
+    return {
+      lineId,
+      lotId,
+      quantity,
+      priceCents,
+      priceFactor: product.defaultFactor,
+      pieceCents,
+    }
+  })
 }
 
 /**
@@ -196,17 +256,7 @@ export async function assignRider(
       lock: true,
     })
     const lotById = new Map(sellable.map((lot) => [lot.id, lot]))
-    const prices = await readWarehousePrices(tx, warehouseId)
-    const standard = new Map(
-      prices.map((row) => [row.presentationId, row.priceCents]),
-    )
-    // Only a price set for the piece itself counts; without one the piece is
-    // priced as the prorated box price.
-    const ownPiece = new Map(
-      prices
-        .filter((row) => row.origin === 'own')
-        .map((row) => [row.presentationId, row.priceCents]),
-    )
+    const pricing = await readPricing(tx, warehouseId)
     const plan = fifoPlanner(sellable)
     const plans = wanted.map((line) => ({
       productName: line.product.name,
@@ -233,34 +283,17 @@ export async function assignRider(
           assignedQuantity: line.baseQuantity,
         })
         .returning({ id: riderAssignmentLines.id })
-      await tx.insert(riderAllocations).values(
-        allocations[index].map(({ lotId, quantity }) => {
-          const priceCents =
-            lotById.get(lotId)?.salePriceCents ??
-            (line.product.defaultPresentationId
-              ? standard.get(line.product.defaultPresentationId)
-              : null)
-          if (priceCents == null) {
-            throw new AppError(
-              'conflict',
-              `${line.product.name} no tiene precio en este almacén.`,
-            )
-          }
-          // A product sold by the piece by default has one price already.
-          const pieceCents =
-            line.product.defaultFactor > 1 && line.product.pieceId
-              ? (ownPiece.get(line.product.pieceId) ?? null)
-              : null
-          return {
-            lineId: stored.id,
-            lotId,
-            quantity,
-            priceCents,
-            priceFactor: line.product.defaultFactor,
-            pieceCents,
-          }
-        }),
-      )
+      await tx
+        .insert(riderAllocations)
+        .values(
+          allocationRows(
+            stored.id,
+            line.product,
+            allocations[index],
+            lotById,
+            pricing,
+          ),
+        )
     }
     return readAssignment(tx, assignment.id)
   })
