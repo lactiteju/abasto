@@ -62,13 +62,6 @@ export function differenceTone(
   return differenceCents > 0 ? 'over' : 'even'
 }
 
-/** Hint under the opening cash: what the previous close counted. */
-export function lastCloseHint(countedCents: number | null): string | undefined {
-  return countedCents === null
-    ? undefined
-    : `El último cierre contó ${formatCents(countedCents)}`
-}
-
 /** Counted pesos typed at a blind close → cents; the server computes the difference. */
 export function countedCash(countedText: string): Parsed<number> {
   return parsePesosToCents(countedText, { allowZero: true })

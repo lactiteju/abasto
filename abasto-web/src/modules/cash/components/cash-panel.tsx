@@ -5,12 +5,12 @@ import { ActionButton } from '#/modules/counter/components/action-button'
 import { CashCloseDialog } from '#/modules/cash/components/cash-close-dialog'
 import { CashHistoryDialog } from '#/modules/cash/components/cash-history-dialog'
 import { CashMovementDialog } from '#/modules/cash/components/cash-movement-dialog'
-import { CashOpenDialog } from '#/modules/cash/components/cash-open-dialog'
 import {
   phoneSummaryLine,
   riderDifferenceLabel,
   summarizeSession,
 } from '#/modules/cash/lib/cash-summary'
+import { useCashActions } from '#/modules/cash/hooks/use-cash-actions'
 import { formatCents } from '#/modules/pricing/lib/money'
 import type { CashSessionDetail } from '#/modules/cash/services/cash-sessions'
 
@@ -21,7 +21,7 @@ type CashPanelProps = {
   canViewHistory: boolean
 }
 
-type Dialog = 'open' | 'entry' | 'withdrawal' | 'close' | 'history'
+type Dialog = 'entry' | 'withdrawal' | 'close' | 'history'
 
 function Figure({
   label,
@@ -52,10 +52,10 @@ function Figure({
 /** "Caja" of the selected warehouse: open it, see the shift so far, move cash, close it. */
 export function CashPanel({
   warehouseId,
-  warehouseName,
   cash,
   canViewHistory,
 }: CashPanelProps) {
+  const actions = useCashActions(warehouseId)
   const [dialog, setDialog] = useState<Dialog>()
   const [expanded, setExpanded] = useState(false)
   const close = () => setDialog(undefined)
@@ -107,7 +107,11 @@ export function CashPanel({
                 </ActionButton>
               </>
             ) : (
-              <ActionButton tone="primary" onClick={() => setDialog('open')}>
+              <ActionButton
+                tone="primary"
+                disabled={actions.pending}
+                onClick={() => actions.open(0)}
+              >
                 Abrir caja
               </ActionButton>
             )}
@@ -149,13 +153,6 @@ export function CashPanel({
           </div>
         )}
       </div>
-      {dialog === 'open' && (
-        <CashOpenDialog
-          warehouseId={warehouseId}
-          warehouseName={warehouseName}
-          onClose={close}
-        />
-      )}
       {(dialog === 'entry' || dialog === 'withdrawal') && (
         <CashMovementDialog
           kind={dialog}

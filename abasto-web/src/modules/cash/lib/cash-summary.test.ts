@@ -4,7 +4,6 @@ import {
   countedCash,
   differenceLabel,
   differenceTone,
-  lastCloseHint,
   phoneSummaryLine,
   movementLabel,
   summarizeSession,
@@ -91,13 +90,6 @@ describe('differenceTone', () => {
     expect(differenceTone(-1)).toBe('short')
     expect(differenceTone(1)).toBe('over')
     expect(differenceTone(0)).toBe('even')
-  })
-})
-
-describe('lastCloseHint', () => {
-  test('names the last counted cash, or nothing when there is no close', () => {
-    expect(lastCloseHint(100000)).toBe('El último cierre contó $1,000.00')
-    expect(lastCloseHint(null)).toBeUndefined()
   })
 })
 

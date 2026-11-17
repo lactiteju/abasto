@@ -5,7 +5,6 @@ import {
   cashHistoryFn,
   cashWithdrawalFn,
   closeCashFn,
-  lastCloseFn,
   openCashFn,
 } from '#/modules/cash/server/cash'
 import type { CashSession } from '#/modules/cash/services/cash-ledger'
@@ -43,7 +42,6 @@ export function useCashActions(warehouseId: string) {
         () => cashWithdrawalFn({ data: { warehouseId, amountCents, reason } }),
         { success: 'Retiro registrado.', onSuccess },
       ),
-    lastClose: async () => unwrap(await lastCloseFn({ data: { warehouseId } })),
     history: async () => unwrap(await cashHistoryFn({ data: { warehouseId } })),
   }
 }
