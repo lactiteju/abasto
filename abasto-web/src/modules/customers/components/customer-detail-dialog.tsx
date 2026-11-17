@@ -1,8 +1,21 @@
+import { useState } from 'react'
+
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '#/components/ui/alert-dialog'
 import { CustomerButton } from '#/modules/customers/components/customer-button'
 import { CustomerModal } from '#/modules/customers/components/customer-modal'
 import { CustomerOrderHistory } from '#/modules/customers/components/customer-order-history'
 import { StatusBadge } from '#/modules/customers/components/status-badge'
 import { StoreAccessPanel } from '#/modules/customers/components/store-access-panel'
+import { useSetCustomerActive } from '#/modules/customers/hooks/use-customers'
 import {
   contactLine,
   ruleLabel,
@@ -33,6 +46,12 @@ export function CustomerDetailDialog({
   onEdit,
   onClose,
 }: CustomerDetailDialogProps) {
+  const { set, pending } = useSetCustomerActive()
+  const [confirming, setConfirming] = useState(false)
+  async function toggle(active: boolean) {
+    if (await set(customer.id, active)) onClose()
+    else setConfirming(false)
+  }
   const names = new Map(presentations.map(({ id, label }) => [id, label]))
   return (
     <CustomerModal
@@ -42,9 +61,27 @@ export function CustomerDetailDialog({
       onClose={onClose}
       headerAction={
         canManage ? (
-          <CustomerButton className="min-h-[38px] px-3.5" onClick={onEdit}>
-            Editar
-          </CustomerButton>
+          <div className="flex gap-2">
+            <CustomerButton className="min-h-[38px] px-3.5" onClick={onEdit}>
+              Editar
+            </CustomerButton>
+            {customer.active ? (
+              <CustomerButton
+                className="min-h-[38px] px-3.5 text-[#a1372e]"
+                onClick={() => setConfirming(true)}
+              >
+                Eliminar cliente
+              </CustomerButton>
+            ) : (
+              <CustomerButton
+                className="min-h-[38px] px-3.5"
+                disabled={pending}
+                onClick={() => void toggle(true)}
+              >
+                Reactivar cliente
+              </CustomerButton>
+            )}
+          </div>
         ) : undefined
       }
     >
@@ -77,6 +114,30 @@ export function CustomerDetailDialog({
       )}
       <h3 className="mt-2 text-[17px] font-[650]">Historial de pedidos</h3>
       <CustomerOrderHistory customerId={customer.id} />
+      <AlertDialog open={confirming} onOpenChange={setConfirming}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Eliminar a {customer.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Dejará de aparecer en la lista y en nuevas ventas. Su historial de
+              pedidos se conserva.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Conservar cliente</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={pending}
+              onClick={(event) => {
+                event.preventDefault()
+                void toggle(false)
+              }}
+            >
+              Eliminar cliente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </CustomerModal>
   )
 }

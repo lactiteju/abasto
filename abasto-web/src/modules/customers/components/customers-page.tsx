@@ -25,9 +25,14 @@ export function CustomersPage({ overview, presentations }: CustomersPageProps) {
   const { canManage, customers, rules } = overview
   const save = useSaveCustomer()
   const [query, setQuery] = useState('')
+  const [showInactive, setShowInactive] = useState(false)
   const [detailId, setDetailId] = useState<string>()
   const [editor, setEditor] = useState<Editor>()
 
+  const visible = showInactive
+    ? customers
+    : customers.filter(({ active }) => active)
+  const hasInactive = customers.some(({ active }) => !active)
   const detail = customers.find(({ id }) => id === detailId)
   const editing = customers.find(({ id }) => id === editor?.customerId)
 
@@ -59,9 +64,19 @@ export function CustomersPage({ overview, presentations }: CustomersPageProps) {
           placeholder="Buscar por nombre, contacto o teléfono…"
           className="min-w-0 flex-[1_1_100%] rounded-lg border border-[#dee4dc] bg-white px-3 py-2.5 text-[13px] text-[#37473c] md:flex-1"
         />
+        {canManage && hasInactive && (
+          <label className="flex items-center gap-2 text-[13px] text-[#503f45]">
+            <input
+              type="checkbox"
+              checked={showInactive}
+              onChange={(event) => setShowInactive(event.target.checked)}
+            />
+            Mostrar inactivos
+          </label>
+        )}
       </div>
       <CustomersTable
-        customers={activeFirst(filterCustomers(customers, query))}
+        customers={activeFirst(filterCustomers(visible, query))}
         canManage={canManage}
         rules={rules}
         onView={setDetailId}

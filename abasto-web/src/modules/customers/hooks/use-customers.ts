@@ -6,6 +6,7 @@ import type { SaveCustomerInput } from '#/modules/customers/lib/customer-inputs'
 import {
   customerOrdersFn,
   saveCustomerFn,
+  setCustomerActiveFn,
 } from '#/modules/customers/server/customers'
 import type { CustomerOrder } from '#/modules/customers/server/customer-orders'
 
@@ -16,6 +17,19 @@ export function useSaveCustomer() {
   return async (input: SaveCustomerInput) =>
     (await run(() => saveCustomerFn({ data: input }), 'Cliente guardado.')) !==
     undefined
+}
+
+/** Soft-deletes (active=false) or reactivates a customer; true on success. */
+export function useSetCustomerActive() {
+  const run = useActionRunner()
+  return {
+    pending: run.pending,
+    set: async (id: string, active: boolean) =>
+      (await run(
+        () => setCustomerActiveFn({ data: { id, active } }),
+        active ? 'Cliente reactivado.' : 'Cliente eliminado.',
+      )) !== undefined,
+  }
 }
 
 export type OrdersState =

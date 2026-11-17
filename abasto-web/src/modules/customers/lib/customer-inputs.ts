@@ -22,6 +22,8 @@ export const saveCustomerInput = z.object({
   rules: z.array(ruleInput),
 })
 
+export const setCustomerActiveInput = z.object({ id, active: z.boolean() })
+
 export const customerOrdersInput = z.object({ customerId: id })
 
 export type SaveCustomerInput = z.infer<typeof saveCustomerInput>

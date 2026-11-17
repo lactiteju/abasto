@@ -5,11 +5,15 @@ import { can } from '#/modules/access/lib/policy'
 import {
   customerOrdersInput,
   saveCustomerInput,
+  setCustomerActiveInput,
 } from '#/modules/customers/lib/customer-inputs'
 import { listCustomerOrders } from '#/modules/customers/server/customer-orders'
 import { saveCustomer } from '#/modules/customers/server/save-customer'
 import { listCommercialRules } from '#/modules/customers/services/commercial-rules'
-import { listCustomers } from '#/modules/customers/services/customers'
+import {
+  listCustomers,
+  setCustomerActive,
+} from '#/modules/customers/services/customers'
 import type {
   CustomerView,
   RuleView,
@@ -58,6 +62,21 @@ export const saveCustomerFn = createServerFn({ method: 'POST' })
     runWithActor((actor) =>
       saveCustomer(actor, parseInput(saveCustomerInput, data)),
     ),
+  )
+
+/** Owner: hides ("deletes") or restores a customer; history is kept. */
+export const setCustomerActiveFn = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => data)
+  .handler(({ data }) =>
+    runWithActor(async (actor) => {
+      const input = parseInput(setCustomerActiveInput, data)
+      const { id, active } = await setCustomerActive(
+        actor,
+        input.id,
+        input.active,
+      )
+      return { id, active }
+    }),
   )
 
 export const customerOrdersFn = createServerFn({ method: 'GET' })

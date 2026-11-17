@@ -6,6 +6,7 @@ import {
   createCustomer,
   getCustomer,
   listCustomers,
+  setCustomerActive,
   updateCustomer,
 } from '#/modules/customers/services/customers'
 import {
@@ -133,5 +134,35 @@ describe('listCustomers and getCustomer', () => {
     expect(error.code).toBe('not_found')
     expect(error.message).toBe(notFound)
     expect(await getCustomer(owner, sur.id)).toEqual(off)
+  })
+})
+
+describe('setCustomerActive', () => {
+  test('the owner hides a customer from staff and restores it; data is kept', async () => {
+    const { owner, staff } = await setupActors()
+    const norte = await createCustomer(owner, { name: 'Norte' })
+    const off = await setCustomerActive(owner, norte.id, false)
+    expect(off).toEqual({ ...norte, active: false })
+    expect(await listCustomers(staff)).toEqual([])
+    expect(await listCustomers(owner, { active: false })).toEqual([off])
+    expect((await getCustomer(staff, norte.id).catch((e) => e)).code).toBe(
+      'not_found',
+    )
+    expect(await setCustomerActive(owner, norte.id, true)).toEqual(norte)
+    expect(await listCustomers(staff)).toEqual([norte])
+  })
+
+  test('staff cannot change it; unknown customer is not found', async () => {
+    const { owner, staff } = await setupActors()
+    const norte = await createCustomer(owner, { name: 'Norte' })
+    const denied = await errorOf(() =>
+      setCustomerActive(staff, norte.id, false),
+    )
+    expect(denied.code).toBe('forbidden')
+    expect(await getCustomer(owner, norte.id)).toEqual(norte)
+    const missing = await errorOf(() =>
+      setCustomerActive(owner, crypto.randomUUID(), false),
+    )
+    expect(missing.code).toBe('not_found')
   })
 })

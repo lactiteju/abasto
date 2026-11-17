@@ -76,6 +76,18 @@ export async function updateCustomer(
 }
 
 /**
+ * "Delete" = soft delete: orders, rules and cash movements reference the
+ * customer, so it is only hidden from lists and new sales (`active = false`).
+ */
+export function setCustomerActive(
+  actor: Actor,
+  id: string,
+  active: boolean,
+): Promise<Customer> {
+  return updateCustomer(actor, id, { active })
+}
+
+/**
  * Any signed-in actor reads active customers (needed to sell); only the owner
  * sees inactive ones. `active` filters the owner's list; staff always get active.
  */
