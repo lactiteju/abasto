@@ -21,8 +21,8 @@ UI copy is Spanish (es-MX); code and identifiers in English. Workers load the `c
 - [x] T3 — S3 — worker — shared numeric sanitize helper (`src/lib/numeric-input.ts`) applied in Input / FieldInput / CompactInput by inputMode. Commit 8aaf918. Supplier-cost fields allow 4 decimals (stored in ten-thousandths).
 - [x] T5 — S4–S6 — worker — recarga service + server fn + dialog, next-assignment prefill, row actions menu. Commits 67caffc, 2a7b942.
 - [x] T6 — S4–S6 — independent verify pass incl. 7 forced-race tests (recharge-concurrency.test.ts); full suite 1413 pass / 2 skip / 0 fail, tsc clean, eslint 0 errors. On-screen check not done.
-- [ ] T7 — S7 — worker — supplier order edit service + server fn + UI.
-- [ ] T8 — S8 — worker — assignment load edit (lower/remove) + «Editar carga» in the ⋯ menu.
+- [x] T7 — S7 — worker — supplier order edit service + server fn + UI. Commit cd9a392; independent verify S7 pass incl. 11 forced races (discount ledger consistent). Also fixed: cancel after edit no longer reopens a discount twice (activeDiscounts).
+- [x] T8 — S8 — worker — assignment load edit (lower/remove) + «Editar carga» in the ⋯ menu. Commit 6261455 + extra races; independent verify S8 pass (137 riders tests).
 - [ ] T9 — S7, S8 — independent verify (races), full suite, commits, push dev.
 - [x] T4 — all — full suite 1391 pass / 2 skip / 0 fail, tsc clean, eslint 0 errors (4 old warnings). On-screen check not done.
 
@@ -37,3 +37,4 @@ UI copy is Spanish (es-MX); code and identifiers in English. Workers load the `c
 - L7 — T6 verify minor (non-blocking): after a recarga at a new price one line may hold two allocations on the same lot and the settle order between them is not deterministic (preview agrees with settle); a box-factor change between assign and recarga counts recarga boxes with the new factor while settle uses the line's stored one. «Preparar siguiente reparto» only appears on today's settled rows (overview data).
 - L8 — Pipeline: push to `dev` deploys via Dokploy (deploy-staging success). The «check» job (prettier over the whole app) is informational (continue-on-error) and already failed on 2026-11-15 from 45 pre-existing unformatted files (drizzle snapshots, package.json, tsconfig).
 - L9 — Options reviewed: only counter Reservado orders and en-route recarga were editable; supplier orders, transfers, store orders only cancel. User: "Si en los dos casos donde dices que vale la pena" → S7 (supplier order) and S8 (assignment load lower/remove). Transfers and store orders stay cancel-only.
+- L10 — T7/T8 verify minor (non-blocking): supplier-order editor hides lines of archived products (kept on save, but the on-screen total omits them and they cannot be removed there); edit button depends on the selected warehouse's permission (server checks the order's). Assignment edit: «Quitar» enabled on the last line (save refused); a settle prepared before a line was removed is refused with the generic «Revisa las líneas del reparto…» message. Last-line copy changed to point to the ⋯ menu (the dialog's own «Cancelar» only closes it).
