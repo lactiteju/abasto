@@ -1,7 +1,6 @@
-import { useState } from 'react'
 import type { ReactNode } from 'react'
 
-import { Maximize2Icon, Minimize2Icon, XIcon } from 'lucide-react'
+import { XIcon } from 'lucide-react'
 
 import {
   Dialog,
@@ -11,6 +10,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog'
+import {
+  MaximizeButton,
+  maximizedClass,
+  useMaximized,
+} from '#/components/ui/dialog-maximize'
 import { cn } from '#/lib/utils/cn'
 
 type InventoryDialogProps = {
@@ -41,10 +45,6 @@ const gutters = {
   wider: 'px-5 md:px-[29px]',
 }
 
-/** Full screen: wins over every size; inner lists drop their height cap via `group-data-maximized/dialog`. */
-const maximizedClass =
-  'h-dvh max-h-dvh w-screen max-w-none rounded-none sm:max-w-none md:w-screen md:max-w-none'
-
 const cornerButton =
   'rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:outline-2 focus:outline-offset-2'
 
@@ -58,13 +58,12 @@ export function InventoryDialog({
   footer,
   children,
 }: InventoryDialogProps) {
-  // Only wide dialogs hold long tables, so only they can fill the screen.
-  const canMaximize = size === 'wide' || size === 'wider'
-  const [maximized, setMaximized] = useState(false)
+  const { maximized, toggle } = useMaximized()
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent
         showCloseButton={false}
+        maximizable={false}
         data-maximized={maximized || undefined}
         className={cn(
           // The content never scrolls: the header and its corner buttons stay put while the body scrolls.
@@ -113,24 +112,7 @@ export function InventoryDialog({
           </div>
         )}
         <span className="absolute top-4 right-4 flex items-center gap-3">
-          {canMaximize && (
-            <button
-              type="button"
-              className={cornerButton}
-              aria-pressed={maximized}
-              title={maximized ? 'Restaurar tamaño' : 'Pantalla completa'}
-              onClick={() => setMaximized((current) => !current)}
-            >
-              {maximized ? (
-                <Minimize2Icon className="size-4" />
-              ) : (
-                <Maximize2Icon className="size-4" />
-              )}
-              <span className="sr-only">
-                {maximized ? 'Restaurar tamaño' : 'Pantalla completa'}
-              </span>
-            </button>
-          )}
+          <MaximizeButton maximized={maximized} onToggle={toggle} />
           <DialogClose className={cornerButton}>
             <XIcon className="size-4" />
             <span className="sr-only">Cerrar</span>

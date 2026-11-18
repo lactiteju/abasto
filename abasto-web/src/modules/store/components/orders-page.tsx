@@ -104,7 +104,10 @@ export function OrdersPage({ user, orders }: OrdersPageProps) {
           if (!open) setTarget(null)
         }}
       >
-        <AlertDialogContent className="store rounded-2xl border border-st-line bg-st-card ring-0">
+        <AlertDialogContent
+          maximizable={false}
+          className="store rounded-2xl border border-st-line bg-st-card ring-0"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle className="st-stencil text-lg text-st-plum-ink">
               ¿Cancelar {target ? storeOrderCode(target.id) : 'el apartado'}?

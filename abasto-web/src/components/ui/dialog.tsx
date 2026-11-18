@@ -3,6 +3,11 @@ import { cn } from '#/lib/utils/cn'
 import { Dialog as DialogPrimitive } from 'radix-ui'
 
 import { Button } from '#/components/ui/button'
+import {
+  MaximizeButton,
+  maximizedClass,
+  useMaximized,
+} from '#/components/ui/dialog-maximize'
 import { escapeClosesOpenList } from '#/lib/open-list-escape'
 import { XIcon } from 'lucide-react'
 
@@ -50,19 +55,29 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  maximizable = true,
+  maximizeButtonClassName,
   onEscapeKeyDown,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
+  /** Offer the full-screen corner button; off when a wrapper draws its own. */
+  maximizable?: boolean
+  /** Where the full-screen button sits, to line up with a custom close button. */
+  maximizeButtonClassName?: string
 }) {
+  const { maximized, toggle } = useMaximized()
+  const full = maximizable && maximized
   return (
     <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"
+        data-maximized={full || undefined}
         className={cn(
-          'fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
+          'group/dialog fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
           className,
+          full && maximizedClass,
         )}
         onEscapeKeyDown={(event) => {
           // Esc in an open picker closes the list, not the whole dialog.
@@ -72,6 +87,17 @@ function DialogContent({
         {...props}
       >
         {children}
+        {maximizable && (
+          <MaximizeButton
+            maximized={maximized}
+            onToggle={toggle}
+            className={cn(
+              'absolute',
+              showCloseButton ? 'top-[15px] right-11' : 'top-4 right-4',
+              maximizeButtonClassName,
+            )}
+          />
+        )}
         {showCloseButton && (
           <DialogPrimitive.Close data-slot="dialog-close" asChild>
             <Button

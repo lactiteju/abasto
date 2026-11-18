@@ -181,6 +181,7 @@ function ImportDialogContent({
   return (
     <DialogContent
       showCloseButton={false}
+      maximizeButtonClassName="top-4 right-11"
       className="max-h-[92dvh] w-[calc(100vw-20px)] max-w-[calc(100vw-20px)] gap-[18px] overflow-y-auto rounded-2xl border border-transparent bg-white p-5 text-base sm:max-w-[calc(100vw-20px)] md:w-[min(1080px,calc(100vw-32px))] md:max-w-[1080px] md:gap-5 md:p-[29px]"
     >
       <DialogHeader className="text-left">
