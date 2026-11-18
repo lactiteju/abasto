@@ -8,7 +8,9 @@ import { myOrdersFn } from '#/modules/store/server/storefront'
 export const Route = createFileRoute('/tienda/pedidos')({
   loader: async ({ context }) =>
     context.user?.role === 'customer' ? unwrap(await myOrdersFn()) : null,
-  head: () => ({ meta: [{ title: storeTitle('Mis pedidos') }] }),
+  head: ({ match }) => ({
+    meta: [{ title: storeTitle('Mis pedidos', match.context.business.name) }],
+  }),
   component: function StoreOrders() {
     const { user } = Route.useRouteContext()
     return <OrdersPage user={user} orders={Route.useLoaderData()} />

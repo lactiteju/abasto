@@ -20,6 +20,7 @@ import {
   prepareNextBlock,
 } from '#/modules/riders/lib/next-assignment'
 import { newAssignmentBlock } from '#/modules/riders/lib/assign-availability'
+import { useBusiness } from '#/modules/business/hooks/use-business'
 import type { RidersOverview } from '#/modules/riders/lib/riders-view'
 import type { AssignmentDetail } from '#/modules/riders/services/assignment-reads'
 import type { Rider } from '#/modules/riders/services/riders'
@@ -71,6 +72,7 @@ export function RepartosPage({
   overview,
   onSelectWarehouse,
 }: RepartosPageProps) {
+  const business = useBusiness()
   const [open, setOpen] = useState<Open>()
   const close = () => setOpen(undefined)
   const selected = overview.warehouses.find(
@@ -150,7 +152,11 @@ export function RepartosPage({
         onNew={() => setOpen({ kind: 'assign' })}
         onAction={(action, assignment) => {
           if (action === 'printNote') {
-            return void printSettlementNote(assignment, selected.name)
+            return void printSettlementNote(
+              assignment,
+              selected.name,
+              business.name,
+            )
           }
           if (action === 'prepareNext') {
             const block = prepareNextBlock(

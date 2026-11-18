@@ -19,7 +19,7 @@ import {
   resolveCartLines,
   unitPriceOf,
 } from '#/modules/store/lib/pick-list'
-import { storeConfig } from '#/modules/store/lib/store-config'
+import { useBusiness } from '#/modules/business/hooks/use-business'
 import type {
   StoreProduct,
   StoreWarehouse,
@@ -42,6 +42,7 @@ export function StoreShell({
   catalog,
   children,
 }: StoreShellProps) {
+  const business = useBusiness()
   const router = useRouter()
   const navigate = useNavigate()
   const location = useLocation()
@@ -100,7 +101,7 @@ export function StoreShell({
               className="block size-3.5 shrink-0 rounded-full bg-st-brand"
             />
             <span className="truncate text-[17px] leading-none font-bold text-st-plum-ink sm:text-[19px]">
-              {storeConfig.name}
+              {business.name}
             </span>
           </Link>
           <nav
@@ -177,8 +178,8 @@ export function StoreShell({
       <footer
         className={`border-t border-st-line px-4 py-6 text-center text-[13px] text-st-muted ${showBar ? 'pb-28 lg:pb-6' : ''}`}
       >
-        {storeConfig.name} · {storeConfig.location}. Los pedidos son apartados:
-        se recogen y se pagan en el almacén.
+        {business.name} · {business.location}. Los pedidos son apartados: se
+        recogen y se pagan en el almacén.
       </footer>
 
       {warehouse ? (

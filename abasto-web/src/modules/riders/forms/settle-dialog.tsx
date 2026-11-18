@@ -11,6 +11,7 @@ import {
   DialogActions,
   InventoryDialog,
 } from '#/modules/inventory/components/inventory-dialog'
+import { useBusiness } from '#/modules/business/hooks/use-business'
 import { cn } from '#/lib/utils/cn'
 import { formatCents } from '#/modules/pricing/lib/money'
 import { printSettlementNote } from '#/modules/riders/hooks/use-settlement-note'
@@ -57,6 +58,8 @@ export function SettleDialog({
     delivered,
   )
 
+  const business = useBusiness()
+
   async function submit() {
     if (!preview.valid || preview.deliveredCents === null) {
       return setError(
@@ -82,7 +85,7 @@ export function SettleDialog({
     if (result) {
       onClose()
       // The client wants the nota printed with every settlement.
-      void printSettlementNote(result.data, warehouseName)
+      void printSettlementNote(result.data, warehouseName, business.name)
     }
   }
 

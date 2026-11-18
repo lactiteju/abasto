@@ -1,4 +1,4 @@
-import { workspace } from '#/config/workspace'
+import { useBusiness } from '#/modules/business/hooks/use-business'
 import { ClientError, unwrap } from '#/lib/boundary'
 import { metricsOf } from '#/modules/executive/lib/profitability'
 import {
@@ -56,6 +56,7 @@ export function OwnerReportsPage({
   onSearch,
   userName,
 }: OwnerReportsPageProps) {
+  const business = useBusiness()
   if (!load.allowed) {
     return (
       <p className="text-sm text-ink-muted">
@@ -86,7 +87,7 @@ export function OwnerReportsPage({
       )
     }
     const report = buildPdfReport(choice.kind, dashboard.data, {
-      business: workspace.business.name,
+      business: business.name,
       scope: [
         warehouse
           ? `Almacén ${warehouse.name}`

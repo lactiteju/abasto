@@ -12,7 +12,7 @@ import {
 import { primaryNav, secondaryNav } from '#/config/navigation'
 import type { NavItem } from '#/config/navigation'
 import type { SessionUser } from '#/modules/access/lib/session-user'
-import { workspace } from '#/config/workspace'
+import { useBusiness } from '#/modules/business/hooks/use-business'
 
 function Brand() {
   return (
@@ -25,6 +25,7 @@ function Brand() {
 }
 
 function BusinessCard() {
+  const business = useBusiness()
   return (
     <div className="mb-[34px] flex items-center gap-2.5 rounded-[10px] border border-sidebar-surface-border bg-sidebar-surface px-2.5 py-[13px]">
       <span className="flex h-[33px] w-[29px] shrink-0 items-center justify-center text-[#e0d7e7]">
@@ -32,10 +33,10 @@ function BusinessCard() {
       </span>
       <div>
         <strong className="block text-xs font-semibold text-sidebar-strong">
-          {workspace.business.name}
+          {business.name}
         </strong>
         <small className="mt-1 block text-xs text-sidebar-muted">
-          {workspace.business.location}
+          {business.location}
         </small>
       </div>
     </div>

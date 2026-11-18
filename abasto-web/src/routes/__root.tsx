@@ -17,6 +17,8 @@ import {
   isStorePath,
 } from '#/modules/access/lib/route-access'
 import { getSessionUser } from '#/modules/access/server/session'
+import { workspace } from '#/config/workspace'
+import { getBusinessFn } from '#/modules/business/server/business'
 import { Toaster } from '#/components/ui/sonner'
 import { TooltipProvider } from '#/components/ui/tooltip'
 
@@ -41,9 +43,14 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       }
       throw redirect({ to: access.to })
     }
-    return { user }
+    // Loaded once for the whole app; a failed read must not take the app down.
+    const business = await getBusinessFn().then(
+      (result) => (result.ok ? result.data : { ...workspace.business }),
+      () => ({ ...workspace.business }),
+    )
+    return { user, business }
   },
-  head: () => ({
+  head: ({ match }) => ({
     meta: [
       {
         charSet: 'utf-8',
@@ -57,8 +64,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
       {
         name: 'description',
-        content:
-          'Distribuidora del Sur: etiquetas por lote, promociones con margen, mostrador, caja, reportes de mermas e importación CSV',
+        content: `${match.context.business.name}: etiquetas por lote, promociones con margen, mostrador, caja, reportes de mermas e importación CSV`,
       },
     ],
     links: [

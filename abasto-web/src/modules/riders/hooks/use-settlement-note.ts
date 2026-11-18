@@ -1,6 +1,5 @@
 import { toast } from 'sonner'
 
-import { workspace } from '#/config/workspace'
 import { messageOf } from '#/hooks/use-action-runner'
 import { buildSettlementNote } from '#/modules/riders/lib/settlement-note'
 import type { AssignmentDetail } from '#/modules/riders/services/assignment-reads'
@@ -12,10 +11,11 @@ import type { AssignmentDetail } from '#/modules/riders/services/assignment-read
 export async function printSettlementNote(
   assignment: AssignmentDetail,
   warehouseName: string,
+  businessName: string,
 ) {
   try {
     const note = buildSettlementNote(assignment, {
-      business: workspace.business.name,
+      business: businessName,
       warehouseName,
     })
     const { downloadRemissionNote } =

@@ -9,7 +9,9 @@ export const Route = createFileRoute('/tienda/entrar')({
     search.redirect === undefined
       ? {}
       : { redirect: safeRedirect(search.redirect) },
-  head: () => ({ meta: [{ title: storeTitle('Entrar') }] }),
+  head: ({ match }) => ({
+    meta: [{ title: storeTitle('Entrar', match.context.business.name) }],
+  }),
   component: function StoreLogin() {
     const { redirect } = Route.useSearch()
     // safeRedirect falls back to "/", which is a staff page: use the store.

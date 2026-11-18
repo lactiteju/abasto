@@ -25,7 +25,9 @@ export const Route = createFileRoute('/tienda')({
       : []
     return { warehouses, warehouse, catalog }
   },
-  head: () => ({ meta: [{ title: storeTitle('Tienda') }] }),
+  head: ({ match }) => ({
+    meta: [{ title: storeTitle('Tienda', match.context.business.name) }],
+  }),
   component: function StoreLayout() {
     const { user } = Route.useRouteContext()
     const { warehouse, catalog } = Route.useLoaderData()

@@ -1,4 +1,4 @@
-import { workspace } from '#/config/workspace'
+import { useBusiness } from '#/modules/business/hooks/use-business'
 import { unwrap } from '#/lib/boundary'
 import { metricsOf } from '#/modules/executive/lib/profitability'
 import { executivePeriodOf } from '#/modules/executive/lib/search'
@@ -53,6 +53,7 @@ export function ManagerReportsPage({
   onSearch,
   userName,
 }: ManagerReportsPageProps) {
+  const business = useBusiness()
   if (!load.allowed) {
     return (
       <ReportEmpty>
@@ -75,7 +76,7 @@ export function ManagerReportsPage({
       }),
     )
     const report = buildManagerPdfReport(choice.kind, data, {
-      business: workspace.business.name,
+      business: business.name,
       scope: [
         `Almacén ${data.warehouse.name}`,
         supplier && `Proveedor ${supplier.name}`,

@@ -421,7 +421,7 @@ function assemble({
     ...section,
     title: `${index + 1}. ${section.title}`,
   }))
-  const shared = { kind, footer: `Tejulacteos · ${meta.business}`, sections }
+  const shared = { kind, footer: meta.business, sections }
   if (kind === 'day') {
     return {
       ...shared,

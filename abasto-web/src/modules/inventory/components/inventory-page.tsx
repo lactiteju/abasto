@@ -10,7 +10,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 
-import { workspace } from '#/config/workspace'
+import { useBusiness } from '#/modules/business/hooks/use-business'
 import { PageHeading } from '#/components/page-heading'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { ActionButton } from '#/modules/inventory/components/action-button'
@@ -133,6 +133,7 @@ export function InventoryPage({
   onActionDone,
   onSelectWarehouse,
 }: InventoryPageProps) {
+  const business = useBusiness()
   const [tab, setTab] = useState('Productos')
   const tabListRef = useRef<HTMLDivElement>(null)
   // On phones the strip scrolls sideways: keep the active tab in view.
@@ -230,7 +231,7 @@ export function InventoryPage({
     const document = buildInventoryCountPdf({
       rows: stock,
       packs,
-      business: workspace.business.name,
+      business: business.name,
       warehouseName: selected.name,
       today: overview.today,
       supplierId,

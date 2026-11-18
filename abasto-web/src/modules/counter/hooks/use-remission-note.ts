@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-import { workspace } from '#/config/workspace'
 import { messageOf } from '#/hooks/use-action-runner'
+import { useBusiness } from '#/modules/business/hooks/use-business'
 import { useOrderActions } from '#/modules/counter/hooks/use-order-actions'
 import { buildRemissionNote } from '#/modules/counter/lib/remission-note'
 import type { OrderDetail } from '#/modules/orders/services/order-reads'
@@ -13,6 +13,7 @@ import type { OrderDetail } from '#/modules/orders/services/order-reads'
  */
 export function useRemissionNote(warehouseName: string) {
   const actions = useOrderActions()
+  const business = useBusiness()
   const [pending, setPending] = useState(false)
 
   async function download(orderId: string, loaded?: OrderDetail) {
@@ -20,7 +21,7 @@ export function useRemissionNote(warehouseName: string) {
     try {
       const order = loaded ?? (await actions.detail(orderId))
       const note = buildRemissionNote(order, {
-        business: workspace.business.name,
+        business: business.name,
         warehouseName,
       })
       const { downloadRemissionNote } =

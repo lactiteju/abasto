@@ -1,4 +1,5 @@
 import { PageHeading } from '#/components/page-heading'
+import { BusinessSection } from '#/modules/business/components/business-section'
 import { NewUserDialog } from '#/modules/access/components/new-user-dialog'
 import { UsersSection } from '#/modules/access/components/users-section'
 import type { ManagedUser } from '#/modules/access/services/access'
@@ -15,9 +16,10 @@ export function SettingsPage({ users, warehouses }: SettingsPageProps) {
     <>
       <PageHeading
         title="Configuración"
-        description="Quién opera cada almacén."
+        description="Los datos del negocio y quién opera cada almacén."
         actions={<NewUserDialog />}
       />
+      <BusinessSection />
       <UsersSection users={users} warehouses={warehouses} />
     </>
   )
