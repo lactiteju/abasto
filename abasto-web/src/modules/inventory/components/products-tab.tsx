@@ -1,3 +1,5 @@
+import { FileDownIcon } from 'lucide-react'
+
 import { StatusBadge } from '#/components/status-badge'
 import { SupplierSelect } from '#/components/supplier-select'
 import { ProductImage } from '#/components/product-image'
@@ -42,6 +44,9 @@ type ProductsTabProps = {
   onSupplierChange: (id: string) => void
   onLots: (row: ProductStock) => void
   onMinimum: (productId: string) => void
+  /** Downloads the count sheet; `canExport` is false when nothing has stock. */
+  onExport: () => void
+  canExport: boolean
 }
 
 /** Stock per product in the selected warehouse. */
@@ -60,6 +65,8 @@ export function ProductsTab({
   onSupplierChange,
   onLots,
   onMinimum,
+  onExport,
+  canExport,
 }: ProductsTabProps) {
   return (
     <>
@@ -82,6 +89,14 @@ export function ProductsTab({
           value={supplierId}
           onChange={onSupplierChange}
         />
+        <ActionButton
+          className="min-h-9 px-3 text-xs md:min-h-[43px] md:px-4 md:text-sm"
+          disabled={!canExport}
+          onClick={onExport}
+        >
+          <FileDownIcon size={17} />
+          Exportar PDF
+        </ActionButton>
       </div>
       {rows.length ? (
         <>
@@ -93,9 +108,9 @@ export function ProductsTab({
             onLots={onLots}
             onMinimum={onMinimum}
           />
-          <ListPanel className="max-md:hidden">
+          <ListPanel scroll className="max-md:hidden">
             <ListTable>
-              <ListHead>
+              <ListHead sticky>
                 {[
                   'Producto',
                   'Existencias',

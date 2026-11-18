@@ -10,6 +10,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 
+import { workspace } from '#/config/workspace'
 import { PageHeading } from '#/components/page-heading'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { ActionButton } from '#/modules/inventory/components/action-button'
@@ -30,6 +31,10 @@ import { OrderDialog } from '#/modules/inventory/forms/order-dialog'
 import { ReceptionDialog } from '#/modules/inventory/forms/reception-dialog'
 import { ReturnDialog } from '#/modules/inventory/forms/return-dialog'
 import { ScrapDialog } from '#/modules/inventory/forms/scrap-dialog'
+import {
+  buildInventoryCountPdf,
+  hasCountableStock,
+} from '#/modules/inventory/lib/inventory-count-pdf'
 import { tabBadges } from '#/modules/inventory/lib/tab-badges'
 import type { InventoryAction } from '#/modules/inventory/lib/inventory-action'
 import {
@@ -221,6 +226,19 @@ export function InventoryPage({
     restock: pendings.restock,
     returns: pendings.returns,
   })
+  const exportCountPdf = async () => {
+    const document = buildInventoryCountPdf({
+      rows: stock,
+      packs,
+      business: workspace.business.name,
+      warehouseName: selected.name,
+      today: overview.today,
+      supplierId,
+    })
+    const { downloadPdfReport } =
+      await import('#/modules/reports/lib/pdf-render')
+    await downloadPdfReport(document)
+  }
   const supplierNames = new Map(
     suppliers.map((supplier) => [supplier.id, supplier.name]),
   )
@@ -316,6 +334,8 @@ export function InventoryPage({
               setDialog({ kind: 'lots', productId: row.productId })
             }
             onMinimum={(productId) => setDialog({ kind: 'minimum', productId })}
+            onExport={exportCountPdf}
+            canExport={hasCountableStock(stock, supplierId)}
           />
         </TabsContent>
         <TabsContent value="Por recibir" className="text-base">

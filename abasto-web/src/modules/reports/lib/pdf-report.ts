@@ -39,11 +39,12 @@ export type PdfSection = {
   empty?: string
   /** Small print under the table. */
   note?: string
+  /** Minimum row height in points, for tables filled in by hand. */
+  minRowHeight?: number
 }
 
-/** A report ready to draw: plain strings only, so the renderer decides nothing. */
-export type PdfReport = {
-  kind: PdfKind
+/** A document ready to draw: plain strings only, so the renderer decides nothing. */
+export type PdfDocument = {
   heading: string
   /** Lines under the heading: scope, comparison, who generated it. */
   lines: Array<string>
@@ -51,6 +52,9 @@ export type PdfReport = {
   footer: string
   sections: Array<PdfSection>
 }
+
+/** A period report: a document tied to the day, week or month it covers. */
+export type PdfReport = PdfDocument & { kind: PdfKind }
 
 export type PdfMeta = {
   business: string

@@ -1,4 +1,4 @@
-import type { PdfReport } from '#/modules/reports/lib/pdf-report'
+import type { PdfDocument } from '#/modules/reports/lib/pdf-report'
 
 const margin = 48
 const ink = '#2a1d33'
@@ -27,7 +27,7 @@ const numeric = /^[-+$\d]/
  * Draws the report as a letter-size PDF of plain tables and saves it. The PDF
  * libraries load here, on the first download, not with the page.
  */
-export async function downloadPdfReport(report: PdfReport) {
+export async function downloadPdfReport(report: PdfDocument) {
   const [{ jsPDF }, { default: autoTable }] = await Promise.all([
     import('jspdf'),
     import('jspdf-autotable'),
@@ -84,6 +84,7 @@ export async function downloadPdfReport(report: PdfReport) {
         cellPadding: 4,
         lineColor: rule,
         lineWidth: { bottom: 0.5 },
+        minCellHeight: section.minRowHeight ?? 0,
       },
       headStyles: { fillColor: headFill, textColor: muted, fontStyle: 'bold' },
       footStyles: { fontStyle: 'bold' },

@@ -10,12 +10,22 @@ import {
 } from '#/components/ui/table'
 import { cn } from '#/lib/utils/cn'
 
-/** White bordered card hosting a list table (`.list-panel`). */
-export function ListPanel({ className, ...props }: ComponentProps<'div'>) {
+/**
+ * White bordered card hosting a list table (`.list-panel`). With `scroll` it
+ * gets a viewport-relative height and scrolls both ways itself, so the
+ * horizontal scrollbar stays at the bottom of the card, not the page.
+ */
+export function ListPanel({
+  className,
+  scroll = false,
+  ...props
+}: ComponentProps<'div'> & { scroll?: boolean }) {
   return (
     <div
       className={cn(
         'overflow-hidden rounded-[12px] border border-[#eee7e0] bg-white',
+        scroll &&
+          'max-h-[max(24rem,calc(100dvh-16rem))] overflow-auto [&>[data-slot=table-container]]:overflow-visible',
         className,
       )}
       {...props}
@@ -23,9 +33,22 @@ export function ListPanel({ className, ...props }: ComponentProps<'div'>) {
   )
 }
 
-export function ListHead({ children }: { children: Array<string> }) {
+/** Keeps the header in view while the body scrolls (needs a scrolling panel). */
+export function ListHead({
+  children,
+  sticky = false,
+}: {
+  children: Array<string>
+  sticky?: boolean
+}) {
   return (
-    <TableHeader>
+    <TableHeader
+      className={
+        sticky
+          ? 'sticky top-0 z-10 bg-[#fcfaf7] shadow-[inset_0_-1px_0_#eee7e0]'
+          : undefined
+      }
+    >
       <TableRow>
         {children.map((label, index) => (
           <TableHead
