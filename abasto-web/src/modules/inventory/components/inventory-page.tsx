@@ -3,6 +3,7 @@ import {
   LayoutGridIcon,
   ClockIcon,
   PlusIcon,
+  PrinterIcon,
   RotateCcwIcon,
   ScaleIcon,
   TruckIcon,
@@ -254,10 +255,11 @@ export function InventoryPage({
             <div className="grid w-full grid-cols-2 gap-2.5 md:contents">
               <ActionButton
                 className={headingButton}
-                onClick={() => setDialog({ kind: 'count' })}
+                disabled={!hasCountableStock(stock, supplierId)}
+                onClick={exportCountPdf}
               >
-                <ClipboardCheckIcon size={18} />
-                Hacer conteo
+                <PrinterIcon size={18} />
+                Imprimir inventario
               </ActionButton>
               <ActionButton
                 tone="primary"
@@ -335,8 +337,6 @@ export function InventoryPage({
               setDialog({ kind: 'lots', productId: row.productId })
             }
             onMinimum={(productId) => setDialog({ kind: 'minimum', productId })}
-            onExport={exportCountPdf}
-            canExport={hasCountableStock(stock, supplierId)}
           />
         </TabsContent>
         <TabsContent value="Por recibir" className="text-base">

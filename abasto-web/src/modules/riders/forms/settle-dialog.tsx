@@ -18,6 +18,7 @@ import { printSettlementNote } from '#/modules/riders/hooks/use-settlement-note'
 import { useRiderActions } from '#/modules/riders/hooks/use-rider-actions'
 import { describeQuantity } from '#/modules/riders/lib/box-quantities'
 import { differenceLabel } from '#/modules/riders/lib/assignment-view'
+import { deliveredText } from '#/modules/riders/lib/delivered-prefill'
 import { exactAmountText } from '#/modules/riders/lib/exact-amount'
 import { previewSettlement } from '#/modules/riders/lib/settlement-preview'
 import type { AssignmentDetail } from '#/modules/riders/services/assignment-reads'
@@ -42,21 +43,24 @@ export function SettleDialog({
 }: SettleDialogProps) {
   const actions = useRiderActions()
   const [typed, setTyped] = useState<Typed>({})
-  const [delivered, setDelivered] = useState('')
+  // null until the user types: the field then follows the expected amount.
+  const [typedDelivered, setDelivered] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
   const leftoverOf = (lineId: string) =>
     typed[lineId] ?? { boxes: '', units: '' }
-  const preview = previewSettlement(
-    assignment.lines.map((line) => ({
-      assignedQuantity: line.assignedQuantity,
-      boxFactor: line.boxFactor,
-      allocations: line.allocations,
-      ...leftoverOf(line.id),
-    })),
-    delivered,
+  const previewLines = assignment.lines.map((line) => ({
+    assignedQuantity: line.assignedQuantity,
+    boxFactor: line.boxFactor,
+    allocations: line.allocations,
+    ...leftoverOf(line.id),
+  }))
+  const delivered = deliveredText(
+    typedDelivered,
+    previewSettlement(previewLines, '').expectedCents,
   )
+  const preview = previewSettlement(previewLines, delivered)
 
   const business = useBusiness()
 
