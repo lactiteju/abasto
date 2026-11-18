@@ -22,3 +22,14 @@ One work-unit commit per spec on `dev` (each reviewable alone, tests with code).
 - [x] T3 — S4+S5 — worker — inventory table scroll + count PDF (4a4ab3e).
 - [x] T4 — S3 — worker — persisted, owner-editable business name (migration 0039_business_settings; not applied to the real DB yet).
 - [x] T5 — full suite 1537 pass / 2 skip / 0 fail, tsc + eslint clean; commits on dev.
+
+## Round 2 (client retest on dev, Nov 18 afternoon)
+
+- **S6 — «Entregado» prefilled with the expected amount.** Client: "el monto por default de lo esperado ... en automático ... (obviamente editable) porque prácticamente todos los días se tiene que cerrar al 100%". Decision: the settle dialog's delivered-cash field starts with the expected amount (from the live preview) and stays editable; while the user hasn't typed it, it follows the expected amount as leftovers change.
+- **S7 — «Nota PDF» fails in Mostrador ("Ocurrió un error. Intenta de nuevo.") and the rider nota did not print.** Regression on dev. Find the root cause (shared renderer `counter/lib/remission-note-pdf.ts`, `use-remission-note.ts`, `useBusiness`, server fetch), fix it, and cover it with a test that exercises the real jsPDF path. Both notas must print original + copia on one letter sheet ("dos notitas en una misma hoja").
+- **S8 — Dialogs still close on an outside click.** Client retested: "Este detalle aún está" (the «Productos de …» dialog in Repartos). Find which dialogs bypass `DialogContent`'s `keepOpenOnOutside` (or why it doesn't take effect) and fix app-wide.
+- **S9 — «Hacer conteo» becomes «Imprimir inventario».** Client: "Cambia esto .. y solo manda a imprimir el inventario .. se ocupa todos los días impreso. Ya nosotros contamos sobre ese inventario". Decision: the inventory header button «Hacer conteo» is replaced by «Imprimir inventario», which downloads the count PDF (S5) for the selected warehouse and current supplier filter; drop the duplicate toolbar «Exportar PDF». The Conteos tab stays.
+
+- [ ] T6 — S7+S8 — worker — diagnose and fix the nota PDF regression and the outside-click dialogs.
+- [ ] T7 — S6+S9 — worker — prefilled delivered amount; «Imprimir inventario» button.
+- [ ] T8 — full suite, commits on dev, push.

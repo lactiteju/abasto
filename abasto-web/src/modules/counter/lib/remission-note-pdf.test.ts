@@ -64,4 +64,18 @@ describe('remission note PDF', () => {
     expect(pdf).toContain('Faltante')
     expect(doc.getNumberOfPages()).toBe(1)
   })
+
+  test('Spanish text, long names and the stamp render without throwing', async () => {
+    const doc = await renderRemissionNote({
+      ...noteWith(0),
+      customer: 'Niño Ñandú Peña',
+      rows: [
+        ['1', 'Leche Ñandú ' + 'deslactosada '.repeat(12), '$1.00', '$1.00'],
+        ['2', 'Yogur día áéíóú ü', '$2.00', '$4.00'],
+        ['3', 'Emoji 🥛 y “comillas” – raya', '$3.00', '$9.00'],
+      ],
+    })
+    expect(doc.getNumberOfPages()).toBe(1)
+    expect(doc.output()).toContain('PAGADO')
+  })
 })

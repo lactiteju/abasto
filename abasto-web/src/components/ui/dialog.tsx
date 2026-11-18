@@ -24,6 +24,15 @@ function keepOpenOnOutside<TEvent extends Event>(
   }
 }
 
+/**
+ * Spread on a hand-drawn `DialogPrimitive.Content` so it keeps the same
+ * outside-click behavior as `DialogContent`.
+ */
+const keepOpenOnOutsideProps = {
+  onPointerDownOutside: keepOpenOnOutside(),
+  onInteractOutside: keepOpenOnOutside(),
+}
+
 function Dialog({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
@@ -210,4 +219,5 @@ export {
   DialogTitle,
   DialogTrigger,
   keepOpenOnOutside,
+  keepOpenOnOutsideProps,
 }

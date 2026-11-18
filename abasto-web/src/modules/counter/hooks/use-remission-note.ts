@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 
-import { messageOf } from '#/hooks/use-action-runner'
 import { useBusiness } from '#/modules/business/hooks/use-business'
 import { useOrderActions } from '#/modules/counter/hooks/use-order-actions'
+import { noteFailureMessage } from '#/modules/counter/lib/note-failure'
 import { buildRemissionNote } from '#/modules/counter/lib/remission-note'
 import type { OrderDetail } from '#/modules/orders/services/order-reads'
 
@@ -28,7 +28,8 @@ export function useRemissionNote(warehouseName: string) {
         await import('#/modules/counter/lib/remission-note-pdf')
       await downloadRemissionNote(note)
     } catch (failure) {
-      toast.error(messageOf(failure))
+      console.error('Nota PDF', failure)
+      toast.error(noteFailureMessage(failure))
     } finally {
       setPending(false)
     }

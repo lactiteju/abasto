@@ -1,6 +1,6 @@
 import { toast } from 'sonner'
 
-import { messageOf } from '#/hooks/use-action-runner'
+import { noteFailureMessage } from '#/modules/counter/lib/note-failure'
 import { buildSettlementNote } from '#/modules/riders/lib/settlement-note'
 import type { AssignmentDetail } from '#/modules/riders/services/assignment-reads'
 
@@ -22,6 +22,7 @@ export async function printSettlementNote(
       await import('#/modules/counter/lib/remission-note-pdf')
     await downloadRemissionNote(note)
   } catch (failure) {
-    toast.error(messageOf(failure))
+    console.error('Nota PDF', failure)
+    toast.error(noteFailureMessage(failure))
   }
 }

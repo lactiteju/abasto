@@ -9,6 +9,7 @@ import {
   DialogOverlay,
   DialogPortal,
   DialogTitle,
+  keepOpenOnOutsideProps,
 } from '#/components/ui/dialog'
 import {
   MaximizeButton,
@@ -42,6 +43,7 @@ export function CatalogModal({
       <DialogPortal>
         <DialogOverlay className="bg-[#30114b66] supports-backdrop-filter:backdrop-blur-[3px]" />
         <DialogPrimitive.Content
+          {...keepOpenOnOutsideProps}
           data-slot="dialog-content"
           data-maximized={maximized || undefined}
           className={cn(
