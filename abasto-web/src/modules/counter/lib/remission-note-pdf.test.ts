@@ -48,4 +48,20 @@ describe('remission note PDF', () => {
     expect(doc.getNumberOfPages()).toBe(2)
     expect(pageTexts(doc)).toHaveLength(2)
   })
+
+  test('prints the party label and the summary lines under the total', async () => {
+    const doc = await renderRemissionNote({
+      ...noteWith(2),
+      partyLabel: 'Repartidor',
+      extraTotals: [
+        ['Entregado', '$100.00'],
+        ['Faltante', '$5.00'],
+      ],
+    })
+    const pdf = doc.output()
+    expect(pdf).toContain('Repartidor')
+    expect(pdf).toContain('Entregado')
+    expect(pdf).toContain('Faltante')
+    expect(doc.getNumberOfPages()).toBe(1)
+  })
 })

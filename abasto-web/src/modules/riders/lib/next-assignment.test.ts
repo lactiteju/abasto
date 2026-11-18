@@ -24,7 +24,11 @@ describe('rowActionsFor', () => {
       'settle',
       'cancel',
     ])
-    expect(rowActionsFor('Liquidada')).toEqual(['view', 'prepareNext'])
+    expect(rowActionsFor('Liquidada')).toEqual([
+      'view',
+      'printNote',
+      'prepareNext',
+    ])
     // A cancelled one still shows what it carried.
     expect(rowActionsFor('Cancelada')).toEqual(['view'])
   })

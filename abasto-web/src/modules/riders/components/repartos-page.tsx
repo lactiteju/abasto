@@ -7,6 +7,7 @@ import { WarningInline } from '#/modules/inventory/components/info-blocks'
 import { hasWarehouseChoice } from '#/modules/warehouses/lib/warehouse-choice'
 import { AssignmentProductsDialog } from '#/modules/riders/components/assignment-products-dialog'
 import { AssignmentsSection } from '#/modules/riders/components/assignments-section'
+import { printSettlementNote } from '#/modules/riders/hooks/use-settlement-note'
 import { RidersCatalog } from '#/modules/riders/components/riders-catalog'
 import { AssignDialog } from '#/modules/riders/forms/assign-dialog'
 import { CancelAssignmentDialog } from '#/modules/riders/forms/cancel-assignment-dialog'
@@ -148,6 +149,9 @@ export function RepartosPage({
         blockedReason={blockedReason}
         onNew={() => setOpen({ kind: 'assign' })}
         onAction={(action, assignment) => {
+          if (action === 'printNote') {
+            return void printSettlementNote(assignment, selected.name)
+          }
           if (action === 'prepareNext') {
             const block = prepareNextBlock(
               assignment.riderId,
@@ -227,6 +231,7 @@ export function RepartosPage({
         <SettleDialog
           key={open.assignment.id}
           assignment={open.assignment}
+          warehouseName={selected.name}
           cashOpen={overview.cash !== null}
           onClose={close}
         />

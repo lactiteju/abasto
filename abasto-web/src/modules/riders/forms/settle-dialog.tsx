@@ -13,6 +13,7 @@ import {
 } from '#/modules/inventory/components/inventory-dialog'
 import { cn } from '#/lib/utils/cn'
 import { formatCents } from '#/modules/pricing/lib/money'
+import { printSettlementNote } from '#/modules/riders/hooks/use-settlement-note'
 import { useRiderActions } from '#/modules/riders/hooks/use-rider-actions'
 import { describeQuantity } from '#/modules/riders/lib/box-quantities'
 import { differenceLabel } from '#/modules/riders/lib/assignment-view'
@@ -24,6 +25,8 @@ type SettleDialogProps = {
   assignment: AssignmentDetail
   /** Settling posts the sale in the open cash session. */
   cashOpen: boolean
+  /** Shown on the printed nota. */
+  warehouseName: string
   onClose: () => void
 }
 
@@ -33,6 +36,7 @@ type Typed = Record<string, { boxes: string; units: string }>
 export function SettleDialog({
   assignment,
   cashOpen,
+  warehouseName,
   onClose,
 }: SettleDialogProps) {
   const actions = useRiderActions()
@@ -75,7 +79,11 @@ export function SettleDialog({
       }),
     })
     setPending(false)
-    if (result) onClose()
+    if (result) {
+      onClose()
+      // The client wants the nota printed with every settlement.
+      void printSettlementNote(result.data, warehouseName)
+    }
   }
 
   return (

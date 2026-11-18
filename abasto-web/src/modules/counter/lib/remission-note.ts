@@ -13,12 +13,17 @@ export type RemissionNote = {
   title: string
   folio: string
   date: string
+  /** Who the note is for: the customer, or the rider of a settlement. */
   customer: string
+  /** Label of `customer` on the note; «Cliente» when omitted. */
+  partyLabel?: string
   warehouse: string
   head: Array<string>
   rows: Array<Array<string>>
   totalLabel: string
   total: string
+  /** Summary lines under the total, as [label, amount]. */
+  extraTotals?: Array<[string, string]>
   paidMark: string
   signature: string
   filename: string
@@ -28,6 +33,9 @@ const dateFormat = new Intl.DateTimeFormat('es-MX', {
   dateStyle: 'long',
   timeZone: 'America/Mexico_City',
 })
+
+/** «18 de noviembre de 2026», in the business time zone. */
+export const formatNoteDate = (date: Date) => dateFormat.format(date)
 
 /** Builds the «Nota de remisión» of a picked-up order: no layout, only text. */
 export function buildRemissionNote(

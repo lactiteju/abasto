@@ -75,7 +75,7 @@ function drawCopy(
   const info = [
     ['Folio', note.folio],
     ['Fecha', note.date],
-    ['Cliente', note.customer],
+    [note.partyLabel ?? 'Cliente', note.customer],
     ['Almacén', note.warehouse],
   ]
   const perColumn = Math.ceil(info.length / infoColumns)
@@ -84,7 +84,7 @@ function drawCopy(
     const x = margin + Math.floor(index / perColumn) * columnWidth
     const rowY = y + (index % perColumn) * 14
     doc.setFont('helvetica', 'bold').text(`${label}:`, x, rowY)
-    doc.setFont('helvetica', 'normal').text(pdfText(value), x + 52, rowY)
+    doc.setFont('helvetica', 'normal').text(pdfText(value), x + 62, rowY)
   }
   y += perColumn * 14
   doc.setDrawColor(rule).line(margin, y, width - margin, y)
@@ -107,7 +107,7 @@ function drawCopy(
     },
     headStyles: { fillColor: headFill, textColor: muted, fontStyle: 'bold' },
     columnStyles: {
-      0: { cellWidth: 50 },
+      0: { cellWidth: 56 },
       2: { halign: 'right', cellWidth: 80 },
       3: { halign: 'right', cellWidth: 80 },
     },
@@ -123,11 +123,18 @@ function drawCopy(
   doc.text(`${note.totalLabel}  ${pdfText(note.total)}`, width - margin, y, {
     align: 'right',
   })
+  for (const [label, amount] of note.extraTotals ?? []) {
+    y += 14
+    doc.setFont('helvetica', 'normal').setFontSize(10)
+    doc.text(`${pdfText(label)}  ${pdfText(amount)}`, width - margin, y, {
+      align: 'right',
+    })
+  }
   y += stampGap
-  doc.setFontSize(22).setTextColor(paid)
+  doc.setFont('helvetica', 'bold').setFontSize(22).setTextColor(paid)
   doc.text(note.paidMark, margin, y)
   doc.setDrawColor(paid).setLineWidth(1.5)
-  doc.rect(margin - 8, y - 24, 110, 34)
+  doc.rect(margin - 8, y - 24, doc.getTextWidth(note.paidMark) + 16, 34)
 
   y += signatureBeside ? 0 : 90
   doc.setDrawColor(ink).setLineWidth(0.5)

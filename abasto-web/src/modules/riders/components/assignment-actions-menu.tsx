@@ -3,6 +3,7 @@ import {
   ListIcon,
   PencilIcon,
   PackagePlusIcon,
+  PrinterIcon,
   RotateCcwIcon,
   XIcon,
 } from 'lucide-react'
@@ -30,6 +31,7 @@ const icons: Record<RowAction, ReactNode> = {
   edit: <PencilIcon className={iconClass} />,
   settle: <CheckCheckIcon className={iconClass} />,
   cancel: <XIcon className="size-4" />,
+  printNote: <PrinterIcon className={iconClass} />,
   prepareNext: <RotateCcwIcon className={iconClass} />,
 }
 
