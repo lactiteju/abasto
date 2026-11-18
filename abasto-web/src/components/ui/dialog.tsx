@@ -11,6 +11,19 @@ import {
 import { escapeClosesOpenList } from '#/lib/open-list-escape'
 import { XIcon } from 'lucide-react'
 
+/**
+ * Outside clicks/focus never dismiss a dialog or sheet (Esc and the close
+ * button still do). A caller handler runs first and may still decide.
+ */
+function keepOpenOnOutside<E extends Event>(
+  handler?: (event: E) => void,
+): (event: E) => void {
+  return (event) => {
+    handler?.(event)
+    event.preventDefault()
+  }
+}
+
 function Dialog({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
@@ -58,6 +71,8 @@ function DialogContent({
   maximizable = true,
   maximizeButtonClassName,
   onEscapeKeyDown,
+  onPointerDownOutside,
+  onInteractOutside,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
@@ -84,6 +99,8 @@ function DialogContent({
           if (escapeClosesOpenList(event.target)) event.preventDefault()
           onEscapeKeyDown?.(event)
         }}
+        onPointerDownOutside={keepOpenOnOutside(onPointerDownOutside)}
+        onInteractOutside={keepOpenOnOutside(onInteractOutside)}
         {...props}
       >
         {children}
@@ -192,4 +209,5 @@ export {
   DialogPortal,
   DialogTitle,
   DialogTrigger,
+  keepOpenOnOutside,
 }
