@@ -163,7 +163,11 @@ export function CashPanel({
       )}
       {/* The close dialog stays up after the close (the drawer is then gone) to show the result. */}
       {dialog === 'close' && (
-        <CashCloseDialog warehouseId={warehouseId} onClose={close} />
+        <CashCloseDialog
+          warehouseId={warehouseId}
+          expectedCents={summary?.expectedCents}
+          onClose={close}
+        />
       )}
       {dialog === 'history' && (
         <CashHistoryDialog warehouseId={warehouseId} onClose={close} />

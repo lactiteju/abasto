@@ -25,12 +25,15 @@ const differenceClass = {
 
 type CashCloseDialogProps = {
   warehouseId: string
+  /** Cash the drawer should hold now; shown as a reference, never prefilled. */
+  expectedCents?: number
   onClose: () => void
 }
 
-/** Blind close: the expected cash is revealed only after the count is recorded. */
+/** Close: the expected cash is shown for reference; the count is typed by hand. */
 export function CashCloseDialog({
   warehouseId,
+  expectedCents,
   onClose,
 }: CashCloseDialogProps) {
   const actions = useCashActions(warehouseId)
@@ -88,9 +91,17 @@ export function CashCloseDialog({
   return (
     <CounterDialog
       title="Cerrar caja"
-      description="Cuenta el efectivo y escribe cuánto hay. Al cerrar verás lo que esperaba el sistema y la diferencia."
+      description="Cuenta el efectivo y escribe cuánto hay. Al cerrar verás la diferencia."
       onClose={onClose}
     >
+      {expectedCents !== undefined && (
+        <p className="flex items-baseline justify-between gap-3 rounded-lg bg-[#f7f2ee] px-3 py-2 text-sm text-[#5f4a51]">
+          Efectivo esperado
+          <strong className="text-base font-[650] text-[#3b2251] tabular-nums">
+            {formatCents(expectedCents)}
+          </strong>
+        </p>
+      )}
       <Field label="Efectivo contado (pesos)">
         <FieldInput
           inputMode="decimal"
