@@ -15,9 +15,9 @@ import { XIcon } from 'lucide-react'
  * Outside clicks/focus never dismiss a dialog or sheet (Esc and the close
  * button still do). A caller handler runs first and may still decide.
  */
-function keepOpenOnOutside<E extends Event>(
-  handler?: (event: E) => void,
-): (event: E) => void {
+function keepOpenOnOutside<TEvent extends Event>(
+  handler?: (event: TEvent) => void,
+): (event: TEvent) => void {
   return (event) => {
     handler?.(event)
     event.preventDefault()
