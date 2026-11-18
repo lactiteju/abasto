@@ -23,6 +23,11 @@ import {
   defaultSupplierId,
 } from '#/modules/riders/lib/assign-supplier-filter'
 import { draftLines, summarizeLoad } from '#/modules/riders/lib/load-picker'
+import {
+  prefillFromSettlement,
+  prefillNotices,
+} from '#/modules/riders/lib/next-assignment'
+import type { SettledLine } from '#/modules/riders/lib/next-assignment'
 import type { LoadQuantities } from '#/modules/riders/lib/load-picker'
 import type { AssignmentDetail } from '#/modules/riders/services/assignment-reads'
 import type { Rider } from '#/modules/riders/services/riders'
@@ -40,7 +45,17 @@ type AssignDialogProps = {
   notices?: ReadonlyArray<string>
   /** «Recargar»: add to this «En ruta» assignment instead of creating one. */
   recharge?: AssignmentDetail
+  /**
+   * By rider id, what came back from their last settled assignment: picking
+   * the rider starts the form with it (until the user edits a quantity).
+   */
+  leftovers?: Readonly<Record<string, ReadonlyArray<SettledLine>>>
 }
+
+const toQuantities = (lines: ReadonlyArray<AssignDraftLine>): LoadQuantities =>
+  Object.fromEntries(
+    lines.map(({ productId, boxes, units }) => [productId, { boxes, units }]),
+  )
 
 /** Hands product to a rider: pick the rider, then boxes and/or units per product. */
 export function AssignDialog({
@@ -51,29 +66,53 @@ export function AssignDialog({
   initialLines,
   notices = [],
   recharge,
+  leftovers,
 }: AssignDialogProps) {
   const actions = useRiderActions()
   const [riderId, setRiderId] = useState(
     recharge?.riderId ?? initialRiderId ?? riders.at(0)?.id ?? '',
   )
-  const [quantities, setQuantities] = useState<LoadQuantities>(() =>
-    Object.fromEntries(
-      (initialLines ?? []).map(({ productId, boxes, units }) => [
-        productId,
-        { boxes, units },
-      ]),
-    ),
+  const leftoverPrefill = (id: string) => {
+    const back = leftovers?.[id]
+    return back?.length ? prefillFromSettlement(back, products) : null
+  }
+  // Explicit lines win; otherwise the chosen rider's leftover, if any.
+  const [prefill, setPrefill] = useState(() =>
+    initialLines || recharge ? null : leftoverPrefill(riderId),
   )
+  const startLines = initialLines ?? prefill?.lines ?? []
+  const [quantities, setQuantities] = useState<LoadQuantities>(() =>
+    toQuantities(startLines),
+  )
+  /** Once a quantity is typed, picking another rider no longer replaces it. */
+  const [edited, setEdited] = useState(false)
+  const shownNotices = [
+    ...(prefill?.lines.length
+      ? ['Se precargó lo que le sobró de su último reparto. Puedes cambiarlo.']
+      : []),
+    ...(prefill ? prefillNotices(prefill) : []),
+    ...notices,
+  ]
+
+  function chooseRider(id: string) {
+    setRiderId(id)
+    if (edited || initialLines) return
+    const next = leftoverPrefill(id)
+    setPrefill(next)
+    setQuantities(toQuantities(next?.lines ?? []))
+  }
+
   // LALA first, unless a prefilled product would be hidden by it.
   const initialSupplierId = useMemo(() => {
     const lala = defaultSupplierId(assignableSuppliers(products))
-    const hidden = (initialLines ?? []).some(
+    const hidden = startLines.some(
       (line) =>
         products.find((p) => p.productId === line.productId)?.supplierId !==
         lala,
     )
     return hidden ? '' : lala
-  }, [products, initialLines])
+    // Only the opening lines choose the starting filter.
+  }, [products])
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
   const lines = draftLines(quantities)
@@ -119,7 +158,7 @@ export function AssignDialog({
             <Field label="Repartidor">
               <FieldSelect
                 value={riderId}
-                onChange={(event) => setRiderId(event.target.value)}
+                onChange={(event) => chooseRider(event.target.value)}
               >
                 <option value="">Elige al repartidor</option>
                 {riders.map((rider) => (
@@ -131,7 +170,7 @@ export function AssignDialog({
             </Field>
           </div>
         )}
-        {notices.map((notice) => (
+        {shownNotices.map((notice) => (
           <WarningInline key={notice} className="my-0">
             {notice}
           </WarningInline>
@@ -145,7 +184,8 @@ export function AssignDialog({
         allProducts={products}
         quantities={quantities}
         initialSupplierId={initialSupplierId}
-        onChange={(productId, change) =>
+        onChange={(productId, change) => {
+          setEdited(true)
           setQuantities((current) => ({
             ...current,
             [productId]: {
@@ -154,7 +194,7 @@ export function AssignDialog({
               ...change,
             },
           }))
-        }
+        }}
       />
       <form
         className="grid gap-3 border-t border-[#f4eee8] pt-4"

@@ -6,6 +6,7 @@ import { getRidersOverview } from '#/modules/riders/server/riders-overview'
 import {
   assignRider,
   cancelAssignment,
+  settleAssignment,
 } from '#/modules/riders/services/assignments'
 import { receive, setupRiders } from '#/modules/riders/services/testing'
 
@@ -88,5 +89,36 @@ describe('getRidersOverview', () => {
     const view = await getRidersOverview(fx.staffA)
     expect(view.assignments.map((a) => a.status)).toEqual(['Cancelada'])
     expect(view.products[0].available).toBe(30)
+  })
+
+  test('gives each free rider what came back from their last settled assignment', async () => {
+    const fx = await setupRiders()
+    await receive(fx, { productId: fx.milkBox.id, quantity: 100 })
+    const detail = await assignRider(fx.staffA, {
+      riderId: fx.rider.id,
+      lines: [{ productId: fx.milkBox.id, boxes: 2, units: 6 }],
+    })
+    expect((await getRidersOverview(fx.managerA)).leftovers).toEqual({})
+    await settleAssignment(fx.staffA, {
+      assignmentId: detail.id,
+      deliveredCents: 0,
+      lines: [{ lineId: detail.lines[0].id, boxes: 2, units: 6 }],
+    })
+    const view = await getRidersOverview(fx.managerA)
+    expect(view.leftovers).toEqual({
+      [fx.rider.id]: [
+        {
+          productId: fx.milkBox.id,
+          productName: detail.lines[0].productName,
+          leftoverQuantity: 30,
+        },
+      ],
+    })
+    // Once the next assignment is made, the leftover is no longer offered.
+    await assignRider(fx.staffA, {
+      riderId: fx.rider.id,
+      lines: [{ productId: fx.milkBox.id, boxes: 0, units: 1 }],
+    })
+    expect((await getRidersOverview(fx.managerA)).leftovers).toEqual({})
   })
 })

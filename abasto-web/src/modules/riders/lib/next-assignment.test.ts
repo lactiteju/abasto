@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'bun:test'
+import type { AssignmentStatus } from '#/modules/riders/db/schema'
 import {
+  lastSettledByRider,
   prefillFromSettlement,
+  prefillNotices,
   prepareNextBlock,
   rowActionsFor,
 } from '#/modules/riders/lib/next-assignment'
@@ -85,5 +88,44 @@ describe('prepareNextBlock', () => {
   test('free active rider is fine; inactive is not', () => {
     expect(prepareNextBlock('r1', new Set(), true)).toBeNull()
     expect(prepareNextBlock('r1', new Set(), false)).not.toBeNull()
+  })
+})
+
+describe('lastSettledByRider', () => {
+  const row = (id: string, riderId: string, status: AssignmentStatus) => ({
+    id,
+    riderId,
+    status,
+  })
+
+  test("takes each rider's newest assignment when it is settled, skipping cancelled ones", () => {
+    const newestFirst = [
+      row('a2', 'a', 'Liquidada'),
+      row('b2', 'b', 'Cancelada'),
+      row('c2', 'c', 'En ruta'),
+      row('a1', 'a', 'Liquidada'),
+      row('b1', 'b', 'Liquidada'),
+      row('c1', 'c', 'Liquidada'),
+    ]
+    expect(lastSettledByRider(newestFirst)).toEqual(
+      new Map([
+        ['a', 'a2'],
+        ['b', 'b1'],
+      ]),
+    )
+  })
+})
+
+describe('prefillNotices', () => {
+  test('names what was capped and what was left out', () => {
+    expect(
+      prefillNotices({ lines: [], capped: ['Leche'], unavailable: ['Crema'] }),
+    ).toEqual([
+      'Se ajustó a lo disponible: Leche.',
+      'Sin existencia ahora, no se incluyó: Crema.',
+    ])
+    expect(prefillNotices({ lines: [], capped: [], unavailable: [] })).toEqual(
+      [],
+    )
   })
 })

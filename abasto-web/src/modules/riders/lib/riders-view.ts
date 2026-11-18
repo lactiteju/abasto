@@ -1,5 +1,6 @@
 import type { CashSessionDetail } from '#/modules/cash/services/cash-sessions'
 import type { AssignableProduct } from '#/modules/riders/lib/assign-draft'
+import type { SettledLine } from '#/modules/riders/lib/next-assignment'
 import type { AssignmentDetail } from '#/modules/riders/services/assignment-reads'
 import type { Rider } from '#/modules/riders/services/riders'
 
@@ -21,4 +22,10 @@ export type RidersOverview = {
   assignments: Array<AssignmentDetail>
   /** Products with stock to hand out, with the box factor used. */
   products: Array<AssignableProduct>
+  /**
+   * By rider id, what came back from their last settled assignment (only
+   * riders whose newest assignment is settled with something back). «Nuevo
+   * reparto» starts with it.
+   */
+  leftovers: Record<string, Array<SettledLine>>
 }

@@ -15,6 +15,7 @@ import { RiderDialog } from '#/modules/riders/forms/rider-dialog'
 import { SettleDialog } from '#/modules/riders/forms/settle-dialog'
 import {
   prefillFromSettlement,
+  prefillNotices,
   prepareNextBlock,
 } from '#/modules/riders/lib/next-assignment'
 import { newAssignmentBlock } from '#/modules/riders/lib/assign-availability'
@@ -50,16 +51,7 @@ function NextAssignmentDialog({
   onClose: () => void
 }) {
   const prefill = prefillFromSettlement(assignment.lines, products)
-  const notices = [
-    ...(prefill.capped.length
-      ? [`Se ajustó a lo disponible: ${prefill.capped.join(', ')}.`]
-      : []),
-    ...(prefill.unavailable.length
-      ? [
-          `Sin existencia ahora, no se incluyó: ${prefill.unavailable.join(', ')}.`,
-        ]
-      : []),
-  ]
+  const notices = prefillNotices(prefill)
   return (
     <AssignDialog
       key={assignment.id}
@@ -194,6 +186,7 @@ export function RepartosPage({
         <AssignDialog
           riders={freeRiders}
           products={overview.products}
+          leftovers={overview.leftovers}
           onClose={close}
         />
       )}

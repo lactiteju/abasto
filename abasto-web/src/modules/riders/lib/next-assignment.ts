@@ -26,7 +26,7 @@ export const rowActionLabels: Record<RowAction, string> = {
   prepareNext: 'Preparar siguiente reparto',
 }
 
-type SettledLine = {
+export type SettledLine = {
   productId: string
   productName: string
   /** Base units that came back; null until settled. */
@@ -70,6 +70,42 @@ export function prefillFromSettlement(
     })
   }
   return { lines, capped, unavailable }
+}
+
+/** Heads-up for what a prefill capped or left out. */
+export function prefillNotices(prefill: NextAssignmentPrefill): Array<string> {
+  return [
+    ...(prefill.capped.length
+      ? [`Se ajustó a lo disponible: ${prefill.capped.join(', ')}.`]
+      : []),
+    ...(prefill.unavailable.length
+      ? [
+          `Sin existencia ahora, no se incluyó: ${prefill.unavailable.join(', ')}.`,
+        ]
+      : []),
+  ]
+}
+
+/**
+ * Per rider, the assignment whose leftover starts their next one: their newest
+ * assignment, ignoring cancelled ones, when it is settled. `newestFirst` must
+ * be sorted newest first.
+ */
+export function lastSettledByRider(
+  newestFirst: ReadonlyArray<{
+    id: string
+    riderId: string
+    status: AssignmentStatus
+  }>,
+): Map<string, string> {
+  const decided = new Set<string>()
+  const settled = new Map<string, string>()
+  for (const { id, riderId, status } of newestFirst) {
+    if (decided.has(riderId) || status === 'Cancelada') continue
+    decided.add(riderId)
+    if (status === 'Liquidada') settled.set(riderId, id)
+  }
+  return settled
 }
 
 /** Why the next assignment cannot be prepared for the rider, or null. */

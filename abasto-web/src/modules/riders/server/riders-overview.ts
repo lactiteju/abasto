@@ -3,6 +3,8 @@ import type { Actor } from '#/modules/access/lib/policy'
 import { getOpenCashSession } from '#/modules/cash/services/cash-sessions'
 import { now as clockNow, businessDate } from '#/modules/orders/services/clock'
 import { currentAssignments } from '#/modules/riders/lib/assignment-view'
+import { lastSettledByRider } from '#/modules/riders/lib/next-assignment'
+import type { SettledLine } from '#/modules/riders/lib/next-assignment'
 import { listAssignableProducts } from '#/modules/riders/services/assignable-products'
 import {
   getAssignment,
@@ -33,6 +35,7 @@ export async function getRidersOverview(
       cash: null,
       assignments: [],
       products: [],
+      leftovers: {},
     }
   }
   const [riders, cash, summaries, products] = await Promise.all([
@@ -46,6 +49,20 @@ export async function getRidersOverview(
       getAssignment(actor, id),
     ),
   )
+  const leftovers: Record<string, Array<SettledLine>> = {}
+  for (const [riderId, assignmentId] of lastSettledByRider(summaries)) {
+    const settled =
+      assignments.find(({ id }) => id === assignmentId) ??
+      (await getAssignment(actor, assignmentId))
+    const back = settled.lines
+      .filter((line) => (line.leftoverQuantity ?? 0) > 0)
+      .map(({ productId, productName, leftoverQuantity }) => ({
+        productId,
+        productName,
+        leftoverQuantity,
+      }))
+    if (back.length) leftovers[riderId] = back
+  }
   return {
     warehouses,
     selectedId: selected.id,
@@ -55,5 +72,6 @@ export async function getRidersOverview(
     cash,
     assignments,
     products,
+    leftovers,
   }
 }
