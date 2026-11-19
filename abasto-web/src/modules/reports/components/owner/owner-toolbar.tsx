@@ -16,7 +16,7 @@ const presets: Array<{ value: PeriodPreset; label: string }> = [
   { value: 'custom', label: 'Personalizado' },
 ]
 
-const control =
+export const toolbarControl =
   'min-h-[42px] rounded-[9px] border border-input bg-white px-3 py-1.5 text-[13px] text-ink-row'
 
 type OwnerToolbarProps = {
@@ -90,7 +90,7 @@ export function OwnerToolbar({
             onChange={(event) =>
               onChange({ almacen: event.target.value || undefined })
             }
-            className={control}
+            className={toolbarControl}
           >
             {!managed && <option value="">Todos los almacenes</option>}
             {warehouses.map((item) => (
@@ -106,7 +106,7 @@ export function OwnerToolbar({
           onChange={(event) =>
             onChange({ proveedor: event.target.value || undefined })
           }
-          className={control}
+          className={toolbarControl}
         >
           <option value="">Todos los proveedores</option>
           {suppliers.map((item) => (
@@ -127,7 +127,7 @@ export function OwnerToolbar({
               onChange={(event) =>
                 onChange({ desde: event.target.value || undefined })
               }
-              className={control}
+              className={toolbarControl}
             />
           </label>
           <label className="flex items-center gap-2">
@@ -138,7 +138,7 @@ export function OwnerToolbar({
               onChange={(event) =>
                 onChange({ hasta: event.target.value || undefined })
               }
-              className={control}
+              className={toolbarControl}
             />
           </label>
         </div>

@@ -14,6 +14,8 @@ import {
 import { OwnerToolbar } from '#/modules/reports/components/owner/owner-toolbar'
 import { PeriodResult } from '#/modules/reports/components/owner/period-result'
 import { ReportEmpty } from '#/modules/reports/components/report-empty'
+import { ReportViewSwitch } from '#/modules/reports/components/report-view-switch'
+import type { MonthlySearch } from '#/modules/reports/lib/monthly-search'
 import { downloadText, salesCsv } from '#/modules/reports/lib/csv'
 import type { ManagerReportsSearch } from '#/modules/reports/lib/manager-search'
 import {
@@ -38,7 +40,7 @@ type ManagerReportsPageProps = {
   load: ManagerReportsLoad
   search: ManagerReportsSearch
   /** Merges a change into the URL. */
-  onSearch: (patch: Partial<ManagerReportsSearch>) => void
+  onSearch: (patch: Partial<ManagerReportsSearch & MonthlySearch>) => void
   /** Who is signed in; printed on the PDF reports. */
   userName?: string
 }
@@ -96,6 +98,7 @@ export function ManagerReportsPage({
   }
   return (
     <>
+      <ReportViewSwitch value="tablero" onChange={onSearch} />
       <OwnerToolbar
         title={
           dashboard ? `Reportes · ${dashboard.warehouse.name}` : 'Reportes'

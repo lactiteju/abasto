@@ -18,6 +18,8 @@ import { PeriodResult } from '#/modules/reports/components/owner/period-result'
 import { SalesBreakdown } from '#/modules/reports/components/owner/sales-breakdown'
 import { DownloadMenu } from '#/modules/reports/components/owner/download-menu'
 import { ReportEmpty } from '#/modules/reports/components/report-empty'
+import { ReportViewSwitch } from '#/modules/reports/components/report-view-switch'
+import type { MonthlySearch } from '#/modules/reports/lib/monthly-search'
 import { downloadText, salesCsv } from '#/modules/reports/lib/csv'
 import {
   dailySeries,
@@ -41,7 +43,7 @@ import type { PeriodPreset } from '#/modules/reports/types/reports'
 type OwnerReportsPageProps = {
   load: OwnerReportsLoad
   search: ExecutiveSearch
-  onSearch: (patch: Partial<ExecutiveSearch>) => void
+  onSearch: (patch: Partial<ExecutiveSearch & MonthlySearch>) => void
   /** Who is signed in; printed on the PDF reports. */
   userName?: string
 }
@@ -109,6 +111,7 @@ export function OwnerReportsPage({
   }
   return (
     <>
+      <ReportViewSwitch value="tablero" onChange={onSearch} />
       <OwnerToolbar
         preset={preset}
         search={search}

@@ -125,25 +125,36 @@ describe('labels', () => {
 describe('buildDailySheet', () => {
   const sheet = buildDailySheet(results)
 
-  test('groups days into Monday-based weeks with subtotal rows', () => {
+  test('groups days into Sunday-to-Saturday weeks, like the client calendar', () => {
     const weeks = sheet.rows.filter((r) => r.kind === 'week')
     expect(weeks.map((w) => w.label)).toEqual([
-      'Semana 1 · 02 al 08 nov',
-      'Semana 2 · 09 al 11 nov',
+      'Semana 1 · 02 al 07 nov',
+      'Semana 2 · 08 al 11 nov',
     ])
     expect(sheet.rows.map((r) => r.kind)).toEqual([
-      ...Array<'day' | 'week'>(7).fill('day'),
+      ...Array<'day' | 'week'>(6).fill('day'),
       'week',
-      ...Array<'day' | 'week'>(3).fill('day'),
+      ...Array<'day' | 'week'>(4).fill('day'),
       'week',
     ])
   })
 
+  test('a Sunday on the 1st opens the first week instead of standing alone', () => {
+    const sheetOf = buildDailySheet({
+      ...results,
+      days: ['2026-11-01', ...days],
+      byDay: [day('2026-11-01', 400, 200), ...byDay],
+    })
+    const weeks = sheetOf.rows.filter((r) => r.kind === 'week')
+    expect(weeks[0].label).toBe('Semana 1 · 01 al 07 nov')
+    expect(weeks).toHaveLength(2)
+  })
+
   test('week and month totals equal the sums of the days', () => {
     const [w1, w2] = sheet.rows.filter((r) => r.kind === 'week')
-    expect(w1.revenueCents).toBe(20892570 + 10000000 + 5000 + 100 + 300)
-    expect(w1.marginCents).toBe(5000000 + 2000000 + 1000 + 50 + 100)
-    expect(w2.revenueCents).toBe(200)
+    expect(w1.revenueCents).toBe(20892570 + 10000000 + 5000 + 100)
+    expect(w1.marginCents).toBe(5000000 + 2000000 + 1000 + 50)
+    expect(w2.revenueCents).toBe(300 + 200)
     expect(sheet.total.revenueCents).toBe(w1.revenueCents! + w2.revenueCents!)
     expect(sheet.total.marginCents).toBe(w1.marginCents! + w2.marginCents!)
     expect(sheet.total.label).toBe('Total de ganancia')
@@ -157,6 +168,20 @@ describe('buildDailySheet', () => {
     expect(rows[8].revenueCents).toBeNull()
     expect(rows[9].empty).toBe(true)
     expect(rows[0].label).toBe('lunes, 2 de noviembre de 2026')
+  })
+
+  test('a week whose days are all after `through` has an empty subtotal', () => {
+    const early = buildDailySheet({
+      ...results,
+      through: '2026-11-07',
+    })
+    const [w1, w2] = early.rows.filter((r) => r.kind === 'week')
+    expect(w1.empty).toBe(false)
+    expect(w1.revenueCents).toBe(20892570 + 10000000 + 5000 + 100)
+    expect(w2.empty).toBe(true)
+    expect(w2.revenueCents).toBeNull()
+    expect(w2.marginCents).toBeNull()
+    expect(early.total.revenueCents).toBe(w1.revenueCents!)
   })
 
   test('Sundays appear only when present in days', () => {

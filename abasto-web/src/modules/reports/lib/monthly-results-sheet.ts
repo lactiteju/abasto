@@ -66,10 +66,14 @@ export const weekLabel = (index: number, from: string, to: string) => {
     : `Semana ${index} · ${dayHeader(from)} al ${dayHeader(to)} ${short}`
 }
 
-/** Monday-based week key: the Monday (YYYY-MM-DD) of the day's week. */
+/**
+ * Week key: the Sunday (YYYY-MM-DD) that opens the day's week. Weeks run
+ * Sunday to Saturday like the client's calendar, so a Sunday with sales joins
+ * the days that follow it instead of closing the previous week.
+ */
 const weekStart = (day: string) => {
   const date = atNoon(day)
-  const back = (date.getUTCDay() + 6) % 7
+  const back = date.getUTCDay()
   date.setUTCDate(date.getUTCDate() - back)
   return date.toISOString().slice(0, 10)
 }
@@ -113,11 +117,13 @@ export function buildDailySheet(results: MonthlyResults): DailySheet {
     week += 1
     let weekRevenue = 0
     let weekMargin = 0
+    let weekHasData = false
     for (let at = index; at <= end; at += 1) {
       const date = results.days[at]
       const data = results.byDay[at]
       const empty = date > results.through
       if (!empty) {
+        weekHasData = true
         weekRevenue += data.revenueCents
         weekMargin += data.marginCents
       }
@@ -133,9 +139,10 @@ export function buildDailySheet(results: MonthlyResults): DailySheet {
     rows.push({
       kind: 'week',
       label: weekLabel(week, results.days[index], results.days[end]),
-      revenueCents: weekRevenue,
-      marginCents: weekMargin,
-      empty: false,
+      // A week that has not started has no subtotal, not a $0.00 one.
+      revenueCents: weekHasData ? weekRevenue : null,
+      marginCents: weekHasData ? weekMargin : null,
+      empty: !weekHasData,
     })
     revenue += weekRevenue
     margin += weekMargin

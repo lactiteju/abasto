@@ -13,13 +13,18 @@ Client asked (WhatsApp, file `RESULTADOS NOVIEMBRE 2026.xlsx`, sheet "VENTA Y GA
 
 ## Tasks
 
-- T1 [S1, S2, S3] writer — service, server function and tests. Status: pending.
-- T2 [S5] writer — Excel and PDF builders and tests. Status: pending.
-- T3 [S4] — UI. Status: pending.
-- T4 [S6] — checks, visual review, commits on `dev`. Status: pending.
+- T1 [S1, S2, S3] writer — service, server function and tests. Status: done. Commit: 34225e0
+- T2 [S5] writer — Excel and PDF builders and tests. Status: done. Commit: 3c3d016
+- T3 [S4] writer — UI. Status: done. Commit: this UI commit.
+- T4 [S6] writer + inline — checks and visual review. Status: done.
 
 ## Log
 
 - L1 (user): "me gustaria que sacara un excel o pdf con el formato que te di solo que un poco mas bonito, y en la UI un dashboard con graficas"
 - L2 (user): chose "Producto primero" on the impeccable decision page; approved reset of impeccable build state, cajas conversion, warehouse filter, hiding Sundays and the exceljs dependency ("si").
 - L3 (decision): Sundays hidden unless they had sales, so month totals never lose money.
+- L4 (evidence): owner and manager captured at 1440 and 390 (`abasto-web/.impeccable/review/`); fixed in one batch: daily total hidden under the panel scroll, expanded day grid clipped, faint dash contrast, uppercase section eyebrow. No page overflow from this view at 390px. Detector: 8 advisory off-ramp font sizes shared with sibling owner components, left as is.
+- L5 (fix): the 1st of November 2026 is a Sunday with sales and stood alone as "Semana 1", giving six weeks. Weeks now run Sunday to Saturday like the client's calendar (RED 3 failing sheet tests, then GREEN).
+- L6 (evidence): `bun test` 1618 pass, 2 skip, 0 fail; tsc clean; eslint and prettier clean on touched files; `bun run build` OK, exceljs in its own lazy chunk.
+- L7 (slice): service, export and UI shipped as three commits; the UI commit is over the ~400-line slice because the view cannot ship half-built. The feature closes here; no more code goes on this slice.
+- L8 (open): switching back to Tablero keeps `mes` in the URL; a manager asking for a warehouse that is not theirs sees the generic reports message.
