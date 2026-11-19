@@ -33,6 +33,8 @@ export async function setupReports() {
     quantity: number
     customerId?: string
     warehouseId?: string
+    /** Presentation sold; the milk piece by default. */
+    presentationId?: string
   }) => {
     useClock(() => new Date(input.at))
     const inB = input.warehouseId === fx.b.id
@@ -40,7 +42,12 @@ export async function setupReports() {
     const order = await createOrder(actor, {
       warehouseId: input.warehouseId ?? fx.a.id,
       customerId: input.customerId ?? fx.customer.id,
-      lines: [{ presentationId: fx.pieceId, quantity: input.quantity }],
+      lines: [
+        {
+          presentationId: input.presentationId ?? fx.pieceId,
+          quantity: input.quantity,
+        },
+      ],
     })
     return pickupOrder(actor, order.id, payCash)
   }
