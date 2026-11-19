@@ -3,6 +3,7 @@ import { ArrowRightIcon } from 'lucide-react'
 
 import { EXPIRY_WARNING_DAYS } from '#/modules/inventory/lib/stock-metrics'
 import { isAlertMetric } from '#/modules/warehouses/lib/card-metrics'
+import { RenameWarehouseDialog } from '#/modules/warehouses/components/rename-warehouse-dialog'
 import type { WarehouseWithMetrics } from '#/modules/warehouses/server/warehouses'
 
 type MetricProps = {
@@ -43,8 +44,11 @@ function Metric({ label, value, warehouseId, alert = false }: MetricProps) {
 
 export function WarehouseCard({
   warehouse,
+  canRename = false,
 }: {
   warehouse: WarehouseWithMetrics
+  /** Owner only: offers "Cambiar nombre". */
+  canRename?: boolean
 }) {
   const { metrics } = warehouse
   return (
@@ -83,13 +87,16 @@ export function WarehouseCard({
             : `${metrics.expiredLots} lotes ya vencieron.`}
         </p>
       )}
-      <Link
-        to="/inventario"
-        search={{ almacen: warehouse.id }}
-        className="mt-4 inline-flex items-center gap-[7px] text-sm font-[650] text-ink-link hover:underline"
-      >
-        Ver inventario <ArrowRightIcon size={15} />
-      </Link>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-x-3">
+        <Link
+          to="/inventario"
+          search={{ almacen: warehouse.id }}
+          className="inline-flex items-center gap-[7px] text-sm font-[650] text-ink-link hover:underline"
+        >
+          Ver inventario <ArrowRightIcon size={15} />
+        </Link>
+        {canRename ? <RenameWarehouseDialog warehouse={warehouse} /> : null}
+      </div>
     </article>
   )
 }

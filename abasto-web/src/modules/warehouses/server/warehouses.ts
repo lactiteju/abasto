@@ -9,10 +9,12 @@ import { getWarehouseStock } from '#/modules/inventory/services/stock-reads'
 import {
   createWarehouse,
   listWarehouses,
+  renameWarehouse,
 } from '#/modules/warehouses/services/warehouses'
 import type { Warehouse } from '#/modules/warehouses/services/warehouses'
 
 const createInput = z.object({ name: z.string() })
+const renameInput = z.object({ id: z.string().min(1), name: z.string() })
 
 export type WarehouseWithMetrics = Warehouse & { metrics: WarehouseMetrics }
 
@@ -42,5 +44,13 @@ export const createWarehouseFn = createServerFn({ method: 'POST' })
   .handler(({ data }) =>
     runWithActor((actor) =>
       createWarehouse(actor, parseInput(createInput, data)),
+    ),
+  )
+
+export const renameWarehouseFn = createServerFn({ method: 'POST' })
+  .validator((data: { id: string; name: string }) => data)
+  .handler(({ data }) =>
+    runWithActor((actor) =>
+      renameWarehouse(actor, parseInput(renameInput, data)),
     ),
   )

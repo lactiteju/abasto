@@ -5,9 +5,15 @@ import { can } from '#/modules/access/lib/policy'
 import {
   cancelInput,
   dispatchInput,
+  ownerTransferInput,
   receiveInput,
+  transferableBoxesInput,
   transfersOverviewInput,
 } from '#/modules/transfers/lib/transfer-inputs'
+import {
+  listTransferableBoxes,
+  transferBoxes,
+} from '#/modules/transfers/services/owner-transfer'
 import { cancelTransfer } from '#/modules/transfers/services/transfer-cancel'
 import { dispatchTransfer } from '#/modules/transfers/services/transfer-dispatch'
 import {
@@ -52,5 +58,26 @@ export const cancelTransferFn = createServerFn({ method: 'POST' })
   .handler(({ data }) =>
     runWithActor((actor) =>
       cancelTransfer(actor, parseInput(cancelInput, data)),
+    ),
+  )
+
+/** Products with whole boxes available in a warehouse (owner only). */
+export const transferableBoxesFn = createServerFn({ method: 'GET' })
+  .validator((data: { warehouseId: string }) => data)
+  .handler(({ data }) =>
+    runWithActor((actor) =>
+      listTransferableBoxes(
+        actor,
+        parseInput(transferableBoxesInput, data).warehouseId,
+      ),
+    ),
+  )
+
+/** Owner-only immediate transfer in whole boxes. */
+export const transferBoxesFn = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => data)
+  .handler(({ data }) =>
+    runWithActor((actor) =>
+      transferBoxes(actor, parseInput(ownerTransferInput, data)),
     ),
   )

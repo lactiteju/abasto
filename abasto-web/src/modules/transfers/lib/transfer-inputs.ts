@@ -18,3 +18,12 @@ export const receiveInput = z.object({
 })
 
 export const cancelInput = z.object({ transferId: id })
+
+export const ownerTransferInput = z.object({
+  fromWarehouseId: id,
+  toWarehouseId: id,
+  productId: id,
+  boxes: z.number(),
+})
+
+export const transferableBoxesInput = z.object({ warehouseId: id })

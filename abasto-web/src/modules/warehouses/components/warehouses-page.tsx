@@ -1,4 +1,5 @@
 import { PageHeading } from '#/components/page-heading'
+import { OwnerTransferDialog } from '#/modules/transfers/forms/owner-transfer-dialog'
 import { CreateWarehouseDialog } from '#/modules/warehouses/components/create-warehouse-dialog'
 import { WarehouseCard } from '#/modules/warehouses/components/warehouse-card'
 import type { WarehouseWithMetrics } from '#/modules/warehouses/server/warehouses'
@@ -14,12 +15,25 @@ export function WarehousesPage({ warehouses, canCreate }: WarehousesPageProps) {
       <PageHeading
         title="Almacenes"
         description="Cada existencia tiene un lugar."
-        actions={canCreate ? <CreateWarehouseDialog /> : undefined}
+        actions={
+          canCreate ? (
+            <>
+              {warehouses.length >= 2 ? (
+                <OwnerTransferDialog warehouses={warehouses} />
+              ) : null}
+              <CreateWarehouseDialog />
+            </>
+          ) : undefined
+        }
       />
       {warehouses.length ? (
         <div className="grid grid-cols-1 gap-[15px] tablet:grid-cols-3 wide:gap-[22px]">
           {warehouses.map((warehouse) => (
-            <WarehouseCard key={warehouse.id} warehouse={warehouse} />
+            <WarehouseCard
+              key={warehouse.id}
+              warehouse={warehouse}
+              canRename={canCreate}
+            />
           ))}
         </div>
       ) : (

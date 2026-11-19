@@ -13,12 +13,9 @@ const maxNameLength = 80
 
 const columns = { id: warehouses.id, name: warehouses.name }
 
-export async function createWarehouse(
-  actor: Actor,
-  input: { name: string },
-): Promise<Warehouse> {
-  authorize(actor, 'warehouses.manage')
-  const name = input.name.trim()
+/** Trimmed name, or the Spanish refusal for a blank or too long one. */
+function validName(raw: string) {
+  const name = raw.trim()
   if (!name) throw new AppError('invalid', 'Escribe el nombre del almacén.')
   if (name.length > maxNameLength) {
     throw new AppError(
@@ -26,6 +23,18 @@ export async function createWarehouse(
       `El nombre del almacén no puede tener más de ${maxNameLength} caracteres.`,
     )
   }
+  return name
+}
+
+const duplicateName = () =>
+  new AppError('conflict', 'Ya existe un almacén con ese nombre.')
+
+export async function createWarehouse(
+  actor: Actor,
+  input: { name: string },
+): Promise<Warehouse> {
+  authorize(actor, 'warehouses.manage')
+  const name = validName(input.name)
   try {
     const [created] = await db
       .insert(warehouses)
@@ -33,9 +42,31 @@ export async function createWarehouse(
       .returning(columns)
     return created
   } catch (error) {
-    if (isUniqueViolation(error)) {
-      throw new AppError('conflict', 'Ya existe un almacén con ese nombre.')
+    if (isUniqueViolation(error)) throw duplicateName()
+    throw error
+  }
+}
+
+export async function renameWarehouse(
+  actor: Actor,
+  input: { id: string; name: string },
+): Promise<Warehouse> {
+  authorize(actor, 'warehouses.manage')
+  const name = validName(input.name)
+  try {
+    const renamed = (
+      await db
+        .update(warehouses)
+        .set({ name })
+        .where(eq(warehouses.id, input.id))
+        .returning(columns)
+    ).at(0)
+    if (!renamed) {
+      throw new AppError('not_found', 'No encontramos ese almacén.')
     }
+    return renamed
+  } catch (error) {
+    if (isUniqueViolation(error)) throw duplicateName()
     throw error
   }
 }

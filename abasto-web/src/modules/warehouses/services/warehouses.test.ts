@@ -14,6 +14,7 @@ import { warehouses } from '#/modules/warehouses/db/schema'
 import {
   createWarehouse,
   listWarehouses,
+  renameWarehouse,
 } from '#/modules/warehouses/services/warehouses'
 
 async function setup() {
@@ -123,5 +124,72 @@ describe('listWarehouses', () => {
     ])
     expect(await listWarehouses(staff)).toEqual([norte])
     expect([centro.id, sur.id]).not.toContain(norte.id)
+  })
+})
+
+describe('renameWarehouse', () => {
+  test('the owner renames a warehouse with a trimmed name', async () => {
+    const { owner } = await setup()
+    const created = await createWarehouse(owner, { name: 'Centro' })
+    const renamed = await renameWarehouse(owner, {
+      id: created.id,
+      name: '  Tejupilco ',
+    })
+    expect(renamed).toEqual({ id: created.id, name: 'Tejupilco' })
+    expect(await listWarehouses(owner)).toEqual([renamed])
+  })
+
+  test('rejects a name another warehouse has, regardless of case', async () => {
+    const { owner } = await setup()
+    await createWarehouse(owner, { name: 'Centro' })
+    const other = await createWarehouse(owner, { name: 'Norte' })
+    const error = await errorOf(() =>
+      renameWarehouse(owner, { id: other.id, name: ' CENTRO ' }),
+    )
+    expect(error.code).toBe('conflict')
+    expect(error.message).toBe('Ya existe un almacén con ese nombre.')
+  })
+
+  test('rejects a blank or too long name', async () => {
+    const { owner } = await setup()
+    const created = await createWarehouse(owner, { name: 'Centro' })
+    const blank = await errorOf(() =>
+      renameWarehouse(owner, { id: created.id, name: '   ' }),
+    )
+    expect(blank.code).toBe('invalid')
+    const long = await errorOf(() =>
+      renameWarehouse(owner, { id: created.id, name: 'x'.repeat(81) }),
+    )
+    expect(long.code).toBe('invalid')
+    expect((await listWarehouses(owner))[0]?.name).toBe('Centro')
+  })
+
+  test('reports an unknown warehouse', async () => {
+    const { owner } = await setup()
+    const error = await errorOf(() =>
+      renameWarehouse(owner, {
+        id: '00000000-0000-0000-0000-000000000000',
+        name: 'Nuevo',
+      }),
+    )
+    expect(error.code).toBe('not_found')
+  })
+
+  test('a manager cannot rename', async () => {
+    const { owner, staffUser } = await setup()
+    const created = await createWarehouse(owner, { name: 'Centro' })
+    await assignWarehouse(owner, {
+      userId: staffUser.id,
+      warehouseId: created.id,
+      role: 'manager',
+    })
+    const manager = await requireActor(
+      await signIn('cajero@abasto.test', 'secreto-456'),
+    )
+    const error = await errorOf(() =>
+      renameWarehouse(manager, { id: created.id, name: 'Otro' }),
+    )
+    expect(error.code).toBe('forbidden')
+    expect((await listWarehouses(owner))[0]?.name).toBe('Centro')
   })
 })
