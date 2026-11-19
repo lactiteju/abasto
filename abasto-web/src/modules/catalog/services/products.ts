@@ -307,8 +307,7 @@ export async function updateProduct(
 export type PieceCost = Pick<ProductFields, (typeof amountKeys)[number]>
 
 /**
- * Saves only the supplier amounts of a product; the owner or any warehouse
- * manager may. Keys other than the three amounts are ignored, and the result
+ * Saves only the supplier amounts of a product; only the owner may. Keys other than the three amounts are ignored, and the result
  * is checked merged with the stored amounts.
  */
 export async function savePieceCost(

@@ -11,8 +11,8 @@ export type Actor = {
 }
 
 /**
- * Company-wide permissions: owner only, except `catalog.manage` (products,
- * presentations, suppliers, import), which any warehouse manager also holds.
+ * Company-wide permissions, all owner only. `catalog.manage` covers products,
+ * presentations, suppliers, CSV import, archive and warehouse prices.
  * `stock.adjust` (add or remove stock from a lot), `riders.manage` (the
  * riders catalog: create, rename, activate) and `business.manage` (business
  * name and location) are strictly owner only.
@@ -32,7 +32,7 @@ export type WarehousePermission =
 
 /**
  * Supplier cost per piece, discount and promotion of a product: global data
- * the owner or any warehouse manager may correct (e.g. while ordering).
+ * only the owner may change. Managers still read it.
  */
 export type CostPermission = 'catalog.cost'
 
@@ -63,9 +63,6 @@ export function can(
 ): boolean {
   if (actor.role === 'owner') return true
   if (actor.role === 'customer') return false
-  if (permission === 'catalog.cost' || permission === 'catalog.manage') {
-    return [...actor.assignments.values()].includes('manager')
-  }
   if (!isWarehousePermission(permission) || !warehouseId) return false
   const role = actor.assignments.get(warehouseId)
   return role ? warehouseGrants[role].has(permission) : false

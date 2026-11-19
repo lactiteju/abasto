@@ -5,7 +5,14 @@ export type PriceTableRow = PriceRow & { supplierId: string | null }
 
 /** Prices of the selected warehouse plus the warehouses the actor may switch to. */
 export type PricingOverview = {
-  warehouses: Array<{ id: string; name: string; canManage: boolean }>
+  warehouses: Array<{
+    id: string
+    name: string
+    /** Manager of this warehouse (or owner): may read supplier costs. */
+    canManage: boolean
+    /** Owner only: may change sale prices and supplier costs. */
+    canEditPrices: boolean
+  }>
   selectedId: string | null
   rows: Array<PriceRow>
 }

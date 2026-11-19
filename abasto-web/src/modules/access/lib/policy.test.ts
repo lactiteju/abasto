@@ -23,14 +23,14 @@ describe('warehouse roles', () => {
 })
 
 describe('catalog.cost', () => {
-  test('the owner and any warehouse manager may edit supplier costs', () => {
+  test('only the owner may edit supplier costs', () => {
     expect(can(actor('owner'), 'catalog.cost')).toBe(true)
     expect(can(actor('staff', { [north]: 'manager' }), 'catalog.cost')).toBe(
-      true,
+      false,
     )
     expect(
       can(actor('staff', { [south]: 'manager' }), 'catalog.cost', north),
-    ).toBe(true)
+    ).toBe(false)
   })
 
   test('staff without a warehouse and customers may not', () => {
@@ -40,18 +40,13 @@ describe('catalog.cost', () => {
       false,
     )
   })
-
-  test('it grants no other company-wide permission', () => {
-    const manager = actor('staff', { [north]: 'manager' })
-    expect(can(manager, 'warehouses.manage')).toBe(false)
-  })
 })
 
 describe('catalog.manage', () => {
-  test('the owner and any warehouse manager may manage the catalog', () => {
+  test('only the owner may manage the catalog and prices', () => {
     expect(can(actor('owner'), 'catalog.manage')).toBe(true)
     expect(can(actor('staff', { [north]: 'manager' }), 'catalog.manage')).toBe(
-      true,
+      false,
     )
   })
 

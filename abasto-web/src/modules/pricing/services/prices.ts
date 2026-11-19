@@ -67,12 +67,12 @@ export async function requirePresentations(tx: Tx, ids: Array<string>) {
   }
 }
 
-/** Sets the own price of presentations in one warehouse; every change is a new history row. */
+/** Sets the own price of presentations in one warehouse (owner only); every change is a new history row. */
 export async function setPrices(
   actor: Actor,
   input: { warehouseId: string; prices: Array<PriceInput>; reason?: string },
 ) {
-  authorize(actor, 'warehouse.manage', input.warehouseId)
+  authorize(actor, 'catalog.manage')
   validatePrices(input.prices)
   await db.transaction(async (tx) => {
     await requireWarehouse(tx, input.warehouseId)

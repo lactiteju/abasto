@@ -15,7 +15,7 @@ import {
 import { setPrices } from '#/modules/pricing/services/prices'
 import { listWarehouses } from '#/modules/warehouses/services/warehouses'
 
-/** Warehouses the actor sees, flagged with whether they may change prices there. */
+/** Warehouses the actor sees, flagged with whether they may read costs (`canManage`) and change prices (`canEditPrices`, owner only). */
 export const pricingOverviewFn = createServerFn({ method: 'GET' })
   .validator((data: { warehouseId?: string }) => data)
   .handler(({ data }) => {
@@ -27,6 +27,7 @@ export const pricingOverviewFn = createServerFn({ method: 'GET' })
       const warehouses = visible.map((warehouse) => ({
         ...warehouse,
         canManage: can(actor, 'warehouse.manage', warehouse.id),
+        canEditPrices: can(actor, 'catalog.manage'),
       }))
       const selected =
         warehouses.find(({ id }) => id === warehouseId) ?? warehouses.at(0)

@@ -45,7 +45,7 @@ import { hasWarehouseChoice } from '#/modules/warehouses/lib/warehouse-choice'
 type CatalogPageProps = {
   products: Array<CatalogProduct>
   suppliers: Array<CatalogSupplier>
-  /** `catalog.manage`: the owner and warehouse managers; other staff browse. */
+  /** `catalog.manage`: owner only; managers and other staff browse. */
   canManage: boolean
   pricing: PricingOverview
   onSelectWarehouse: (id: string) => void
@@ -96,8 +96,8 @@ export function CatalogPage({
     ({ id }) => id === pricing.selectedId,
   )
   const managed = pricing.warehouses.filter((option) => option.canManage)
-  // Supplier cost is global; the owner and any warehouse manager edit it.
-  const canEditCost = canManage || managed.length > 0
+  // Supplier cost is global: the owner and any warehouse manager read it, only the owner edits it.
+  const canSeeCost = canManage || managed.length > 0
   const priceRows = useMemo(
     () => joinProducts(pricing.rows, products),
     [pricing.rows, products],
@@ -112,34 +112,28 @@ export function CatalogPage({
         title="Catálogo"
         description="Los productos que ofreces a tus clientes y su precio en cada almacén."
         actions={
-          canManage || managed.length > 0 ? (
+          canManage ? (
             <>
-              {canManage && (
-                <>
-                  <CatalogButton
-                    className={headerButton}
-                    onClick={() => setSuppliersOpen(true)}
-                  >
-                    Proveedores
-                  </CatalogButton>
-                  <CatalogButton
-                    className={headerButton}
-                    onClick={() => setImportOpen(true)}
-                  >
-                    Importar CSV
-                  </CatalogButton>
-                </>
-              )}
-              {canManage && (
-                <CatalogButton
-                  tone="primary"
-                  className={`${headerButton} gap-0 md:gap-[9px]`}
-                  onClick={() => setEditor({})}
-                >
-                  <PlusIcon className="size-[18px]" />
-                  Nuevo producto
-                </CatalogButton>
-              )}
+              <CatalogButton
+                className={headerButton}
+                onClick={() => setSuppliersOpen(true)}
+              >
+                Proveedores
+              </CatalogButton>
+              <CatalogButton
+                className={headerButton}
+                onClick={() => setImportOpen(true)}
+              >
+                Importar CSV
+              </CatalogButton>
+              <CatalogButton
+                tone="primary"
+                className={`${headerButton} gap-0 md:gap-[9px]`}
+                onClick={() => setEditor({})}
+              >
+                <PlusIcon className="size-[18px]" />
+                Nuevo producto
+              </CatalogButton>
             </>
           ) : undefined
         }
@@ -183,9 +177,9 @@ export function CatalogPage({
           groups={priceGroups}
           supplierNames={supplierNames}
           showPrices={Boolean(warehouse)}
-          costOf={canEditCost ? netCostPerPieceOf : undefined}
+          costOf={canSeeCost ? netCostPerPieceOf : undefined}
           canManage={canManage}
-          onPrices={setPricesId}
+          onPrices={canManage ? setPricesId : undefined}
           onEdit={(productId) => setEditor({ productId })}
           onRestore={(productId) => void actions.restoreProduct(productId)}
         />
@@ -207,13 +201,15 @@ export function CatalogPage({
                     group={priceGroups.get(product.id)}
                     warehouseName={warehouse.name}
                     netCostPerPiece={
-                      canEditCost ? netCostPerPieceOf(product) : undefined
+                      canSeeCost ? netCostPerPieceOf(product) : undefined
                     }
                   />
                 ) : undefined
               }
               onPrices={
-                warehouse && priceGroups.get(product.id)?.rows.length
+                canManage &&
+                warehouse &&
+                priceGroups.get(product.id)?.rows.length
                   ? () => setPricesId(product.id)
                   : undefined
               }
@@ -224,14 +220,14 @@ export function CatalogPage({
         </div>
       )}
       {visible.length === 0 && <CatalogEmpty />}
-      {warehouse && openPrices && openProduct && (
+      {canManage && warehouse && openPrices && openProduct && (
         <ProductPricesDialog
           key={`${warehouse.id}:${openPrices.productId}`}
           product={openProduct}
           group={openPrices}
           warehouseName={warehouse.name}
-          canEdit={warehouse.canManage}
-          canEditCost={canEditCost}
+          canEdit={warehouse.canEditPrices}
+          canEditCost={canManage}
           onSaveCost={(patch) => actions.savePieceCost(openProduct.id, patch)}
           onSavePrices={pricingActions.savePrices}
           onHistory={(row) => {

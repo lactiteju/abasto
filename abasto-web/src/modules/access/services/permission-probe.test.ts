@@ -29,6 +29,7 @@ import {
 } from '#/modules/catalog/services/suppliers'
 import {
   createProduct,
+  savePieceCost,
   updateProduct,
 } from '#/modules/catalog/services/products'
 import {
@@ -48,6 +49,8 @@ import {
   getMarginReport,
   getWarehouseRanking,
 } from '#/modules/executive/services/profitability'
+import { setPrices } from '#/modules/pricing/services/prices'
+import { importProducts } from '#/modules/product-import/services/import-products'
 import { orderSettings } from '#/modules/orders/db/schema'
 import { setReservationHours } from '#/modules/orders/services/reservation-settings'
 import {
@@ -162,8 +165,8 @@ async function setup() {
 
 type Fixture = Awaited<ReturnType<typeof setup>>
 
-/** Catalog services: the owner and any warehouse manager, never a customer. */
-const managerCatalog: Array<
+/** Catalog and price services: owner only; a manager and a customer are refused. */
+const ownerCatalog: Array<
   [string, (actor: Actor, fx: Fixture) => Promise<unknown>]
 > = [
   [
@@ -197,6 +200,46 @@ const managerCatalog: Array<
   [
     'catalog.manage updateSupplier',
     (actor, fx) => updateSupplier(actor, fx.supplier.id, { active: false }),
+  ],
+  [
+    'catalog.manage setPrices',
+    (actor, fx) =>
+      setPrices(actor, {
+        warehouseId: fx.north.id,
+        prices: [
+          { presentationId: fx.product.presentations[0].id, priceCents: 1500 },
+        ],
+      }),
+  ],
+  [
+    'catalog.cost savePieceCost',
+    (actor, fx) =>
+      savePieceCost(actor, fx.product.id, {
+        listPricePerPiece: 100000,
+        fixedDiscountPerPiece: 0,
+        promotionPerPiece: 0,
+      }),
+  ],
+  [
+    'catalog.manage importProducts',
+    (actor, fx) =>
+      importProducts(actor, {
+        warehouseId: fx.north.id,
+        rows: [
+          {
+            product: {
+              sku: 'IMP-1',
+              name: 'Importado',
+              category: 'Bebidas',
+              unit: 'piezas',
+              presentations: [{ name: 'Pieza', factor: 1 }],
+              defaultIndex: 0,
+            },
+            priceCents: 1000,
+            minimum: 1,
+          },
+        ],
+      }),
   ],
 ]
 
@@ -294,18 +337,32 @@ const ownerOnly: Array<
 beforeEach(() => resetDatabase(db))
 
 describe('catalog operations', () => {
-  test.each(managerCatalog)(
-    'a warehouse manager passes the server entry: %s',
+  test.each(ownerCatalog)(
+    'a warehouse manager is refused at the server entry: %s',
     async (_name, call) => {
       const fx = await setup()
+      const before = await snapshot()
       const result = await throughServerEntry(fx.managerHeaders, (actor) =>
+        call(actor, fx),
+      )
+      expect(result).toEqual(forbidden)
+      expect(await snapshot()).toEqual(before)
+    },
+  )
+
+  test.each(ownerCatalog)(
+    'the owner passes the server entry: %s',
+    async (_name, call) => {
+      const fx = await setup()
+      const ownerHeaders = await signIn('dueno@abasto.test', 'secreto-123')
+      const result = await throughServerEntry(ownerHeaders, (actor) =>
         call(actor, fx),
       )
       expect(result).toMatchObject({ ok: true })
     },
   )
 
-  test.each(managerCatalog)(
+  test.each(ownerCatalog)(
     'a store customer is refused at the server entry: %s',
     async (_name, call) => {
       const fx = await setup()

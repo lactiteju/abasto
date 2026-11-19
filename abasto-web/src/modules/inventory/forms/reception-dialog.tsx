@@ -74,6 +74,8 @@ type ReceptionDialogProps = {
   restock: ReadonlyArray<PendingBalance>
   /** Catalog products; the dialog offers the order's supplier ones as unordered arrivals. */
   products: ReadonlyArray<CatalogProduct>
+  /** Only the owner may also save reception prices on the catalog. */
+  canUpdateCatalog: boolean
   onClose: () => void
 }
 
@@ -85,6 +87,7 @@ export function ReceptionDialog({
   order,
   restock,
   products,
+  canUpdateCatalog,
   onClose,
 }: ReceptionDialogProps) {
   const actions = useInventoryActions()
@@ -96,7 +99,7 @@ export function ReceptionDialog({
   const [error, setError] = useState<string | null>(null)
   const [attempted, setAttempted] = useState(false)
   const [confirmExpired, setConfirmExpired] = useState(false)
-  const [updateCatalog, setUpdateCatalog] = useState(true)
+  const [updateCatalog, setUpdateCatalog] = useState(canUpdateCatalog)
   const [extras, setExtras] = useState<ExtrasDraft>({})
   const [query, setQuery] = useState('')
   const [showExtras, setShowExtras] = useState(false)
@@ -654,7 +657,7 @@ export function ReceptionDialog({
           )}
 
           <div className="grid gap-2 text-sm text-[#5f4a51]">
-            {(totals.changed > 0 || extrasRepriced) && (
+            {canUpdateCatalog && (totals.changed > 0 || extrasRepriced) && (
               <label className="flex items-start gap-2">
                 <input
                   type="checkbox"

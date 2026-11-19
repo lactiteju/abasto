@@ -52,9 +52,9 @@ type ProductPricesDialogProps = {
   product: CatalogProduct
   group: ProductGroup
   warehouseName: string
-  /** Manager of this warehouse or owner; everyone else only reads the sale prices. */
+  /** Owner only; everyone else only reads the sale prices. */
   canEdit: boolean
-  /** Owner or any warehouse manager: the supplier cost is global and hidden from everyone else. */
+  /** Owner only: the supplier cost is global. */
   canEditCost: boolean
   /** Resolve to the server message when saving failed, or null on success. */
   onSaveCost: (patch: PieceCostAmounts) => Promise<string | null>

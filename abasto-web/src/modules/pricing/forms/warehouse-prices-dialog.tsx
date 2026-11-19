@@ -16,7 +16,7 @@ import { pricingOverviewFn } from '#/modules/pricing/server/pricing'
 type WarehousePricesDialogProps = {
   product: CatalogProduct
   warehouseId: string
-  /** Owner or any warehouse manager (supplier cost is global). */
+  /** Supplier cost is global; only the owner edits it. */
   canEditCost: boolean
   /** Called after the sale prices were saved, so the caller can reload what it shows. */
   onPricesSaved: () => void
@@ -54,14 +54,18 @@ export function WarehousePricesDialog({
           joinProducts(overview.rows, [product]),
         ).get(product.id)
         if (!current) return
-        if (!warehouse || !group) {
+        if (!warehouse?.canEditPrices) {
+          toast.error('Solo el dueño puede cambiar precios.')
+          return onClose()
+        }
+        if (!group) {
           toast.error('Este producto no tiene presentaciones activas.')
           return onClose()
         }
         setLoaded({
           group,
           warehouseName: warehouse.name,
-          canEdit: warehouse.canManage,
+          canEdit: warehouse.canEditPrices,
         })
       } catch (failure) {
         if (!current) return
@@ -86,7 +90,7 @@ export function WarehousePricesDialog({
       group={loaded.group}
       warehouseName={loaded.warehouseName}
       canEdit={loaded.canEdit}
-      canEditCost={canEditCost}
+      canEditCost={canEditCost && loaded.canEdit}
       onSaveCost={(patch) => catalogActions.savePieceCost(product.id, patch)}
       onSavePrices={async (prices) => {
         const message = await pricingActions.savePrices(prices)

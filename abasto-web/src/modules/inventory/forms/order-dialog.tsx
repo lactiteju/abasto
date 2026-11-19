@@ -222,12 +222,8 @@ export function OrderDialog({
   }
 
   const editing = products.find(({ id }) => id === editingId)
-  // The owner, or the manager of the receiving warehouse, fixes costs and prices without leaving the order.
-  const canEditPrices =
-    canEditProducts ||
-    warehouses.some(
-      ({ id, canManage }) => id === draft.warehouseId && canManage,
-    )
+  // Only the owner fixes costs and prices without leaving the order.
+  const canEditPrices = canEditProducts
 
   return (
     <>

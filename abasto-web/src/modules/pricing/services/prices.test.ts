@@ -126,26 +126,24 @@ describe('setPrices', () => {
     })
   })
 
-  test('a manager prices their warehouse; the manager of another one cannot', async () => {
+  test('a manager cannot set prices, not even in their own warehouse', async () => {
     const fx = await setupPricing()
     const presentationId = fx.piece(fx.cola).id
-    await setPrices(fx.managerA, {
-      warehouseId: fx.a.id,
-      prices: [{ presentationId, priceCents: 1850 }],
-    })
+    const before = await pricingState(fx)
+    for (const manager of [fx.managerA, fx.managerB]) {
+      const error = await errorOf(() =>
+        setPrices(manager, {
+          warehouseId: fx.a.id,
+          prices: [{ presentationId, priceCents: 1850 }],
+        }),
+      )
+      expect([error.code, error.message]).toEqual(['forbidden', forbidden])
+    }
+    expect(await pricingState(fx)).toEqual(before)
     const read = await listWarehousePrices(fx.managerA, fx.a.id)
-    await expect(
+    expect(
       read.find((row) => row.presentationId === presentationId),
-    ).toMatchObject({
-      priceCents: 1850,
-    })
-    const error = await errorOf(() =>
-      setPrices(fx.managerB, {
-        warehouseId: fx.a.id,
-        prices: [{ presentationId, priceCents: 1 }],
-      }),
-    )
-    expect([error.code, error.message]).toEqual(['forbidden', forbidden])
+    ).toMatchObject({ priceCents: null })
   })
 
   test('a manager of A cannot price or read B', async () => {

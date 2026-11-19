@@ -116,7 +116,7 @@ describe('receiveSupplierOrder: products that arrived without being ordered', ()
   test('a typed price is used and, with the catalog flag, saved on the product', async () => {
     const fx = await setupSupplierOrders()
     const order = await pendingOrder(fx)
-    const result = await receiveSupplierOrder(fx.managerA, {
+    const result = await receiveSupplierOrder(fx.owner, {
       ...arrive(order, [
         {
           productId: fx.free.id,

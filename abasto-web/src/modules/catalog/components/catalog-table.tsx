@@ -18,7 +18,8 @@ type CatalogTableProps = {
   /** Net cost per piece in ten-thousandths; absent for anyone who may not see costs. */
   costOf?: (product: CatalogProduct) => number
   canManage: boolean
-  onPrices: (productId: string) => void
+  /** Owner only: absent hides "Precios". */
+  onPrices?: (productId: string) => void
   onEdit: (productId: string) => void
   /** Brings an archived product back; shown on archived rows to the owner. */
   onRestore: (productId: string) => void
@@ -160,7 +161,10 @@ export function CatalogTable({
                         : undefined
                     }
                     onPrices={
-                      !product.archivedAt && showPrices && group?.rows.length
+                      !product.archivedAt &&
+                      onPrices &&
+                      showPrices &&
+                      group?.rows.length
                         ? () => onPrices(product.id)
                         : undefined
                     }

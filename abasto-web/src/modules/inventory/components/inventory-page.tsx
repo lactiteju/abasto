@@ -431,6 +431,7 @@ export function InventoryPage({
           order={dialog.order}
           restock={pendings.restock}
           products={pickable}
+          canUpdateCatalog={canEditProducts}
           onClose={() => setDialog(null)}
         />
       )}

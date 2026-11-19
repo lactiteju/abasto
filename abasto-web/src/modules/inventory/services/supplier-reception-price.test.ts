@@ -149,7 +149,7 @@ describe('receiveSupplierOrder: list price per piece at reception', () => {
     // The catalog moved after ordering; an unchanged reception price leaves it alone.
     await savePieceCost(fx.owner, fx.soda.id, { listPricePerPiece: 9000 })
     await receiveSupplierOrder(
-      fx.managerA,
+      fx.owner,
       arrive(
         order,
         [{ listPricePerPiece: 13000 }, { listPricePerPiece: 8400 }],
@@ -162,6 +162,23 @@ describe('receiveSupplierOrder: list price per piece at reception', () => {
       promotion: 300,
     })
     expect((await catalogPrice(fx.soda.id)).list).toBe(9000)
+  })
+
+  test('a manager cannot update the catalog price at reception, changing nothing', async () => {
+    const fx = await setupSupplierOrders()
+    const order = await pendingOrder(fx)
+    const before = await supplierState()
+    const error = await errorOf(() =>
+      receiveSupplierOrder(
+        fx.managerA,
+        arrive(order, [{ listPricePerPiece: 13000 }, {}], {
+          updateCatalogPrices: true,
+        }),
+      ),
+    )
+    expect(error.code).toBe('forbidden')
+    expect(await supplierState()).toEqual(before)
+    expect((await catalogPrice(fx.milk.id)).list).toBe(12000)
   })
 
   test('rejects a price below the line discount and promotion, changing nothing', async () => {
