@@ -20,6 +20,10 @@ import { describeQuantity } from '#/modules/riders/lib/box-quantities'
 import { differenceLabel } from '#/modules/riders/lib/assignment-view'
 import { deliveredText } from '#/modules/riders/lib/delivered-prefill'
 import { exactAmountText } from '#/modules/riders/lib/exact-amount'
+import {
+  clampBoxesText,
+  clampUnitsText,
+} from '#/modules/riders/lib/leftover-caps'
 import { previewSettlement } from '#/modules/riders/lib/settlement-preview'
 import type { AssignmentDetail } from '#/modules/riders/services/assignment-reads'
 
@@ -139,7 +143,22 @@ export function SettleDialog({
                     inputMode="numeric"
                     placeholder="0"
                     value={boxes}
-                    onChange={(event) => update({ boxes: event.target.value })}
+                    onChange={(event) => {
+                      const nextBoxes = clampBoxesText(
+                        event.target.value,
+                        line.assignedQuantity,
+                        line.boxFactor,
+                      )
+                      update({
+                        boxes: nextBoxes,
+                        units: clampUnitsText(
+                          units,
+                          line.assignedQuantity,
+                          line.boxFactor,
+                          nextBoxes,
+                        ),
+                      })
+                    }}
                   />
                 </Field>
                 <Field label="Regresó (unidades)">
@@ -147,7 +166,16 @@ export function SettleDialog({
                     inputMode="numeric"
                     placeholder="0"
                     value={units}
-                    onChange={(event) => update({ units: event.target.value })}
+                    onChange={(event) =>
+                      update({
+                        units: clampUnitsText(
+                          event.target.value,
+                          line.assignedQuantity,
+                          line.boxFactor,
+                          boxes,
+                        ),
+                      })
+                    }
                   />
                 </Field>
                 <p className="pb-2.5 text-sm text-[#785e67]">
