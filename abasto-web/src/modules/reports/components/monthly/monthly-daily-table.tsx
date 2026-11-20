@@ -2,17 +2,20 @@ import { cn } from '#/lib/utils/cn'
 import { formatCents } from '#/modules/pricing/lib/money'
 import { Panel } from '#/modules/reports/components/owner/owner-panel'
 import { dayLabel } from '#/modules/reports/components/monthly/monthly-format'
-import { buildDailySheet } from '#/modules/reports/lib/monthly-results-sheet'
+import {
+  boxesLabel,
+  buildDailySheet,
+} from '#/modules/reports/lib/monthly-results-sheet'
 import type { MonthlyResults } from '#/modules/reports/types/monthly-results'
 
 const cell =
-  'px-3 py-2 text-right whitespace-nowrap tabular-nums min-[1180px]:py-1.5'
+  'px-2 py-2 text-right whitespace-nowrap tabular-nums min-[1180px]:py-1.5'
 const headCell = 'sticky top-0 z-10 bg-card'
 const footCell = 'sticky bottom-0 border-t border-input bg-card'
 const dash = <span className="text-muted-foreground">—</span>
 
-const money = (cents: number | null, empty: boolean) =>
-  empty || cents === null ? (
+const money = (cents: number | null, hidden: boolean) =>
+  hidden || cents === null ? (
     dash
   ) : (
     <span className={cn(cents < 0 && 'text-destructive')}>
@@ -20,9 +23,13 @@ const money = (cents: number | null, empty: boolean) =>
     </span>
   )
 
+const boxes = (value: number | null, hidden: boolean) =>
+  hidden || value === null ? dash : boxesLabel(value)
+
 /**
  * "Venta y ganancia por día": one row per day, a subtotal after each week and
- * the month at the bottom. Days that have not happened show "—".
+ * the month at the bottom. Days that have not happened, and past days without
+ * sales, show "—".
  */
 export function MonthlyDailyTable({
   results,
@@ -42,7 +49,7 @@ export function MonthlyDailyTable({
           <tr className="border-b border-border text-xs text-muted-foreground">
             <th
               scope="col"
-              className={cn(headCell, 'px-3 py-2 text-left font-semibold')}
+              className={cn(headCell, 'px-2 py-2 text-left font-semibold')}
             >
               Fecha
             </th>
@@ -51,6 +58,9 @@ export function MonthlyDailyTable({
             </th>
             <th scope="col" className={cn(cell, headCell, 'font-semibold')}>
               Ganancia
+            </th>
+            <th scope="col" className={cn(cell, headCell, 'font-semibold')}>
+              Cajas
             </th>
           </tr>
         </thead>
@@ -63,12 +73,12 @@ export function MonthlyDailyTable({
                 className={cn(
                   'border-b border-[#f4ede3]',
                   row.day === today && 'bg-accent font-semibold',
-                  row.empty && 'text-muted-foreground',
+                  (row.empty || row.quiet) && 'text-muted-foreground',
                 )}
               >
                 <th
                   scope="row"
-                  className="px-3 py-2 text-left font-normal min-[1180px]:py-1.5"
+                  className="px-2 py-2 text-left font-normal min-[1180px]:py-1.5"
                 >
                   {dayLabel(row.day!)}
                   {row.day === today && (
@@ -77,8 +87,15 @@ export function MonthlyDailyTable({
                     </span>
                   )}
                 </th>
-                <td className={cell}>{money(row.revenueCents, row.empty)}</td>
-                <td className={cell}>{money(row.marginCents, row.empty)}</td>
+                <td className={cell}>
+                  {money(row.revenueCents, row.empty || row.quiet)}
+                </td>
+                <td className={cell}>
+                  {money(row.marginCents, row.empty || row.quiet)}
+                </td>
+                <td className={cell}>
+                  {boxes(row.boxes, row.empty || row.quiet)}
+                </td>
               </tr>
             ) : (
               <tr
@@ -87,19 +104,26 @@ export function MonthlyDailyTable({
               >
                 <th
                   scope="row"
-                  className="px-3 py-2 text-left font-semibold min-[1180px]:py-1.5"
+                  className="px-2 py-2 text-left font-semibold min-[1180px]:py-1.5"
                 >
                   {row.label.split(' · ')[0]}
                 </th>
-                <td className={cell}>{money(row.revenueCents, row.empty)}</td>
-                <td className={cell}>{money(row.marginCents, row.empty)}</td>
+                <td className={cell}>
+                  {money(row.revenueCents, row.empty || row.quiet)}
+                </td>
+                <td className={cell}>
+                  {money(row.marginCents, row.empty || row.quiet)}
+                </td>
+                <td className={cell}>
+                  {boxes(row.boxes, row.empty || row.quiet)}
+                </td>
               </tr>
             ),
           )}
         </tbody>
         <tfoot>
           <tr className="font-bold text-ink-figure">
-            <th scope="row" className={cn(footCell, 'px-3 py-3 text-left')}>
+            <th scope="row" className={cn(footCell, 'px-2 py-3 text-left')}>
               Total del mes
             </th>
             <td className={cn(cell, footCell)}>
@@ -107,6 +131,9 @@ export function MonthlyDailyTable({
             </td>
             <td className={cn(cell, footCell)}>
               {formatCents(sheet.total.marginCents)}
+            </td>
+            <td className={cn(cell, footCell)}>
+              {boxesLabel(sheet.total.boxes)}
             </td>
           </tr>
         </tfoot>

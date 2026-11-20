@@ -179,7 +179,8 @@ describe('monthly results', () => {
     })
     setToday('2026-11-30T18:00:00Z')
     const both = (await getMonthlyResults(fx.owner, { month })).data!
-    expect(both.products.map((p) => p.productId).sort()).toEqual(
+    const sold = both.products.filter((p) => p.boxes > 0)
+    expect(sold.map((p) => p.productId).sort()).toEqual(
       [fx.milkBox.id, fx.cola.id].sort(),
     )
     const cola = (
@@ -209,6 +210,75 @@ describe('monthly results', () => {
     const january = (await getMonthlyResults(fx.owner, { month: '2026-01' }))
       .data!
     expect(january.previous.orders).toBe(0)
-    expect(january.products).toEqual([])
+    expect(january.products.every((p) => p.boxes === 0)).toBe(true)
+  })
+})
+
+describe('monthly results: every product of the scope', () => {
+  test('unsold active products come back with zeros after the sold ones', async () => {
+    const fx = await stocked()
+    await fx.sell({ at: '2026-11-02T18:00:00Z', quantity: 12 })
+    setToday('2026-11-30T18:00:00Z')
+    const { data } = await getMonthlyResults(fx.owner, { month })
+    const ids = data!.products.map((p) => p.productId)
+    expect(ids.length).toBeGreaterThan(3)
+    expect(ids[0]).toBe(fx.milkBox.id)
+    const unsold = data!.products.slice(1)
+    for (const row of unsold) {
+      expect(row).toMatchObject({
+        boxes: 0,
+        revenueCents: 0,
+        costCents: 0,
+        marginCents: 0,
+        marginPerBoxCents: null,
+        boxesByDay: {},
+      })
+      expect(row.boxFactor).toBeGreaterThanOrEqual(1)
+    }
+    expect(data!.totals.boxes).toBe(1)
+  })
+
+  test('position is the catalog order (name, then SKU) and sorting keeps margin first', async () => {
+    const fx = await stocked()
+    await fx.sell({ at: '2026-11-02T18:00:00Z', quantity: 12 })
+    setToday('2026-11-30T18:00:00Z')
+    const { data } = await getMonthlyResults(fx.owner, { month })
+    const catalog = [...data!.products].sort((a, b) => a.position - b.position)
+    expect(catalog.map((p) => p.position)).toEqual(
+      catalog.map((_, index) => index),
+    )
+    expect(catalog.map((p) => p.name)).toEqual(
+      [...catalog.map((p) => p.name)].sort((a, b) => a.localeCompare(b)),
+    )
+    const unsold = data!.products.slice(1)
+    expect(unsold.map((p) => p.position)).toEqual(
+      [...unsold.map((p) => p.position)].sort((a, b) => a - b),
+    )
+  })
+
+  test('the supplier filter drops unsold products of other suppliers', async () => {
+    const fx = await stocked()
+    await fx.sell({ at: '2026-11-02T18:00:00Z', quantity: 12 })
+    setToday('2026-11-30T18:00:00Z')
+    const { data } = await getMonthlyResults(fx.owner, {
+      month,
+      supplierId: fx.cocaCola.id,
+    })
+    expect(data!.products.map((p) => p.productId)).toEqual([fx.cola.id])
+    expect(data!.products[0]).toMatchObject({ boxes: 0, position: 0 })
+  })
+
+  test('a warehouse lists products stocked or priced there, plus the ones sold', async () => {
+    const fx = await stocked()
+    setToday('2026-11-30T18:00:00Z')
+    const inB = (
+      await getMonthlyResults(fx.owner, { month, warehouseId: fx.b.id })
+    ).data!
+    // B only has a price for the milk box piece; nothing is stocked there.
+    expect(inB.products.map((p) => p.productId)).toEqual([fx.milkBox.id])
+    const inA = (
+      await getMonthlyResults(fx.owner, { month, warehouseId: fx.a.id })
+    ).data!
+    expect(inA.products.map((p) => p.productId)).toEqual([fx.milkBox.id])
   })
 })

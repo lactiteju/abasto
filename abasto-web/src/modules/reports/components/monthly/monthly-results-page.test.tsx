@@ -9,6 +9,7 @@ import type { ReactElement, ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 import { MonthlyProducts } from '#/modules/reports/components/monthly/monthly-products'
+import { MonthlyProductsTable } from '#/modules/reports/components/monthly/monthly-products-table'
 import { MonthlyResultsPage } from '#/modules/reports/components/monthly/monthly-results-page'
 import type { MonthlyViewSearch } from '#/modules/reports/components/monthly/monthly-results-page'
 import { ReportViewSwitch } from '#/modules/reports/components/report-view-switch'
@@ -62,6 +63,7 @@ const results: MonthlyResults = {
       productId: 'p1',
       name: 'Crema Ácida Alpura 426 ml',
       sku: 'ALP-426',
+      position: 1,
       boxName: 'Caja 12',
       boxFactor: 12,
       boxesByDay: { '2026-11-02': 12.5, '2026-11-03': 4 },
@@ -70,6 +72,20 @@ const results: MonthlyResults = {
       costCents: 120_050,
       marginCents: 30_000,
       marginPerBoxCents: 1818,
+    },
+    {
+      productId: 'p2',
+      name: 'Queso Oaxaca 1 kg',
+      sku: 'QUE-1',
+      position: 0,
+      boxName: 'Caja 10',
+      boxFactor: 10,
+      boxesByDay: {},
+      boxes: 0,
+      revenueCents: 0,
+      costCents: 0,
+      marginCents: 0,
+      marginPerBoxCents: null,
     },
   ],
   totals: totals(1),
@@ -148,6 +164,43 @@ describe('MonthlyResultsPage', () => {
     const future = html.match(/>—</g) ?? []
     expect(future.length).toBeGreaterThanOrEqual(5 * 2 + 2)
     expect(html).toMatch(/aria-current="date"[^>]*>.*?mié 04/)
+  })
+
+  test('daily table: Cajas column and a dash for past days without sales', async () => {
+    const html = await render(load(results))
+    expect(html).toMatch(/>Cajas<\/th>/)
+    // 04 nov is a past day without orders: no $0.00 anywhere in the panel.
+    expect(html).not.toContain('$0.00')
+    expect(html).toContain('25')
+  })
+
+  test('products: switch, unsold toggle off, unsold hidden from the chart', async () => {
+    const html = await render(load(results))
+    expect(html).toContain('Gráfica')
+    expect(html).toContain('Tabla')
+    expect(html).toContain('Mostrar productos sin venta')
+    expect(html).not.toContain('Queso Oaxaca 1 kg')
+  })
+
+  test('table: catalog order, unsold on request, dashes for days to come, totals row', () => {
+    const withUnsold = renderToStaticMarkup(
+      <MonthlyProductsTable results={results} unsold />,
+    )
+    expect(withUnsold.indexOf('Queso Oaxaca 1 kg')).toBeGreaterThan(-1)
+    expect(withUnsold.indexOf('Queso Oaxaca 1 kg')).toBeLessThan(
+      withUnsold.indexOf('Crema Ácida Alpura 426 ml'),
+    )
+    expect(withUnsold).toContain('Caja 10')
+    expect(withUnsold).toContain('Total cajas')
+    expect(withUnsold).toContain('Gan. / caja')
+    expect(withUnsold).toContain('Total cajas vendidas')
+    expect(withUnsold).toContain('>12.5<')
+    expect((withUnsold.match(/>—</g) ?? []).length).toBeGreaterThanOrEqual(4)
+    const soldOnly = renderToStaticMarkup(
+      <MonthlyProductsTable results={results} unsold={false} />,
+    )
+    expect(soldOnly).not.toContain('Queso Oaxaca 1 kg')
+    expect(soldOnly).toContain('Crema Ácida Alpura 426 ml')
   })
 
   test('products: ranked row, closed by default', async () => {

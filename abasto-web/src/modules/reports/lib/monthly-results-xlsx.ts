@@ -19,6 +19,9 @@ const band = 'FFFFF8F0'
 const weekFill = 'FFF1EAF6'
 const moneyFormat = '$ #,##0.00'
 const boxesFormat = '#,##0.##'
+// Daily file: past days without sales keep a numeric 0 that Excel prints as "—".
+const quietMoneyFormat = '$ #,##0.00;-$ #,##0.00;"—"'
+const quietBoxesFormat = '#,##0.##;-#,##0.##;"—"'
 const empty = '—'
 
 const fill = (argb: string) =>
@@ -67,18 +70,26 @@ function dailyWorksheet(
   const model = buildDailySheet(results)
   const header = titleRows(sheet, results, meta)
   sheet.getRow(header).values = [...model.columns]
-  styleHeader(sheet, header, 3)
-  sheet.columns = [{ width: 38 }, { width: 20 }, { width: 20 }]
+  styleHeader(sheet, header, 4)
+  sheet.columns = [{ width: 38 }, { width: 20 }, { width: 20 }, { width: 12 }]
   let banded = false
   for (const item of model.rows) {
     const row = sheet.addRow([
       item.label,
       item.empty ? empty : dollars(item.revenueCents ?? 0),
       item.empty ? empty : dollars(item.marginCents ?? 0),
+      item.empty ? empty : (item.boxes ?? 0),
     ])
-    for (const column of [2, 3]) {
+    for (const column of [2, 3, 4]) {
       const cell = row.getCell(column)
-      cell.numFmt = moneyFormat
+      cell.numFmt =
+        column === 4
+          ? item.quiet
+            ? quietBoxesFormat
+            : boxesFormat
+          : item.quiet
+            ? quietMoneyFormat
+            : moneyFormat
       cell.alignment = { horizontal: 'right' }
     }
     if (item.kind === 'week') {
@@ -100,12 +111,13 @@ function dailyWorksheet(
     model.total.label,
     dollars(model.total.revenueCents),
     dollars(model.total.marginCents),
+    model.total.boxes,
   ])
   total.font = { bold: true }
   total.eachCell((cell, column) => {
     cell.border = { top: { style: 'medium', color: { argb: plum } } }
     if (column > 1) {
-      cell.numFmt = moneyFormat
+      cell.numFmt = column === 4 ? boxesFormat : moneyFormat
       cell.alignment = { horizontal: 'right' }
     }
   })

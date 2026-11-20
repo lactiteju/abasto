@@ -38,6 +38,8 @@ const grouped = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
 })
 
+const twoDecimals = (value: number) => Math.round(value * 100) / 100
+
 const two = (value: number) => String(value).padStart(2, '0')
 
 /** "lunes, 2 de noviembre de 2026". */
@@ -86,16 +88,22 @@ export type DailyRow = {
   /** Null for days after `through` (no data yet). */
   revenueCents: number | null
   marginCents: number | null
+  /** Boxes sold; null for days after `through`. */
+  boxes: number | null
+  /** Day after `through`: nothing to show yet. */
   empty: boolean
+  /** Period already over without a single sale: shown as "—", not zeros. */
+  quiet: boolean
 }
 
 export type DailySheet = {
-  columns: ['FECHA', 'VENTA DIARIA', 'GANANCIA DIARIA']
+  columns: ['FECHA', 'VENTA DIARIA', 'GANANCIA DIARIA', 'CAJAS']
   rows: Array<DailyRow>
   total: {
     label: 'Total de ganancia'
     revenueCents: number
     marginCents: number
+    boxes: number
   }
 }
 
@@ -117,6 +125,8 @@ export function buildDailySheet(results: MonthlyResults): DailySheet {
     week += 1
     let weekRevenue = 0
     let weekMargin = 0
+    let weekBoxes = 0
+    let weekOrders = 0
     let weekHasData = false
     for (let at = index; at <= end; at += 1) {
       const date = results.days[at]
@@ -126,6 +136,8 @@ export function buildDailySheet(results: MonthlyResults): DailySheet {
         weekHasData = true
         weekRevenue += data.revenueCents
         weekMargin += data.marginCents
+        weekBoxes += data.boxes
+        weekOrders += data.orders
       }
       rows.push({
         kind: 'day',
@@ -133,7 +145,9 @@ export function buildDailySheet(results: MonthlyResults): DailySheet {
         day: date,
         revenueCents: empty ? null : data.revenueCents,
         marginCents: empty ? null : data.marginCents,
+        boxes: empty ? null : data.boxes,
         empty,
+        quiet: !empty && data.orders === 0,
       })
     }
     rows.push({
@@ -142,25 +156,32 @@ export function buildDailySheet(results: MonthlyResults): DailySheet {
       // A week that has not started has no subtotal, not a $0.00 one.
       revenueCents: weekHasData ? weekRevenue : null,
       marginCents: weekHasData ? weekMargin : null,
+      boxes: weekHasData ? twoDecimals(weekBoxes) : null,
       empty: !weekHasData,
+      quiet: weekHasData && weekOrders === 0,
     })
     revenue += weekRevenue
     margin += weekMargin
     index = end + 1
   }
   return {
-    columns: ['FECHA', 'VENTA DIARIA', 'GANANCIA DIARIA'],
+    columns: ['FECHA', 'VENTA DIARIA', 'GANANCIA DIARIA', 'CAJAS'],
     rows,
     total: {
       label: 'Total de ganancia',
       revenueCents: revenue,
       marginCents: margin,
+      // The month's own total (as the KPI), not the sum of rounded days.
+      boxes: results.totals.boxes,
     },
   }
 }
 
 export type BoxesRow = {
+  productId: string
   name: string
+  /** Name of the box presentation, e.g. "Caja 12". */
+  boxName: string
   /** One entry per day column; null = nothing sold (or no data yet). */
   boxesByDay: Array<number | null>
   boxes: number
@@ -187,7 +208,9 @@ const boxesRow = (
   days: Array<string>,
   through: string,
 ): BoxesRow => ({
+  productId: product.productId,
   name: product.name,
+  boxName: product.boxName,
   boxesByDay: days.map((date) =>
     date > through ? null : (product.boxesByDay[date] ?? null),
   ),
@@ -196,10 +219,23 @@ const boxesRow = (
   marginCents: product.marginCents,
 })
 
-export function buildBoxesSheet(results: MonthlyResults): BoxesSheet {
-  const rows = results.products.map((product) =>
-    boxesRow(product, results.days, results.through),
-  )
+/** True when the product sold something in the month. */
+export const wasSold = (product: MonthlyProductRow) =>
+  product.boxes > 0 || product.revenueCents !== 0
+
+/**
+ * Product × day grid in catalog order (`position`). `unsold: false` leaves
+ * out products without sales; totals are unaffected since those add zero.
+ */
+export function buildBoxesSheet(
+  results: MonthlyResults,
+  options: { unsold?: boolean } = {},
+): BoxesSheet {
+  const { unsold = true } = options
+  const rows = results.products
+    .filter((product) => unsold || wasSold(product))
+    .sort((a, b) => a.position - b.position)
+    .map((product) => boxesRow(product, results.days, results.through))
   return {
     dayHeaders: results.days.map(dayHeader),
     futureDays: results.days.map((date) => date > results.through),
@@ -209,7 +245,7 @@ export function buildBoxesSheet(results: MonthlyResults): BoxesSheet {
     dayTotals: results.days.map((_, column) =>
       rows.reduce((sum, row) => sum + (row.boxesByDay[column] ?? 0), 0),
     ),
-    totalBoxes: rows.reduce((sum, row) => sum + row.boxes, 0),
+    totalBoxes: results.totals.boxes,
     totalMarginCents: rows.reduce((sum, row) => sum + row.marginCents, 0),
   }
 }

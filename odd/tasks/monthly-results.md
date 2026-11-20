@@ -35,3 +35,11 @@ Client asked (WhatsApp, file `RESULTADOS NOVIEMBRE 2026.xlsx`, sheet "VENTA Y GA
 - S8 Tablero download menu also offers both Excel files for the month of the period on screen (same warehouse and supplier); the old CSV stays.
 - T5 [S7, S8] writer — split Excel and wire both downloads. Status: done. Commit: this commit. Evidence: bun test 1621 pass, 2 skip, 0 fail; tsc, eslint, prettier clean; build OK with exceljs lazy. Open menus not browser-clicked.
 - L9 (user): showed the old Tablero CSV ("Este es el excel que quedo") next to the client's sheet; chose two separate files, brand colours, matrix with total, per-box margin and margin, and the Excel also from Tablero.
+
+## Round 3 (dashboard must say what the client sheet says)
+
+- S9 Daily panel gains a "Cajas" column (days, week subtotals, month total); past days without sales print "—" instead of $0.00 (future days keep "—").
+- S10 "Cajas por producto" gets a Gráfica | Tabla switch: Tabla is the product × day number grid (sticky product column and header, totals per row and a totals row), Gráfica stays as built.
+- S11 All active products in scope (supplier filter applied) come back from the service, unsold ones with zeros, plus a catalog position; the UI hides unsold products unless "Mostrar productos sin venta" is on; Tabla uses catalog order, Gráfica ranks by margin. The boxes Excel lists every product in catalog order like the client's sheet.
+- T6 [S9, S10, S11] writer — service, UI and Excel. Status: done. Commit: this commit. Evidence: service RED 4/11 then GREEN, sheet RED 4 then GREEN; bun test 1633 pass, 2 skip, 0 fail; tsc, eslint, prettier clean; build OK; captures desktop-grafica.png, desktop-tabla.png, mobile.png. Open: Tabla total columns need horizontal scroll at 1440px.
+- L10 (user): "Y el dashboard expresa lo que nos pidieron?" Gaps named: no boxes per day, matrix only as relative bars, unsold products hidden, $0.00 vs "—". User: "Si".

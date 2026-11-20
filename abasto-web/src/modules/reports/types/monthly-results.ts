@@ -23,6 +23,8 @@ export type MonthlyProductRow = {
   productId: string
   name: string
   sku: string
+  /** Catalog order (name, then SKU) among the products of the sheet, 0-based. */
+  position: number
   /** Name of the presentation counted as "caja", e.g. "Caja 12". */
   boxName: string
   /** Base units in one box; 1 when the product has no box presentation. */
@@ -59,7 +61,10 @@ export type MonthlyResults = {
   days: Array<string>
   /** One entry per `days` item, same order. */
   byDay: Array<MonthlyDay>
-  /** Sorted by margin, highest first; only products sold in the month. */
+  /**
+   * Every active product in scope (unsold ones with zeros), sorted by margin
+   * (highest first), then by `position`.
+   */
   products: Array<MonthlyProductRow>
   totals: MonthlyTotals
   /** Same totals for the previous calendar month, whole month. */

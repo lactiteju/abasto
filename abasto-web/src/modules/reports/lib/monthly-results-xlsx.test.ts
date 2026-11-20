@@ -29,6 +29,7 @@ const results: MonthlyResults = {
       productId: 'p1',
       name: 'Leche',
       sku: 'L1',
+      position: 0,
       boxName: 'Caja 12',
       boxFactor: 12,
       boxesByDay: { '2026-11-02': 10 },
@@ -37,6 +38,20 @@ const results: MonthlyResults = {
       costCents: 15000000,
       marginCents: 5892570,
       marginPerBoxCents: 589257,
+    },
+    {
+      productId: 'p2',
+      name: 'Aceite',
+      sku: 'A1',
+      position: 1,
+      boxName: 'Caja 6',
+      boxFactor: 6,
+      boxesByDay: {},
+      boxes: 0,
+      revenueCents: 0,
+      costCents: 0,
+      marginCents: 0,
+      marginPerBoxCents: null,
     },
   ],
   totals: { ...zero, boxes: 10, marginCents: 5892570, revenueCents: 20892570 },
@@ -80,6 +95,20 @@ describe('buildDailySalesXlsx', () => {
     expect(daily.getCell('C10').value).toBe(58925.7)
     expect(daily.views[0]).toMatchObject({ state: 'frozen', ySplit: 5 })
   })
+
+  test('Cajas column; a past day without sales is a numeric 0 shown as "—"', async () => {
+    const daily = (await load(await buildDailySalesXlsx(results, meta)))
+      .worksheets[0]
+    expect(daily.getCell('D5').value).toBe('CAJAS')
+    expect(daily.getCell('D6').value).toBe(10)
+    expect(daily.getCell('B7').value).toBe(0)
+    expect(daily.getCell('B7').numFmt).toBe('$ #,##0.00;-$ #,##0.00;"—"')
+    expect(daily.getCell('D7').value).toBe(0)
+    expect(daily.getCell('D7').numFmt).toBe('#,##0.##;-#,##0.##;"—"')
+    expect(daily.getCell('D9').value).toBe(10)
+    expect(daily.getCell('D10').value).toBe(10)
+    expect(daily.getCell('D10').numFmt).toBe('#,##0.##')
+  })
 })
 
 describe('buildBoxesXlsx', () => {
@@ -98,10 +127,14 @@ describe('buildBoxesXlsx', () => {
     expect(boxes.getCell('D6').value).toBe('—')
     expect(boxes.getCell('F6').value).toBe(5892.57)
     expect(boxes.getCell('G6').value).toBe(58925.7)
-    expect(boxes.getCell('A7').value).toBe('Total cajas vendidas')
-    expect(boxes.getCell('E7').value).toBe(10)
-    expect(boxes.getCell('A8').value).toBe('Total de ganancia')
-    expect(boxes.getCell('G8').value).toBe(58925.7)
+    expect(boxes.getCell('A7').value).toBe('Aceite')
+    expect(boxes.getCell('E7').value).toBe(0)
+    expect(boxes.getCell('F7').value).toBe('—')
+    expect(boxes.getCell('G7').value).toBe(0)
+    expect(boxes.getCell('A8').value).toBe('Total cajas vendidas')
+    expect(boxes.getCell('E8').value).toBe(10)
+    expect(boxes.getCell('A9').value).toBe('Total de ganancia')
+    expect(boxes.getCell('G9').value).toBe(58925.7)
     expect(boxes.views[0]).toMatchObject({ xSplit: 1, ySplit: 5 })
   })
 
@@ -110,6 +143,6 @@ describe('buildBoxesXlsx', () => {
       .worksheets[0]
     const boxes = (await load(await buildBoxesXlsx(results, meta)))
       .worksheets[0]
-    expect(boxes.getCell('G8').value).toBe(daily.getCell('C10').value)
+    expect(boxes.getCell('G9').value).toBe(daily.getCell('C10').value)
   })
 })

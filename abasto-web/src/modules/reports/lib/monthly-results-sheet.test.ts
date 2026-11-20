@@ -14,25 +14,32 @@ import type {
   MonthlyResults,
 } from '#/modules/reports/types/monthly-results'
 
-const day = (date: string, revenueCents = 0, marginCents = 0): MonthlyDay => ({
+const day = (
+  date: string,
+  revenueCents = 0,
+  marginCents = 0,
+  boxes = 0,
+): MonthlyDay => ({
   day: date,
   orders: revenueCents ? 1 : 0,
   revenueCents,
   costCents: revenueCents - marginCents,
   marginCents,
-  boxes: 0,
+  boxes,
 })
 
 const product = (
   name: string,
   boxesByDay: Record<string, number>,
   marginCents: number,
+  position: number,
 ): MonthlyProductRow => {
   const boxes = Object.values(boxesByDay).reduce((a, b) => a + b, 0)
   return {
     productId: name,
     name,
     sku: name,
+    position,
     boxName: 'Caja 12',
     boxFactor: 12,
     boxesByDay,
@@ -58,14 +65,14 @@ const days = [
   '2026-11-11',
 ]
 const byDay = [
-  day('2026-11-02', 20892570, 5000000),
-  day('2026-11-03', 10000000, 2000000),
+  day('2026-11-02', 20892570, 5000000, 10),
+  day('2026-11-03', 10000000, 2000000, 4),
   day('2026-11-04'),
   day('2026-11-05', 5000, 1000),
   day('2026-11-06'),
   day('2026-11-07', 100, 50),
   day('2026-11-08', 300, 100),
-  day('2026-11-09', 200, 100),
+  day('2026-11-09', 200, 100, 2.5),
   day('2026-11-10'),
   day('2026-11-11'),
 ]
@@ -76,9 +83,9 @@ const results: MonthlyResults = {
   days,
   byDay,
   products: [
-    product('Leche', { '2026-11-02': 10, '2026-11-09': 2.5 }, 6000000),
-    product('Queso', { '2026-11-03': 4 }, 1000000),
-    product('Sin ventas', {}, 0),
+    product('Leche', { '2026-11-02': 10, '2026-11-09': 2.5 }, 6000000, 2),
+    product('Queso', { '2026-11-03': 4 }, 1000000, 1),
+    product('Sin ventas', {}, 0, 0),
   ],
   totals: {
     orders: 5,
@@ -191,8 +198,51 @@ describe('buildDailySheet', () => {
   })
 })
 
+describe('buildDailySheet boxes and quiet days', () => {
+  const sheet = buildDailySheet(results)
+  const dayRow = (date: string) => sheet.rows.find((r) => r.day === date)!
+
+  test('columns end with CAJAS; days carry their boxes', () => {
+    expect(sheet.columns).toEqual([
+      'FECHA',
+      'VENTA DIARIA',
+      'GANANCIA DIARIA',
+      'CAJAS',
+    ])
+    expect(dayRow('2026-11-02').boxes).toBe(10)
+    expect(dayRow('2026-11-10').boxes).toBeNull()
+  })
+
+  test('past days without sales are quiet; sold and future days are not', () => {
+    expect(dayRow('2026-11-04').quiet).toBe(true)
+    expect(dayRow('2026-11-02').quiet).toBe(false)
+    expect(dayRow('2026-11-10').quiet).toBe(false)
+    expect(dayRow('2026-11-10').empty).toBe(true)
+  })
+
+  test('week subtotals and month total add the boxes', () => {
+    const [w1, w2] = sheet.rows.filter((r) => r.kind === 'week')
+    expect(w1.boxes).toBe(14)
+    expect(w2.boxes).toBe(2.5)
+    expect(sheet.total.boxes).toBe(16.5)
+  })
+})
+
 describe('buildBoxesSheet', () => {
   const sheet = buildBoxesSheet(results)
+  const rowOf = (name: string) => sheet.rows.find((r) => r.name === name)!
+
+  test('rows follow the catalog order and list unsold products', () => {
+    expect(sheet.rows.map((r) => r.name)).toEqual([
+      'Sin ventas',
+      'Queso',
+      'Leche',
+    ])
+    expect(rowOf('Sin ventas')).toMatchObject({ boxes: 0, boxName: 'Caja 12' })
+    const sold = buildBoxesSheet(results, { unsold: false })
+    expect(sold.rows.map((r) => r.name)).toEqual(['Queso', 'Leche'])
+    expect(sold.totalBoxes).toBe(sheet.totalBoxes)
+  })
 
   test('two-digit day headers, one column per day', () => {
     expect(sheet.dayHeaders).toEqual([
@@ -216,16 +266,16 @@ describe('buildBoxesSheet', () => {
       true,
       true,
     ])
-    const leche = sheet.rows[0]
+    const leche = rowOf('Leche')
     expect(leche.boxesByDay[0]).toBe(10)
     expect(leche.boxesByDay[1]).toBeNull()
     expect(leche.boxesByDay[7]).toBe(2.5)
   })
 
   test('product rows carry totals and per-box margin', () => {
-    expect(sheet.rows[0].boxes).toBe(12.5)
-    expect(sheet.rows[0].marginPerBoxCents).toBe(480000)
-    expect(sheet.rows[2].marginPerBoxCents).toBeNull()
+    expect(rowOf('Leche').boxes).toBe(12.5)
+    expect(rowOf('Leche').marginPerBoxCents).toBe(480000)
+    expect(rowOf('Sin ventas').marginPerBoxCents).toBeNull()
   })
 
   test('totals are the sums of the rows and match the daily sheet', () => {

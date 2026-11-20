@@ -21,7 +21,12 @@ import type {
 } from '#/modules/reports/types/monthly-results'
 import type { DateRange } from '#/modules/reports/types/reports'
 
-type Scope = { ids: Array<string>; supplierId?: string }
+type Scope = {
+  ids: Array<string>
+  supplierId?: string
+  /** Every warehouse is in scope (owner without a warehouse filter). */
+  all?: boolean
+}
 
 type TotalsRow = { orders: number; revenue: string; cost: string }
 type DayRow = TotalsRow & { day: string }
@@ -34,6 +39,7 @@ type ProductRow = {
   revenue: string
   cost: string
 }
+type CatalogRow = Pick<ProductRow, 'id' | 'name' | 'sku' | 'unit'>
 type ProductDayRow = { id: string; day: string; units: string }
 type PresentationRow = { product_id: string; name: string; factor: number }
 
@@ -140,6 +146,35 @@ const productDaysOf = (range: DateRange, scope: Scope) =>
     sql`group by 1, 2`,
   )
 
+/**
+ * Products of the sheet in catalog order (name, then SKU, as the catalog
+ * lists them): active products of the supplier filter that are stocked or
+ * priced in the scoped warehouses (every active product when all warehouses
+ * are in scope), plus any product sold in the month even if archived since.
+ */
+async function catalogOf(scope: Scope, soldIds: ReadonlyArray<string>) {
+  const supplier = scope.supplierId
+    ? sql`and p.supplier_id::text = ${scope.supplierId}`
+    : sql``
+  const stocked = scope.all
+    ? sql`true`
+    : sql`(
+        exists (select 1 from lots l
+          where l.product_id = p.id and l.on_hand > 0
+            and l.warehouse_id in (${uuidList(scope.ids)}))
+        or exists (select 1 from presentation_prices pp
+          join presentations pr on pr.id = pp.presentation_id
+          where pr.product_id = p.id
+            and pp.warehouse_id in (${uuidList(scope.ids)}))
+      )`
+  const sold = soldIds.length ? sql`p.id in (${uuidList(soldIds)})` : sql`false`
+  const result = await db.execute<CatalogRow>(sql`
+    select p.id::text as id, p.name, p.sku, p.unit from products p
+    where ((p.archived_at is null and ${stocked}) or ${sold}) ${supplier}
+    order by p.name, p.sku`)
+  return result.rows
+}
+
 async function presentationsOf(productIds: ReadonlyArray<string>) {
   if (!productIds.length) return []
   const result = await db.execute<PresentationRow>(sql`
@@ -178,6 +213,7 @@ async function resolveScope(
     scope: {
       ids: covered.map((item) => item.id),
       supplierId: input.supplierId,
+      all: !chosen,
     },
   }
 }
@@ -185,7 +221,8 @@ async function resolveScope(
 /**
  * The monthly sheet: per business day (Monday to Saturday, plus Sundays with
  * sales) sale, cost, margin and boxes, and per product the boxes of each day,
- * with the previous month's totals. Sales and cost are the sales report's.
+ * with the previous month's totals. Products cover the whole catalog scope,
+ * unsold ones with zeros. Sales and cost are the sales report's.
  */
 export async function getMonthlyResults(
   actor: Actor,
@@ -212,7 +249,11 @@ export async function getMonthlyResults(
     totalOf(before, scope),
     productsOf(before, scope),
   ])
-  const everyProduct = [...products, ...prevProducts]
+  const catalog = await catalogOf(
+    scope,
+    products.map((row) => row.id),
+  )
+  const everyProduct = [...catalog, ...products, ...prevProducts]
   const boxes = boxesOf(
     await presentationsOf([...new Set(everyProduct.map((row) => row.id))]),
     new Map(everyProduct.map((row) => [row.id, row.unit])),
@@ -242,8 +283,15 @@ export async function getMonthlyResults(
     return { day, ...totals }
   })
 
-  const rows = products
-    .map((row): MonthlyProductRow => {
+  const soldBy = new Map(products.map((row) => [row.id, row]))
+  const rows = catalog
+    .map((item, position): MonthlyProductRow => {
+      const row = soldBy.get(item.id) ?? {
+        ...item,
+        units: '0',
+        revenue: '0',
+        cost: '0',
+      }
       const box = boxes.get(row.id) ?? { name: row.unit, factor: 1 }
       const exact = Number(row.units) / box.factor
       const revenueCents = Number(row.revenue)
@@ -253,6 +301,7 @@ export async function getMonthlyResults(
         productId: row.id,
         name: row.name,
         sku: row.sku,
+        position,
         boxName: box.name,
         boxFactor: box.factor,
         boxesByDay: productBoxes.get(row.id) ?? {},
@@ -263,9 +312,7 @@ export async function getMonthlyResults(
         marginPerBoxCents: exact > 0 ? Math.round(marginCents / exact) : null,
       }
     })
-    .sort(
-      (a, b) => b.marginCents - a.marginCents || a.name.localeCompare(b.name),
-    )
+    .sort((a, b) => b.marginCents - a.marginCents || a.position - b.position)
 
   const data: MonthlyResults = {
     month: input.month,

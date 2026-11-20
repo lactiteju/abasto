@@ -57,13 +57,14 @@ export async function downloadMonthlyResultsPdf(
   const daily = buildDailySheet(results)
   const dailyRows: Array<Cells> = daily.rows.map((row) => [
     row.label,
-    row.empty ? empty : moneyLabel(row.revenueCents ?? 0),
-    row.empty ? empty : moneyLabel(row.marginCents ?? 0),
+    row.empty || row.quiet ? empty : moneyLabel(row.revenueCents ?? 0),
+    row.empty || row.quiet ? empty : moneyLabel(row.marginCents ?? 0),
+    row.empty || row.quiet ? empty : boxesLabel(row.boxes ?? 0),
   ])
   autoTable(doc, {
     startY: heading(dailySheetName, margin + 8),
     margin: { left: margin, right: margin, bottom: margin + 14 },
-    tableWidth: 460,
+    tableWidth: 500,
     head: [[...daily.columns].map(pdfText)],
     body: dailyRows.map((row) => row.map(pdfText)),
     foot: [
@@ -71,6 +72,7 @@ export async function downloadMonthlyResultsPdf(
         daily.total.label,
         moneyLabel(daily.total.revenueCents),
         moneyLabel(daily.total.marginCents),
+        boxesLabel(daily.total.boxes),
       ].map(pdfText),
     ],
     showFoot: 'lastPage',
@@ -90,6 +92,7 @@ export async function downloadMonthlyResultsPdf(
     columnStyles: {
       1: { halign: 'right' },
       2: { halign: 'right' },
+      3: { halign: 'right' },
     },
     didParseCell: ({ cell, row, section, column }) => {
       if (section === 'head' && column.index > 0) cell.styles.halign = 'right'

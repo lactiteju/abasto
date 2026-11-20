@@ -9,11 +9,13 @@ import {
   dayLabel,
   isSunday,
 } from '#/modules/reports/components/monthly/monthly-format'
+import { MonthlyProductsTable } from '#/modules/reports/components/monthly/monthly-products-table'
 import { Panel } from '#/modules/reports/components/owner/owner-panel'
 import { TextLink } from '#/modules/reports/components/report-buttons'
 import {
   boxesLabel,
   dayHeader,
+  wasSold,
 } from '#/modules/reports/lib/monthly-results-sheet'
 import type {
   MonthlyProductRow,
@@ -29,14 +31,26 @@ type MonthlyProductsProps = {
   initialOpen?: string
 }
 
-/** "Cajas por producto", ranked by margin, with a micro-bar per day. */
+type Mode = 'grafica' | 'tabla'
+
+const modes: Array<{ value: Mode; label: string }> = [
+  { value: 'grafica', label: 'Gráfica' },
+  { value: 'tabla', label: 'Tabla' },
+]
+
+/**
+ * "Cajas por producto": Gráfica ranks products by margin with a micro-bar per
+ * day; Tabla is the product × day grid in catalog order.
+ */
 export function MonthlyProducts({
   results,
   initialOpen,
 }: MonthlyProductsProps) {
   const [open, setOpen] = useState<string | undefined>(initialOpen)
   const [all, setAll] = useState(false)
-  const { products } = results
+  const [mode, setMode] = useState<Mode>('grafica')
+  const [unsold, setUnsold] = useState(false)
+  const products = unsold ? results.products : results.products.filter(wasSold)
   const shown = all ? products : products.slice(0, topProducts)
   return (
     <section
@@ -44,59 +58,99 @@ export function MonthlyProducts({
       className="grid min-w-0 gap-3 @container"
     >
       <div className="grid gap-1">
-        <h2
-          id="resultados-cajas"
-          className="text-[15px] font-[650] text-ink-figure"
-        >
-          Cajas por producto
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <h2
+            id="resultados-cajas"
+            className="text-[15px] font-[650] text-ink-figure"
+          >
+            Cajas por producto
+          </h2>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <label className="flex min-h-11 items-center gap-2 text-[13px] text-ink-row min-[820px]:min-h-9">
+              <input
+                type="checkbox"
+                checked={unsold}
+                onChange={(event) => setUnsold(event.target.checked)}
+                className="size-4 accent-primary"
+              />
+              Mostrar productos sin venta
+            </label>
+            <div
+              role="group"
+              aria-label="Forma de ver las cajas"
+              className="inline-flex rounded-[9px] border border-[#e6dfeb] bg-white p-[3px]"
+            >
+              {modes.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  aria-pressed={mode === item.value}
+                  onClick={() => setMode(item.value)}
+                  className={cn(
+                    'min-h-11 rounded-md px-4 py-1.5 text-[13px] whitespace-nowrap text-muted-foreground min-[820px]:min-h-8',
+                    mode === item.value
+                      ? 'bg-[#3f1266] font-[650] text-white'
+                      : 'hover:bg-muted',
+                  )}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
         <p className="text-[13px] text-muted-foreground">
-          De mayor a menor ganancia. Cada barra es un día y su altura se mide
-          contra el mejor día de ese producto; las franjas grises son domingos.
+          {mode === 'grafica'
+            ? 'De mayor a menor ganancia. Cada barra es un día y su altura se mide contra el mejor día de ese producto; las franjas grises son domingos.'
+            : 'En el orden del catálogo, con las cajas vendidas cada día; las columnas grises son domingos y — es un día que aún no llega.'}
         </p>
       </div>
-      <Panel className="overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="hidden border-b border-border px-4 py-2 text-xs font-semibold text-muted-foreground @[860px]:grid @[860px]:grid-cols-[200px_minmax(0,1fr)_300px] @[860px]:gap-4"
-        >
-          <span>Producto</span>
-          <span>Día a día</span>
-          <span className="grid grid-cols-[64px_100px_1fr] text-right">
-            <span>Cajas</span>
-            <span>Gan. / caja</span>
-            <span>Ganancia</span>
-          </span>
-        </div>
-        <ul>
-          {shown.map((product) => (
-            <ProductRow
-              key={product.productId}
-              product={product}
-              results={results}
-              open={open === product.productId}
-              onToggle={() =>
-                setOpen(
-                  open === product.productId ? undefined : product.productId,
-                )
-              }
-            />
-          ))}
-        </ul>
-        {products.length > topProducts && (
-          <div className="border-t border-border px-4 py-1">
-            <TextLink
-              className="min-h-11"
-              aria-expanded={all}
-              onClick={() => setAll((value) => !value)}
-            >
-              {all
-                ? `Ver los ${topProducts} primeros`
-                : `Ver todos (${products.length})`}
-            </TextLink>
+      {mode === 'tabla' ? (
+        <MonthlyProductsTable results={results} unsold={unsold} />
+      ) : (
+        <Panel className="overflow-hidden">
+          <div
+            aria-hidden="true"
+            className="hidden border-b border-border px-4 py-2 text-xs font-semibold text-muted-foreground @[860px]:grid @[860px]:grid-cols-[200px_minmax(0,1fr)_300px] @[860px]:gap-4"
+          >
+            <span>Producto</span>
+            <span>Día a día</span>
+            <span className="grid grid-cols-[64px_100px_1fr] text-right">
+              <span>Cajas</span>
+              <span>Gan. / caja</span>
+              <span>Ganancia</span>
+            </span>
           </div>
-        )}
-      </Panel>
+          <ul>
+            {shown.map((product) => (
+              <ProductRow
+                key={product.productId}
+                product={product}
+                results={results}
+                open={open === product.productId}
+                onToggle={() =>
+                  setOpen(
+                    open === product.productId ? undefined : product.productId,
+                  )
+                }
+              />
+            ))}
+          </ul>
+          {products.length > topProducts && (
+            <div className="border-t border-border px-4 py-1">
+              <TextLink
+                className="min-h-11"
+                aria-expanded={all}
+                onClick={() => setAll((value) => !value)}
+              >
+                {all
+                  ? `Ver los ${topProducts} primeros`
+                  : `Ver todos (${products.length})`}
+              </TextLink>
+            </div>
+          )}
+        </Panel>
+      )}
     </section>
   )
 }
