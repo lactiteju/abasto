@@ -175,6 +175,18 @@ async function catalogOf(scope: Scope, soldIds: ReadonlyArray<string>) {
   return result.rows
 }
 
+/** Base units on hand today per product in the scoped warehouses (stocked products only). */
+async function stockOf(scope: Scope, productIds: ReadonlyArray<string>) {
+  if (!productIds.length) return new Map<string, number>()
+  const result = await db.execute<{ product_id: string; units: string }>(sql`
+    select product_id::text as product_id, sum(on_hand)::bigint as units
+    from lots
+    where on_hand > 0 and warehouse_id in (${uuidList(scope.ids)})
+      and product_id in (${uuidList(productIds)})
+    group by product_id`)
+  return new Map(result.rows.map((row) => [row.product_id, Number(row.units)]))
+}
+
 async function presentationsOf(productIds: ReadonlyArray<string>) {
   if (!productIds.length) return []
   const result = await db.execute<PresentationRow>(sql`
@@ -253,6 +265,10 @@ export async function getMonthlyResults(
     scope,
     products.map((row) => row.id),
   )
+  const stock = await stockOf(
+    scope,
+    catalog.map((row) => row.id),
+  )
   const everyProduct = [...catalog, ...products, ...prevProducts]
   const boxes = boxesOf(
     await presentationsOf([...new Set(everyProduct.map((row) => row.id))]),
@@ -301,6 +317,7 @@ export async function getMonthlyResults(
         productId: row.id,
         name: row.name,
         sku: row.sku,
+        stockUnits: stock.get(row.id) ?? 0,
         position,
         boxName: box.name,
         boxFactor: box.factor,

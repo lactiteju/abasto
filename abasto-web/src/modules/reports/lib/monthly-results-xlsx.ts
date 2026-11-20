@@ -48,7 +48,12 @@ function titleRows(
   return 5
 }
 
-function styleHeader(sheet: Worksheet, rowNumber: number, columns: number) {
+function styleHeader(
+  sheet: Worksheet,
+  rowNumber: number,
+  columns: number,
+  leftColumns = 1,
+) {
   const row = sheet.getRow(rowNumber)
   row.height = 22
   for (let column = 1; column <= columns; column += 1) {
@@ -57,7 +62,7 @@ function styleHeader(sheet: Worksheet, rowNumber: number, columns: number) {
     cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }
     cell.alignment = {
       vertical: 'middle',
-      horizontal: column === 1 ? 'left' : 'center',
+      horizontal: column <= leftColumns ? 'left' : 'center',
       wrapText: true,
     }
   }
@@ -133,14 +138,17 @@ function boxesWorksheet(
   const model = buildBoxesSheet(results)
   const days = model.dayHeaders.length
   const header = titleRows(sheet, results, meta)
-  const totalColumns = 1 + days + 3
+  const lead = 2
+  const totalColumns = lead + days + 3
   sheet.getRow(header).values = [
+    model.skuHeader,
     model.productHeader,
     ...model.dayHeaders,
     ...model.totalHeaders,
   ]
-  styleHeader(sheet, header, totalColumns)
+  styleHeader(sheet, header, totalColumns, lead)
   sheet.columns = [
+    { width: 14 },
     { width: 34 },
     ...model.dayHeaders.map(() => ({ width: 6 })),
     { width: 14 },
@@ -149,6 +157,7 @@ function boxesWorksheet(
   ]
   model.rows.forEach((item, index) => {
     const row = sheet.addRow([
+      item.sku,
       item.name,
       ...item.boxesByDay.map((boxes, column) =>
         model.futureDays[column] ? null : boxes,
@@ -162,7 +171,7 @@ function boxesWorksheet(
         cell.fill = fill(band)
       })
     }
-    for (let column = 2; column <= 1 + days + 1; column += 1) {
+    for (let column = lead + 1; column <= lead + days + 1; column += 1) {
       const cell = row.getCell(column)
       cell.numFmt = boxesNumFmt(Number(cell.value ?? 0))
       cell.alignment = { horizontal: 'center' }
@@ -172,6 +181,7 @@ function boxesWorksheet(
     row.getCell(totalColumns - 2).font = { bold: true }
   })
   const boxesRow = sheet.addRow([
+    '',
     'Total cajas vendidas',
     ...model.dayTotals.map((total, column) =>
       model.futureDays[column] ? null : total,
@@ -179,6 +189,7 @@ function boxesWorksheet(
     model.totalBoxes,
   ])
   const marginRow = sheet.addRow([
+    '',
     'Total de ganancia',
     ...Array<string>(days + 2).fill(''),
     dollars(model.totalMarginCents),
@@ -189,10 +200,10 @@ function boxesWorksheet(
       const cell = row.getCell(column)
       if (row === boxesRow) {
         cell.border = { top: { style: 'medium', color: { argb: plum } } }
-        if (column > 1) {
+        if (column > lead) {
           const value = Number(cell.value ?? 0)
           cell.numFmt =
-            value === 0 && column <= days + 1
+            value === 0 && column <= lead + days
               ? quietBoxesFormat
               : boxesNumFmt(value)
           cell.alignment = { horizontal: 'center' }
@@ -201,7 +212,7 @@ function boxesWorksheet(
     }
   }
   marginRow.getCell(totalColumns).numFmt = moneyFormat
-  sheet.views = [{ state: 'frozen', xSplit: 1, ySplit: header }]
+  sheet.views = [{ state: 'frozen', xSplit: lead, ySplit: header }]
 }
 
 const xlsxType =

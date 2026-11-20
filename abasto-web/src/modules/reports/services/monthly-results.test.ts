@@ -282,3 +282,34 @@ describe('monthly results: every product of the scope', () => {
     expect(inA.products.map((p) => p.productId)).toEqual([fx.milkBox.id])
   })
 })
+
+describe('monthly results: stock in scope', () => {
+  test('stockUnits is the on-hand of the products in the scope warehouses', async () => {
+    const fx = await stocked()
+    setToday('2026-11-30T18:00:00Z')
+    const all = (await getMonthlyResults(fx.owner, { month })).data!
+    const milk = all.products.find((p) => p.productId === fx.milkBox.id)!
+    expect(milk.stockUnits).toBe(100)
+    expect(
+      all.products
+        .filter((p) => p.productId !== fx.milkBox.id)
+        .every((p) => p.stockUnits === 0),
+    ).toBe(true)
+    const inB = (
+      await getMonthlyResults(fx.owner, { month, warehouseId: fx.b.id })
+    ).data!
+    expect(inB.products.map((p) => p.stockUnits)).toEqual([0])
+    const inA = (
+      await getMonthlyResults(fx.owner, { month, warehouseId: fx.a.id })
+    ).data!
+    expect(inA.products.map((p) => p.stockUnits)).toEqual([100])
+  })
+
+  test('selling lowers the stock', async () => {
+    const fx = await stocked()
+    await fx.sell({ at: '2026-11-02T18:00:00Z', quantity: 12 })
+    setToday('2026-11-30T18:00:00Z')
+    const { data } = await getMonthlyResults(fx.owner, { month })
+    expect(data!.products[0].stockUnits).toBe(88)
+  })
+})

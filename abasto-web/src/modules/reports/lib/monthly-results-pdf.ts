@@ -107,11 +107,13 @@ export async function downloadMonthlyResultsPdf(
   const boxes = buildBoxesSheet(results)
   const days = boxes.dayHeaders.length
   const matrixHead: Cells = [
+    boxes.skuHeader,
     boxes.productHeader,
     ...boxes.dayHeaders,
     ...boxes.totalHeaders,
   ]
   const matrixBody: Array<Cells> = boxes.rows.map((row) => [
+    row.sku,
     row.name,
     ...row.boxesByDay.map((value) => (value === null ? '' : boxesLabel(value))),
     boxesLabel(row.boxes),
@@ -122,8 +124,13 @@ export async function downloadMonthlyResultsPdf(
   ])
   const dayStyles = Object.fromEntries(
     Array.from({ length: days }, (_, column) => [
-      column + 1,
-      { halign: 'center' as const, cellWidth: 'auto' as const },
+      column + 2,
+      {
+        halign: 'center' as const,
+        cellWidth: 'auto' as const,
+        // Day cells are narrow: side padding would hide "28.5" behind "…".
+        cellPadding: { top: 2, bottom: 2, left: 0.5, right: 0.5 },
+      },
     ]),
   )
   autoTable(doc, {
@@ -133,6 +140,7 @@ export async function downloadMonthlyResultsPdf(
     body: matrixBody.map((row) => row.map(pdfText)),
     foot: [
       [
+        '',
         'Total cajas vendidas',
         ...boxes.dayTotals.map((total, column) =>
           boxes.futureDays[column]
@@ -146,6 +154,7 @@ export async function downloadMonthlyResultsPdf(
         '',
       ].map(pdfText),
       [
+        '',
         'Total de ganancia',
         ...Array<string>(days + 2).fill(''),
         moneyLabel(boxes.totalMarginCents),
@@ -160,24 +169,31 @@ export async function downloadMonthlyResultsPdf(
       cellPadding: 2,
       overflow: 'ellipsize',
     },
-    headStyles: { fillColor: plum, textColor: '#ffffff', fontStyle: 'bold' },
+    headStyles: {
+      fillColor: plum,
+      textColor: '#ffffff',
+      fontStyle: 'bold',
+      overflow: 'linebreak',
+    },
     footStyles: { fontStyle: 'bold' },
     columnStyles: {
-      0: { cellWidth: 110 },
+      0: { cellWidth: 36 },
+      // Long product names wrap instead of losing their size ("… 250 ml").
+      1: { cellWidth: 112, overflow: 'linebreak' },
       ...dayStyles,
-      [days + 1]: { halign: 'center', cellWidth: 64, fontStyle: 'bold' },
-      [days + 2]: { halign: 'right', cellWidth: 84 },
-      [days + 3]: { halign: 'right', cellWidth: 64 },
+      [days + 2]: { halign: 'center', cellWidth: 40, fontStyle: 'bold' },
+      [days + 3]: { halign: 'right', cellWidth: 52 },
+      [days + 4]: { halign: 'right', cellWidth: 60 },
     },
     didParseCell: ({ cell, row, section, column }) => {
-      if (section === 'head' && column.index > 0) {
-        cell.styles.halign = column.index <= days + 1 ? 'center' : 'right'
+      if (section === 'head' && column.index > 1) {
+        cell.styles.halign = column.index <= days + 2 ? 'center' : 'right'
       }
       if (section === 'foot') {
         cell.styles.halign =
-          column.index === 0
+          column.index <= 1
             ? 'left'
-            : column.index <= days + 1
+            : column.index <= days + 2
               ? 'center'
               : 'right'
         if (row.index === 0) {

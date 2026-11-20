@@ -36,12 +36,14 @@ const product = (
   boxesByDay: Record<string, number>,
   marginCents: number,
   position: number,
+  stockUnits = 0,
 ): MonthlyProductRow => {
   const boxes = Object.values(boxesByDay).reduce((a, b) => a + b, 0)
   return {
     productId: name,
     name,
     sku: name,
+    stockUnits,
     position,
     boxName: 'Caja 12',
     boxFactor: 12,
@@ -89,6 +91,7 @@ const results: MonthlyResults = {
     product('Leche', { '2026-11-02': 10, '2026-11-09': 2.5 }, 6000000, 2),
     product('Queso', { '2026-11-03': 4 }, 1000000, 1),
     product('Sin ventas', {}, 0, 0),
+    product('Solo existencia', {}, 0, 3, 24),
   ],
   totals: {
     orders: 5,
@@ -235,16 +238,31 @@ describe('buildBoxesSheet', () => {
   const sheet = buildBoxesSheet(results)
   const rowOf = (name: string) => sheet.rows.find((r) => r.name === name)!
 
-  test('rows follow the catalog order and list unsold products', () => {
+  test('rows are the products with stock or sales, in catalog order', () => {
     expect(sheet.rows.map((r) => r.name)).toEqual([
-      'Sin ventas',
       'Queso',
       'Leche',
+      'Solo existencia',
     ])
-    expect(rowOf('Sin ventas')).toMatchObject({ boxes: 0, boxName: 'Caja 12' })
+    expect(rowOf('Solo existencia')).toMatchObject({
+      boxes: 0,
+      boxName: 'Caja 12',
+    })
+    expect(sheet.rows.some((r) => r.name === 'Sin ventas')).toBe(false)
     const sold = buildBoxesSheet(results, { unsold: false })
     expect(sold.rows.map((r) => r.name)).toEqual(['Queso', 'Leche'])
     expect(sold.totalBoxes).toBe(sheet.totalBoxes)
+  })
+
+  test('a product sold without stock left still appears', () => {
+    const soldOut = { ...results.products[0], stockUnits: 0 }
+    const only = buildBoxesSheet({ ...results, products: [soldOut] })
+    expect(only.rows.map((r) => r.name)).toEqual(['Leche'])
+  })
+
+  test('rows carry the SKU and the header lists it before the product', () => {
+    expect(sheet.skuHeader).toBe('SKU')
+    expect(rowOf('Leche').sku).toBe('Leche')
   })
 
   test('two-digit day headers, one column per day', () => {
@@ -278,7 +296,7 @@ describe('buildBoxesSheet', () => {
   test('product rows carry totals and per-box margin', () => {
     expect(rowOf('Leche').boxes).toBe(12.5)
     expect(rowOf('Leche').marginPerBoxCents).toBe(480000)
-    expect(rowOf('Sin ventas').marginPerBoxCents).toBeNull()
+    expect(rowOf('Solo existencia').marginPerBoxCents).toBeNull()
   })
 
   test('totals are the sums of the rows and match the daily sheet', () => {

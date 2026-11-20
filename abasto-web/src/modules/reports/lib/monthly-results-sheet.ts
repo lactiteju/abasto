@@ -209,6 +209,7 @@ export function dailyRowCells(row: DailyRow): [string, string, string, string] {
 
 export type BoxesRow = {
   productId: string
+  sku: string
   name: string
   /** Name of the box presentation, e.g. "Caja 12". */
   boxName: string
@@ -224,6 +225,7 @@ export type BoxesSheet = {
   dayHeaders: Array<string>
   /** True for columns after `through`: left blank. */
   futureDays: Array<boolean>
+  skuHeader: 'SKU'
   productHeader: 'PRODUCTO'
   totalHeaders: ['TOTAL CAJAS', 'GANANCIA X CAJA', 'GANANCIA']
   rows: Array<BoxesRow>
@@ -239,6 +241,7 @@ const boxesRow = (
   through: string,
 ): BoxesRow => ({
   productId: product.productId,
+  sku: product.sku,
   name: product.name,
   boxName: product.boxName,
   boxesByDay: days.map((date) =>
@@ -253,9 +256,13 @@ const boxesRow = (
 export const wasSold = (product: MonthlyProductRow) =>
   product.boxes > 0 || product.revenueCents !== 0
 
+/** True when the product has stock today in the report scope. */
+export const hasStock = (product: MonthlyProductRow) => product.stockUnits > 0
+
 /**
- * Product × day grid in catalog order (`position`). `unsold: false` leaves
- * out products without sales; totals are unaffected since those add zero.
+ * Product × day grid in catalog order (`position`) of the products with stock
+ * today in the scope or sales in the month. `unsold: false` leaves out the
+ * ones without sales too; totals are unaffected since those add zero.
  */
 export function buildBoxesSheet(
   results: MonthlyResults,
@@ -263,12 +270,15 @@ export function buildBoxesSheet(
 ): BoxesSheet {
   const { unsold = true } = options
   const rows = results.products
-    .filter((product) => unsold || wasSold(product))
+    .filter((product) =>
+      unsold ? hasStock(product) || wasSold(product) : wasSold(product),
+    )
     .sort((a, b) => a.position - b.position)
     .map((product) => boxesRow(product, results.days, results.through))
   return {
     dayHeaders: results.days.map(dayHeader),
     futureDays: results.days.map((date) => date > results.through),
+    skuHeader: 'SKU',
     productHeader: 'PRODUCTO',
     totalHeaders: ['TOTAL CAJAS', 'GANANCIA X CAJA', 'GANANCIA'],
     rows,

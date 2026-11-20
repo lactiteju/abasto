@@ -23,6 +23,11 @@ export type MonthlyProductRow = {
   productId: string
   name: string
   sku: string
+  /**
+   * Base units on hand today in the report scope (selected warehouse(s));
+   * 0 when none. The boxes export lists products with stock or sales.
+   */
+  stockUnits: number
   /** Catalog order (name, then SKU) among the products of the sheet, 0-based. */
   position: number
   /** Name of the presentation counted as "caja", e.g. "Caja 12". */

@@ -29,6 +29,7 @@ const results: MonthlyResults = {
       productId: 'p1',
       name: 'Leche',
       sku: 'L1',
+      stockUnits: 0,
       position: 0,
       boxName: 'Caja 12',
       boxFactor: 12,
@@ -43,7 +44,23 @@ const results: MonthlyResults = {
       productId: 'p2',
       name: 'Aceite',
       sku: 'A1',
+      stockUnits: 6,
       position: 1,
+      boxName: 'Caja 6',
+      boxFactor: 6,
+      boxesByDay: {},
+      boxes: 0,
+      revenueCents: 0,
+      costCents: 0,
+      marginCents: 0,
+      marginPerBoxCents: null,
+    },
+    {
+      productId: 'p3',
+      name: 'Vinagre',
+      sku: 'V1',
+      stockUnits: 0,
+      position: 2,
       boxName: 'Caja 6',
       boxFactor: 6,
       boxesByDay: {},
@@ -130,36 +147,40 @@ describe('buildDailySalesXlsx', () => {
 })
 
 describe('buildBoxesXlsx', () => {
-  test('one sheet with the matrix, per-product totals and the two summary rows', async () => {
+  test('one sheet with SKU, the matrix, per-product totals and the two summary rows', async () => {
     const book = await load(await buildBoxesXlsx(results, meta))
     expect(book.worksheets.map((s) => s.name)).toEqual(['Cajas por producto'])
     const boxes = book.worksheets[0]
     expect(boxes.getCell('A1').value).toBe('Abasto')
-    expect(boxes.getCell('A5').value).toBe('PRODUCTO')
-    expect(boxes.getCell('B5').value).toBe('02')
-    expect(boxes.getCell('E5').value).toBe('TOTAL CAJAS')
-    expect(boxes.getCell('F5').value).toBe('GANANCIA X CAJA')
-    expect(boxes.getCell('G5').value).toBe('GANANCIA')
-    expect(boxes.getCell('A6').value).toBe('Leche')
-    expect(boxes.getCell('B6').value).toBe(10)
+    expect(boxes.getCell('A5').value).toBe('SKU')
+    expect(boxes.getCell('B5').value).toBe('PRODUCTO')
+    expect(boxes.getCell('C5').value).toBe('02')
+    expect(boxes.getCell('F5').value).toBe('TOTAL CAJAS')
+    expect(boxes.getCell('G5').value).toBe('GANANCIA X CAJA')
+    expect(boxes.getCell('H5').value).toBe('GANANCIA')
+    expect(boxes.getCell('A6').value).toBe('L1')
+    expect(boxes.getCell('B6').value).toBe('Leche')
+    expect(boxes.getCell('C6').value).toBe(10)
     // Day after `through`: blank.
-    expect(boxes.getCell('D6').value).toBeNull()
-    expect(boxes.getCell('F6').value).toBe(5892.57)
-    expect(boxes.getCell('G6').value).toBe(58925.7)
-    expect(boxes.getCell('A7').value).toBe('Aceite')
-    expect(boxes.getCell('E7').value).toBe(0)
-    expect(boxes.getCell('F7').value).toBe('—')
-    expect(boxes.getCell('G7').value).toBe(0)
-    expect(boxes.getCell('A8').value).toBe('Total cajas vendidas')
-    expect(boxes.getCell('E8').value).toBe(10)
+    expect(boxes.getCell('E6').value).toBeNull()
+    expect(boxes.getCell('G6').value).toBe(5892.57)
+    expect(boxes.getCell('H6').value).toBe(58925.7)
+    // In stock but unsold: listed; no stock and unsold (Vinagre): left out.
+    expect(boxes.getCell('A7').value).toBe('A1')
+    expect(boxes.getCell('B7').value).toBe('Aceite')
+    expect(boxes.getCell('F7').value).toBe(0)
+    expect(boxes.getCell('G7').value).toBe('—')
+    expect(boxes.getCell('H7').value).toBe(0)
+    expect(boxes.getCell('B8').value).toBe('Total cajas vendidas')
+    expect(boxes.getCell('F8').value).toBe(10)
     // Totals row: the sold day, a past day without sales "—", a future day blank.
-    expect(boxes.getCell('B8').value).toBe(10)
-    expect(boxes.getCell('C8').value).toBe(0)
-    expect(boxes.getCell('C8').numFmt).toBe('#,##0;-#,##0;"—"')
-    expect(boxes.getCell('D8').value).toBeNull()
-    expect(boxes.getCell('A9').value).toBe('Total de ganancia')
-    expect(boxes.getCell('G9').value).toBe(58925.7)
-    expect(boxes.views[0]).toMatchObject({ xSplit: 1, ySplit: 5 })
+    expect(boxes.getCell('C8').value).toBe(10)
+    expect(boxes.getCell('D8').value).toBe(0)
+    expect(boxes.getCell('D8').numFmt).toBe('#,##0;-#,##0;"—"')
+    expect(boxes.getCell('E8').value).toBeNull()
+    expect(boxes.getCell('B9').value).toBe('Total de ganancia')
+    expect(boxes.getCell('H9').value).toBe(58925.7)
+    expect(boxes.views[0]).toMatchObject({ xSplit: 2, ySplit: 5 })
   })
 
   test('total ganancia equals the daily file total', async () => {
@@ -167,6 +188,6 @@ describe('buildBoxesXlsx', () => {
       .worksheets[0]
     const boxes = (await load(await buildBoxesXlsx(results, meta)))
       .worksheets[0]
-    expect(boxes.getCell('G9').value).toBe(daily.getCell('C10').value)
+    expect(boxes.getCell('H9').value).toBe(daily.getCell('C10').value)
   })
 })
