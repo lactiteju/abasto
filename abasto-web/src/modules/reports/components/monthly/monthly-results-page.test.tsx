@@ -9,7 +9,12 @@ import type { ReactElement, ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 import { MonthlyProducts } from '#/modules/reports/components/monthly/monthly-products'
-import { MonthlyProductsTable } from '#/modules/reports/components/monthly/monthly-products-table'
+import {
+  barShare,
+  compactPesos,
+  listProducts,
+  niceTicks,
+} from '#/modules/reports/components/monthly/monthly-chart-math'
 import { MonthlyResultsPage } from '#/modules/reports/components/monthly/monthly-results-page'
 import type { MonthlyViewSearch } from '#/modules/reports/components/monthly/monthly-results-page'
 import { ReportViewSwitch } from '#/modules/reports/components/report-view-switch'
@@ -153,77 +158,50 @@ describe('MonthlyResultsPage', () => {
     expect(html).toContain('Bajó')
   })
 
-  test('daily table: future days show a dash, week subtotals and month total', async () => {
+  test('daily chart: title, legend, accessible table and the days of the month', async () => {
     const html = await render(load(results))
-    expect(html).toContain('Venta y ganancia por día')
+    expect(html).toContain('Venta por día')
+    expect(html).toContain('Ganancia')
+    expect(html).toContain('Semana nueva')
     expect(html).toContain('lun 02')
-    expect(html).toContain('mar 03')
-    expect(html).toContain('Semana 1')
-    expect(html).toContain('Total del mes')
-    // Thu 5, Fri 6, Sat 7, Mon 9, Tue 10 are after "through"; so is week 2.
-    const future = html.match(/>—</g) ?? []
-    expect(future.length).toBeGreaterThanOrEqual(5 * 2 + 2)
-    expect(html).toMatch(/aria-current="date"[^>]*>.*?mié 04/)
+    expect(html).toContain('lunes, 2 de noviembre de 2026')
+    expect(html).toContain('HOY')
+    // Days after "through" say so in the table instead of printing $0.00.
+    expect((html.match(/Aún no llega/g) ?? []).length).toBe(5)
+    expect(html).not.toContain('Venta y ganancia por día</')
+    expect(html).not.toContain('Total del mes')
   })
 
-  test('daily table: Cajas column and a dash for past days without sales', async () => {
+  test('the Round 3 pieces are gone', async () => {
     const html = await render(load(results))
-    expect(html).toMatch(/>Cajas<\/th>/)
-    // 04 nov is a past day without orders: no $0.00 anywhere in the panel.
-    expect(html).not.toContain('$0.00')
-    expect(html).toContain('25')
+    expect(html).not.toContain('Mostrar productos sin venta')
+    expect(html).not.toContain('Cajas por producto')
+    expect(html).not.toContain('Gráfica')
   })
 
-  test('products: switch, unsold toggle off, unsold hidden from the chart', async () => {
+  test('product list: chips as pressed buttons, metric switch, unsold hidden', async () => {
     const html = await render(load(results))
-    expect(html).toContain('Gráfica')
-    expect(html).toContain('Tabla')
-    expect(html).toContain('Mostrar productos sin venta')
+    expect(html).toMatch(/aria-pressed="true"[^>]*>Más vendidos</)
+    expect(html).toMatch(/aria-pressed="false"[^>]*>Menos vendidos</)
+    expect(html).toContain('>Mayor ganancia<')
+    expect(html).toContain('>Sin venta<')
+    expect(html).toMatch(/aria-pressed="true"[^>]*>Pesos</)
+    expect(html).toMatch(/aria-pressed="false"[^>]*>Cajas</)
+    expect(html).toContain('Crema Ácida Alpura 426 ml')
+    expect(html).toContain('Caja 12')
+    expect(html).toContain('Ganancia $300.00 · Margen 20.0 %')
     expect(html).not.toContain('Queso Oaxaca 1 kg')
   })
 
-  test('table: catalog order, unsold on request, dashes for days to come, totals row', () => {
-    const withUnsold = renderToStaticMarkup(
-      <MonthlyProductsTable results={results} unsold />,
-    )
-    expect(withUnsold.indexOf('Queso Oaxaca 1 kg')).toBeGreaterThan(-1)
-    expect(withUnsold.indexOf('Queso Oaxaca 1 kg')).toBeLessThan(
-      withUnsold.indexOf('Crema Ácida Alpura 426 ml'),
-    )
-    expect(withUnsold).toContain('Caja 10')
-    expect(withUnsold).toContain('Total cajas')
-    expect(withUnsold).toContain('Gan. / caja')
-    expect(withUnsold).toContain('Total cajas vendidas')
-    expect(withUnsold).toContain('>12.5<')
-    expect((withUnsold.match(/>—</g) ?? []).length).toBeGreaterThanOrEqual(4)
-    const soldOnly = renderToStaticMarkup(
-      <MonthlyProductsTable results={results} unsold={false} />,
-    )
-    expect(soldOnly).not.toContain('Queso Oaxaca 1 kg')
-    expect(soldOnly).toContain('Crema Ácida Alpura 426 ml')
-  })
-
-  test('products: ranked row, closed by default', async () => {
+  test('the product map is gone and the list has no selection', async () => {
     const html = await render(load(results))
-    expect(html).toContain('Cajas por producto')
-    expect(html).toContain('Crema Ácida Alpura 426 ml')
-    expect(html).toContain('ALP-426 · Caja 12')
-    expect(html).toContain('aria-expanded="false"')
-    expect(html).not.toContain('Cajas de Crema Ácida Alpura 426 ml por día')
+    expect(html).not.toContain('Mapa de productos')
+    expect(html).not.toContain('Estrellas')
+    expect(html).not.toContain('data-id="')
+    expect(html).not.toContain('role="status"')
   })
 
-  test('an open product lists its exact boxes per day', () => {
-    const html = renderToStaticMarkup(
-      <MonthlyProducts results={results} initialOpen="p1" />,
-    )
-    expect(html).toContain('aria-expanded="true"')
-    expect(html).toContain('Cajas de Crema Ácida Alpura 426 ml por día')
-    expect(html).toContain('>02<')
-    expect(html).toContain('>12.5<')
-    expect(html).toContain('>4<')
-  })
-
-  test('more than 15 products offer "Ver todos"', () => {
+  test('more than 12 products offer "Ver todos"', () => {
     const many: MonthlyResults = {
       ...results,
       products: Array.from({ length: 20 }, (_, index) => ({
@@ -234,8 +212,8 @@ describe('MonthlyResultsPage', () => {
     }
     const html = renderToStaticMarkup(<MonthlyProducts results={many} />)
     expect(html).toContain('Ver todos (20)')
-    expect(html).toContain('Producto 14')
-    expect(html).not.toContain('Producto 15<')
+    expect(html).toContain('>Producto 11<')
+    expect(html).not.toContain('>Producto 12<')
   })
 
   test('a month without sales shows the empty state', async () => {
@@ -246,7 +224,8 @@ describe('MonthlyResultsPage', () => {
     }
     const html = await render(load(empty))
     expect(html).toContain('Sin ventas en noviembre')
-    expect(html).not.toContain('Cajas por producto')
+    expect(html).not.toContain('Venta por día')
+    expect(html).not.toContain('Mapa de productos')
   })
 
   test('a failed load says why', async () => {
@@ -299,5 +278,70 @@ describe('ReportViewSwitch', () => {
     resultados.props.onClick?.()
     tablero.props.onClick?.()
     expect(patches).toEqual([{ vista: 'resultados' }, { vista: undefined }])
+  })
+})
+
+describe('chart math', () => {
+  const soldProduct = (
+    name: string,
+    revenue: number,
+    boxes: number,
+    position = 0,
+  ) => ({
+    ...results.products[0],
+    productId: name,
+    name,
+    position,
+    revenueCents: revenue,
+    marginCents: Math.round(revenue / 5),
+    boxes,
+  })
+  const unsold = {
+    ...results.products[1],
+    productId: 'u',
+    position: 9,
+  }
+
+  test('nice axis ticks start at 0 and end at a round top', () => {
+    expect(niceTicks(48_000)).toEqual({
+      ticks: [0, 20_000, 40_000, 60_000],
+      top: 60_000,
+    })
+    expect(niceTicks(0).top).toBe(1)
+    const { ticks, top } = niceTicks(1234)
+    expect(ticks[0]).toBe(0)
+    expect(top).toBeGreaterThanOrEqual(1234)
+  })
+
+  test('compact pesos', () => {
+    expect(compactPesos(80_000)).toBe('$800')
+    expect(compactPesos(5_000_000)).toBe('$50 mil')
+    expect(compactPesos(1_250_000)).toBe('$12.5 mil')
+    expect(compactPesos(120_000_000)).toBe('$1.2 M')
+  })
+
+  test('chips order the list; Sin venta is the unsold in catalog order', () => {
+    const products = [
+      soldProduct('A', 100, 9, 2),
+      soldProduct('B', 300, 1, 1),
+      soldProduct('C', 200, 5, 0),
+      unsold,
+    ]
+    const names = (
+      sort: Parameters<typeof listProducts>[1],
+      metric = 'pesos' as const,
+    ) => listProducts(products, sort, metric).map((p) => p.productId)
+    expect(names('mas')).toEqual(['B', 'C', 'A'])
+    expect(names('menos')).toEqual(['A', 'C', 'B'])
+    expect(names('mas', 'cajas' as never)).toEqual(['A', 'C', 'B'])
+    expect(names('ganancia')).toEqual(['B', 'C', 'A'])
+    expect(names('sin')).toEqual(['u'])
+  })
+
+  test('bar share is proportional to the longest bar', () => {
+    expect(barShare(50, 100)).toBe(50)
+    expect(barShare(100, 100)).toBe(100)
+    expect(barShare(0, 100)).toBe(0)
+    expect(barShare(1, 1000)).toBe(2)
   })
 })

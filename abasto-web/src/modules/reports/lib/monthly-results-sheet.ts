@@ -56,9 +56,21 @@ export const monthTitle = (month: string) =>
 export const moneyLabel = (cents: number) =>
   `${cents < 0 ? '-' : ''}$ ${grouped.format(Math.abs(cents) / 100)}`
 
-/** Boxes with up to two decimals: 12.5 → "12.5". */
+const groupedBoxes = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2,
+})
+
+/** Boxes with up to two decimals and no trailing zeros: 12.5 → "12.5", 6 → "6". */
 export const boxesLabel = (boxes: number) =>
-  String(Math.round(boxes * 100) / 100)
+  groupedBoxes.format(Math.round(boxes * 100) / 100)
+
+/**
+ * Excel number format that prints `boxesLabel`. "#,##0.##" would show "6.",
+ * so whole numbers get no decimal part at all.
+ */
+export const boxesNumFmt = (boxes: number) =>
+  Number.isInteger(Math.round(boxes * 100) / 100) ? '#,##0' : '#,##0.0#'
 
 /** "Semana 1 · 02 al 07 nov" (single day: "Semana 2 · 09 nov"). */
 export const weekLabel = (index: number, from: string, to: string) => {
@@ -73,7 +85,7 @@ export const weekLabel = (index: number, from: string, to: string) => {
  * Sunday to Saturday like the client's calendar, so a Sunday with sales joins
  * the days that follow it instead of closing the previous week.
  */
-const weekStart = (day: string) => {
+export const weekStart = (day: string) => {
   const date = atNoon(day)
   const back = date.getUTCDay()
   date.setUTCDate(date.getUTCDate() - back)
@@ -100,7 +112,7 @@ export type DailySheet = {
   columns: ['FECHA', 'VENTA DIARIA', 'GANANCIA DIARIA', 'CAJAS']
   rows: Array<DailyRow>
   total: {
-    label: 'Total de ganancia'
+    label: 'Total del mes'
     revenueCents: number
     marginCents: number
     boxes: number
@@ -168,13 +180,31 @@ export function buildDailySheet(results: MonthlyResults): DailySheet {
     columns: ['FECHA', 'VENTA DIARIA', 'GANANCIA DIARIA', 'CAJAS'],
     rows,
     total: {
-      label: 'Total de ganancia',
+      label: 'Total del mes',
       revenueCents: revenue,
       marginCents: margin,
       // The month's own total (as the KPI), not the sum of rounded days.
       boxes: results.totals.boxes,
     },
   }
+}
+
+/**
+ * The one rule for days without figures, in Excel and PDF: a past day or week
+ * without sales prints "—"; one that has not happened yet stays blank.
+ */
+export const noSalesMark = '—'
+
+/** Label, venta, ganancia and cajas of a daily row, as printed. */
+export function dailyRowCells(row: DailyRow): [string, string, string, string] {
+  if (row.empty) return [row.label, '', '', '']
+  if (row.quiet) return [row.label, noSalesMark, noSalesMark, noSalesMark]
+  return [
+    row.label,
+    moneyLabel(row.revenueCents ?? 0),
+    moneyLabel(row.marginCents ?? 0),
+    boxesLabel(row.boxes ?? 0),
+  ]
 }
 
 export type BoxesRow = {
@@ -192,7 +222,7 @@ export type BoxesRow = {
 export type BoxesSheet = {
   /** "02", "03"… one per day column. */
   dayHeaders: Array<string>
-  /** True for columns after `through`: shown as "—". */
+  /** True for columns after `through`: left blank. */
   futureDays: Array<boolean>
   productHeader: 'PRODUCTO'
   totalHeaders: ['TOTAL CAJAS', 'GANANCIA X CAJA', 'GANANCIA']

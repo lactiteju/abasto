@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import { useBusiness } from '#/modules/business/hooks/use-business'
 import { businessDate } from '#/modules/orders/services/clock'
-import { MonthlyDailyTable } from '#/modules/reports/components/monthly/monthly-daily-table'
+import { MonthlyDailyChart } from '#/modules/reports/components/monthly/monthly-daily-chart'
 import { monthName } from '#/modules/reports/components/monthly/monthly-format'
 import { MonthlyHeader } from '#/modules/reports/components/monthly/monthly-header'
 import type { MonthlyDownload } from '#/modules/reports/components/monthly/monthly-header'
@@ -144,20 +144,14 @@ export function MonthlyResultsPage({
 function Results({ data, today }: { data: MonthlyResults; today: string }) {
   const previousMonth = shiftMonth(data.month, -1)
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-5 min-[1180px]:grid-cols-[minmax(0,1fr)_352px]">
-      <div className="min-w-0 min-[1180px]:col-span-2">
-        <MonthlyKpis
-          totals={data.totals}
-          previous={data.previous}
-          previousName={monthName(previousMonth)}
-        />
-      </div>
-      <div className="min-w-0 min-[1180px]:col-start-2 min-[1180px]:row-start-2">
-        <MonthlyDailyTable results={data} today={today} />
-      </div>
-      <div className="min-w-0 min-[1180px]:col-start-1 min-[1180px]:row-start-2">
-        <MonthlyProducts results={data} />
-      </div>
+    <div className="grid min-w-0 gap-5">
+      <MonthlyKpis
+        totals={data.totals}
+        previous={data.previous}
+        previousName={monthName(previousMonth)}
+      />
+      <MonthlyDailyChart results={data} today={today} />
+      <MonthlyProducts results={data} />
     </div>
   )
 }

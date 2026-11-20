@@ -2,6 +2,7 @@ import type { Worksheet } from 'exceljs'
 import { downloadBlob } from '#/modules/reports/lib/csv'
 import {
   boxesFilename,
+  boxesNumFmt,
   boxesSheetName,
   buildBoxesSheet,
   buildDailySheet,
@@ -18,10 +19,10 @@ const plum = 'FF5B2A86'
 const band = 'FFFFF8F0'
 const weekFill = 'FFF1EAF6'
 const moneyFormat = '$ #,##0.00'
-const boxesFormat = '#,##0.##'
-// Daily file: past days without sales keep a numeric 0 that Excel prints as "—".
+// Past days without sales keep a numeric 0 that Excel prints as "—"; days to
+// come are left blank (same rule as the PDF, see `noSalesMark`).
 const quietMoneyFormat = '$ #,##0.00;-$ #,##0.00;"—"'
-const quietBoxesFormat = '#,##0.##;-#,##0.##;"—"'
+const quietBoxesFormat = '#,##0;-#,##0;"—"'
 const empty = '—'
 
 const fill = (argb: string) =>
@@ -76,9 +77,9 @@ function dailyWorksheet(
   for (const item of model.rows) {
     const row = sheet.addRow([
       item.label,
-      item.empty ? empty : dollars(item.revenueCents ?? 0),
-      item.empty ? empty : dollars(item.marginCents ?? 0),
-      item.empty ? empty : (item.boxes ?? 0),
+      item.empty ? null : dollars(item.revenueCents ?? 0),
+      item.empty ? null : dollars(item.marginCents ?? 0),
+      item.empty ? null : (item.boxes ?? 0),
     ])
     for (const column of [2, 3, 4]) {
       const cell = row.getCell(column)
@@ -86,7 +87,7 @@ function dailyWorksheet(
         column === 4
           ? item.quiet
             ? quietBoxesFormat
-            : boxesFormat
+            : boxesNumFmt(item.boxes ?? 0)
           : item.quiet
             ? quietMoneyFormat
             : moneyFormat
@@ -117,7 +118,7 @@ function dailyWorksheet(
   total.eachCell((cell, column) => {
     cell.border = { top: { style: 'medium', color: { argb: plum } } }
     if (column > 1) {
-      cell.numFmt = column === 4 ? boxesFormat : moneyFormat
+      cell.numFmt = column === 4 ? boxesNumFmt(model.total.boxes) : moneyFormat
       cell.alignment = { horizontal: 'right' }
     }
   })
@@ -150,7 +151,7 @@ function boxesWorksheet(
     const row = sheet.addRow([
       item.name,
       ...item.boxesByDay.map((boxes, column) =>
-        model.futureDays[column] ? empty : boxes,
+        model.futureDays[column] ? null : boxes,
       ),
       item.boxes,
       item.marginPerBoxCents === null ? empty : dollars(item.marginPerBoxCents),
@@ -162,8 +163,9 @@ function boxesWorksheet(
       })
     }
     for (let column = 2; column <= 1 + days + 1; column += 1) {
-      row.getCell(column).numFmt = boxesFormat
-      row.getCell(column).alignment = { horizontal: 'center' }
+      const cell = row.getCell(column)
+      cell.numFmt = boxesNumFmt(Number(cell.value ?? 0))
+      cell.alignment = { horizontal: 'center' }
     }
     row.getCell(totalColumns - 1).numFmt = moneyFormat
     row.getCell(totalColumns).numFmt = moneyFormat
@@ -172,7 +174,7 @@ function boxesWorksheet(
   const boxesRow = sheet.addRow([
     'Total cajas vendidas',
     ...model.dayTotals.map((total, column) =>
-      model.futureDays[column] ? empty : total,
+      model.futureDays[column] ? null : total,
     ),
     model.totalBoxes,
   ])
@@ -188,7 +190,11 @@ function boxesWorksheet(
       if (row === boxesRow) {
         cell.border = { top: { style: 'medium', color: { argb: plum } } }
         if (column > 1) {
-          cell.numFmt = boxesFormat
+          const value = Number(cell.value ?? 0)
+          cell.numFmt =
+            value === 0 && column <= days + 1
+              ? quietBoxesFormat
+              : boxesNumFmt(value)
           cell.alignment = { horizontal: 'center' }
         }
       }

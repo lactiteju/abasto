@@ -2,6 +2,8 @@ import type { MonthlyExportMeta } from '#/modules/reports/lib/monthly-results-xl
 import {
   boxesLabel,
   boxesSheetName,
+  dailyRowCells,
+  noSalesMark,
   buildBoxesSheet,
   buildDailySheet,
   dailySheetName,
@@ -18,7 +20,6 @@ const muted = '#74686a'
 const plum = '#5b2a86'
 const band = '#fff8f0'
 const weekFill = '#f1eaf6'
-const empty = '—'
 
 type Cells = Array<string>
 
@@ -55,12 +56,7 @@ export async function downloadMonthlyResultsPdf(
   }
 
   const daily = buildDailySheet(results)
-  const dailyRows: Array<Cells> = daily.rows.map((row) => [
-    row.label,
-    row.empty || row.quiet ? empty : moneyLabel(row.revenueCents ?? 0),
-    row.empty || row.quiet ? empty : moneyLabel(row.marginCents ?? 0),
-    row.empty || row.quiet ? empty : boxesLabel(row.boxes ?? 0),
-  ])
+  const dailyRows: Array<Cells> = daily.rows.map(dailyRowCells)
   autoTable(doc, {
     startY: heading(dailySheetName, margin + 8),
     margin: { left: margin, right: margin, bottom: margin + 14 },
@@ -117,15 +113,11 @@ export async function downloadMonthlyResultsPdf(
   ]
   const matrixBody: Array<Cells> = boxes.rows.map((row) => [
     row.name,
-    ...row.boxesByDay.map((value, column) =>
-      boxes.futureDays[column]
-        ? empty
-        : value === null
-          ? ''
-          : boxesLabel(value),
-    ),
+    ...row.boxesByDay.map((value) => (value === null ? '' : boxesLabel(value))),
     boxesLabel(row.boxes),
-    row.marginPerBoxCents === null ? empty : moneyLabel(row.marginPerBoxCents),
+    row.marginPerBoxCents === null
+      ? noSalesMark
+      : moneyLabel(row.marginPerBoxCents),
     moneyLabel(row.marginCents),
   ])
   const dayStyles = Object.fromEntries(
@@ -143,7 +135,11 @@ export async function downloadMonthlyResultsPdf(
       [
         'Total cajas vendidas',
         ...boxes.dayTotals.map((total, column) =>
-          boxes.futureDays[column] ? empty : boxesLabel(total),
+          boxes.futureDays[column]
+            ? ''
+            : total === 0
+              ? noSalesMark
+              : boxesLabel(total),
         ),
         boxesLabel(boxes.totalBoxes),
         '',

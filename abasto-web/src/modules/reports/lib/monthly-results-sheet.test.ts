@@ -1,7 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  boxesLabel,
+  boxesNumFmt,
   buildBoxesSheet,
   buildDailySheet,
+  dailyRowCells,
   dayHeader,
   longDateLabel,
   moneyLabel,
@@ -164,7 +167,7 @@ describe('buildDailySheet', () => {
     expect(w2.revenueCents).toBe(300 + 200)
     expect(sheet.total.revenueCents).toBe(w1.revenueCents! + w2.revenueCents!)
     expect(sheet.total.marginCents).toBe(w1.marginCents! + w2.marginCents!)
-    expect(sheet.total.label).toBe('Total de ganancia')
+    expect(sheet.total.label).toBe('Total del mes')
   })
 
   test('days after `through` are empty, past days without sales are 0', () => {
@@ -285,5 +288,50 @@ describe('buildBoxesSheet', () => {
     expect(sheet.dayTotals[1]).toBe(4)
     const products = sheet.rows.reduce((s, r) => s + r.marginCents, 0)
     expect(sheet.totalMarginCents).toBe(products)
+  })
+})
+
+describe('one rule for past-empty and future days', () => {
+  const sheet = buildDailySheet(results)
+  const rowOf = (date: string) => sheet.rows.find((r) => r.day === date)!
+
+  test('a sold day prints its figures', () => {
+    expect(dailyRowCells(rowOf('2026-11-02'))).toEqual([
+      'lunes, 2 de noviembre de 2026',
+      '$ 208,925.70',
+      '$ 50,000.00',
+      '10',
+    ])
+  })
+
+  test('a past day without sales prints "—"', () => {
+    expect(dailyRowCells(rowOf('2026-11-04')).slice(1)).toEqual(['—', '—', '—'])
+  })
+
+  test('a future day stays blank', () => {
+    expect(dailyRowCells(rowOf('2026-11-10')).slice(1)).toEqual(['', '', ''])
+  })
+
+  test('a week that has not started is blank, a quiet week is "—"', () => {
+    const early = buildDailySheet({ ...results, through: '2026-11-07' })
+    const [, w2] = early.rows.filter((r) => r.kind === 'week')
+    expect(dailyRowCells(w2).slice(1)).toEqual(['', '', ''])
+  })
+})
+
+describe('boxes in Excel and PDF', () => {
+  test('up to two decimals, no trailing .00, thousands grouped', () => {
+    expect(boxesLabel(6)).toBe('6')
+    expect(boxesLabel(12.5)).toBe('12.5')
+    expect(boxesLabel(12.456)).toBe('12.46')
+    expect(boxesLabel(1234.5)).toBe('1,234.5')
+  })
+
+  test('Excel format never ends in a dot', () => {
+    expect(boxesNumFmt(6)).toBe('#,##0')
+    expect(boxesNumFmt(12.5)).toBe('#,##0.0#')
+    expect(boxesNumFmt(12.456)).toBe('#,##0.0#')
+    for (const value of [0, 6, 12.5, 12.25, 1234])
+      expect(boxesNumFmt(value).endsWith('.')).toBe(false)
   })
 })

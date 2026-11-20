@@ -72,7 +72,7 @@ const load = async (buffer: ArrayBuffer) => {
 }
 
 describe('buildDailySalesXlsx', () => {
-  test('one sheet with titles, long dates, week subtotal, total and "—" for future days', async () => {
+  test('one sheet with titles, long dates, week subtotal, total and blank future days', async () => {
     const book = await load(await buildDailySalesXlsx(results, meta))
     expect(book.worksheets.map((s) => s.name)).toEqual([
       'Venta y ganancia por día',
@@ -89,9 +89,10 @@ describe('buildDailySalesXlsx', () => {
     expect(daily.getCell('A6').value).toBe('lunes, 2 de noviembre de 2026')
     expect(daily.getCell('B6').value).toBe(208925.7)
     expect(daily.getCell('B6').numFmt).toBe('$ #,##0.00')
-    expect(daily.getCell('B8').value).toBe('—')
+    // Future day: blank, not a dash.
+    expect(daily.getCell('B8').value).toBeNull()
     expect(daily.getCell('A9').value).toBe('Semana 1 · 02 al 04 nov')
-    expect(daily.getCell('A10').value).toBe('Total de ganancia')
+    expect(daily.getCell('A10').value).toBe('Total del mes')
     expect(daily.getCell('C10').value).toBe(58925.7)
     expect(daily.views[0]).toMatchObject({ state: 'frozen', ySplit: 5 })
   })
@@ -104,10 +105,27 @@ describe('buildDailySalesXlsx', () => {
     expect(daily.getCell('B7').value).toBe(0)
     expect(daily.getCell('B7').numFmt).toBe('$ #,##0.00;-$ #,##0.00;"—"')
     expect(daily.getCell('D7').value).toBe(0)
-    expect(daily.getCell('D7').numFmt).toBe('#,##0.##;-#,##0.##;"—"')
+    expect(daily.getCell('D7').numFmt).toBe('#,##0;-#,##0;"—"')
     expect(daily.getCell('D9').value).toBe(10)
     expect(daily.getCell('D10').value).toBe(10)
-    expect(daily.getCell('D10').numFmt).toBe('#,##0.##')
+    expect(daily.getCell('D6').numFmt).toBe('#,##0')
+    expect(daily.getCell('D10').numFmt).toBe('#,##0')
+  })
+
+  test('fractional boxes use a format that cannot print a trailing dot', async () => {
+    const fractional: MonthlyResults = {
+      ...results,
+      byDay: results.byDay.map((item, index) =>
+        index === 0 ? { ...item, boxes: 12.5 } : item,
+      ),
+      totals: { ...results.totals, boxes: 12.5 },
+    }
+    const daily = (await load(await buildDailySalesXlsx(fractional, meta)))
+      .worksheets[0]
+    expect(daily.getCell('D6').numFmt).toBe('#,##0.0#')
+    expect(daily.getCell('D10').numFmt).toBe('#,##0.0#')
+    for (const address of ['D6', 'D7', 'D9', 'D10'])
+      expect(daily.getCell(address).numFmt.endsWith('.')).toBe(false)
   })
 })
 
@@ -124,7 +142,8 @@ describe('buildBoxesXlsx', () => {
     expect(boxes.getCell('G5').value).toBe('GANANCIA')
     expect(boxes.getCell('A6').value).toBe('Leche')
     expect(boxes.getCell('B6').value).toBe(10)
-    expect(boxes.getCell('D6').value).toBe('—')
+    // Day after `through`: blank.
+    expect(boxes.getCell('D6').value).toBeNull()
     expect(boxes.getCell('F6').value).toBe(5892.57)
     expect(boxes.getCell('G6').value).toBe(58925.7)
     expect(boxes.getCell('A7').value).toBe('Aceite')
@@ -133,6 +152,11 @@ describe('buildBoxesXlsx', () => {
     expect(boxes.getCell('G7').value).toBe(0)
     expect(boxes.getCell('A8').value).toBe('Total cajas vendidas')
     expect(boxes.getCell('E8').value).toBe(10)
+    // Totals row: the sold day, a past day without sales "—", a future day blank.
+    expect(boxes.getCell('B8').value).toBe(10)
+    expect(boxes.getCell('C8').value).toBe(0)
+    expect(boxes.getCell('C8').numFmt).toBe('#,##0;-#,##0;"—"')
+    expect(boxes.getCell('D8').value).toBeNull()
     expect(boxes.getCell('A9').value).toBe('Total de ganancia')
     expect(boxes.getCell('G9').value).toBe(58925.7)
     expect(boxes.views[0]).toMatchObject({ xSplit: 1, ySplit: 5 })
