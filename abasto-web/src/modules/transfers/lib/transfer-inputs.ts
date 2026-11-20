@@ -22,8 +22,7 @@ export const cancelInput = z.object({ transferId: id })
 export const ownerTransferInput = z.object({
   fromWarehouseId: id,
   toWarehouseId: id,
-  productId: id,
-  boxes: z.number(),
+  lines: z.array(z.object({ productId: id, boxes: z.number() })),
 })
 
 export const transferableBoxesInput = z.object({ warehouseId: id })

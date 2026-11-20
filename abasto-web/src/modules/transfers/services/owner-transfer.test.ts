@@ -23,12 +23,14 @@ beforeEach(() => resetDatabase(db))
 type Fx = Awaited<ReturnType<typeof setupTransfers>>
 
 // Water default presentation = box of 12 units.
-const move = (fx: Fx, boxes: number, overrides = {}) => ({
+const move = (
+  fx: Fx,
+  boxes: number,
+  overrides: { toWarehouseId?: string; productId?: string } = {},
+) => ({
   fromWarehouseId: fx.a.id,
-  toWarehouseId: fx.b.id,
-  productId: fx.water.id,
-  boxes,
-  ...overrides,
+  toWarehouseId: overrides.toWarehouseId ?? fx.b.id,
+  lines: [{ productId: overrides.productId ?? fx.water.id, boxes }],
 })
 
 async function rejects(
@@ -221,12 +223,96 @@ describe('transferBoxes', () => {
   })
 })
 
+describe('transferBoxes with several lines', () => {
+  test('moves every line in one transfer', async () => {
+    const fx = await setupTransfers()
+    await receive(fx, { productId: fx.water.id, quantity: 36 })
+    await receive(fx, { productId: fx.milkBox.id, quantity: 5 })
+    const { id } = await transferBoxes(fx.owner, {
+      fromWarehouseId: fx.a.id,
+      toWarehouseId: fx.b.id,
+      lines: [
+        { productId: fx.water.id, boxes: 2 },
+        { productId: fx.milkBox.id, boxes: 3 },
+      ],
+    })
+    expect(await db.select().from(transfers)).toHaveLength(1)
+    const lines = await db
+      .select()
+      .from(transferLines)
+      .where(eq(transferLines.transferId, id))
+    expect(lines.map((line) => [line.productId, line.quantity]).sort()).toEqual(
+      [
+        [fx.water.id, 24],
+        [fx.milkBox.id, 3],
+      ].sort(),
+    )
+    const moved = await db
+      .select()
+      .from(lots)
+      .where(eq(lots.warehouseId, fx.b.id))
+    expect(moved.reduce((sum, lot) => sum + lot.onHand, 0)).toBe(27)
+  })
+
+  test('rolls everything back when one line lacks stock', async () => {
+    const fx = await setupTransfers()
+    await receive(fx, { productId: fx.water.id, quantity: 36 })
+    await receive(fx, { productId: fx.milkBox.id, quantity: 1 })
+    await rejects(
+      () =>
+        transferBoxes(fx.owner, {
+          fromWarehouseId: fx.a.id,
+          toWarehouseId: fx.b.id,
+          lines: [
+            { productId: fx.water.id, boxes: 1 },
+            { productId: fx.milkBox.id, boxes: 2 },
+          ],
+        }),
+      'conflict',
+      'No hay suficientes cajas disponibles en el origen.',
+    )
+  })
+
+  test('refuses duplicated products and empty transfers', async () => {
+    const fx = await setupTransfers()
+    await receive(fx, { productId: fx.water.id, quantity: 36 })
+    await rejects(
+      () =>
+        transferBoxes(fx.owner, {
+          fromWarehouseId: fx.a.id,
+          toWarehouseId: fx.b.id,
+          lines: [
+            { productId: fx.water.id, boxes: 1 },
+            { productId: fx.water.id, boxes: 1 },
+          ],
+        }),
+      'invalid',
+      'Cada producto solo puede aparecer una vez en el traspaso.',
+    )
+    await rejects(
+      () =>
+        transferBoxes(fx.owner, {
+          fromWarehouseId: fx.a.id,
+          toWarehouseId: fx.b.id,
+          lines: [],
+        }),
+      'invalid',
+      'Agrega al menos un producto al traspaso.',
+    )
+  })
+})
+
 describe('listTransferableBoxes', () => {
   test('lists whole available boxes per product, owner only', async () => {
     const fx = await setupTransfers()
     await receive(fx, { productId: fx.water.id, quantity: 30 })
     expect(await listTransferableBoxes(fx.owner, fx.a.id)).toEqual([
-      expect.objectContaining({ productId: fx.water.id, boxes: 2 }),
+      expect.objectContaining({
+        productId: fx.water.id,
+        boxes: 2,
+        sku: expect.any(String),
+        imageUrl: null,
+      }),
     ])
     expect(await listTransferableBoxes(fx.owner, fx.b.id)).toEqual([])
     expect(

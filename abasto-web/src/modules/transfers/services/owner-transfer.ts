@@ -21,18 +21,23 @@ import { transferredCostCents } from '#/modules/transfers/lib/transfer-cost'
 import { transferLines, transfers } from '#/modules/transfers/db/schema'
 import { warehouses } from '#/modules/warehouses/db/schema'
 
-export type OwnerTransferInput = {
-  fromWarehouseId: string
-  toWarehouseId: string
+export type OwnerTransferLine = {
   productId: string
   /** Whole boxes of the product's default presentation. */
   boxes: number
+}
+
+export type OwnerTransferInput = {
+  fromWarehouseId: string
+  toWarehouseId: string
+  lines: ReadonlyArray<OwnerTransferLine>
 }
 
 export type TransferableProduct = {
   productId: string
   name: string
   sku: string
+  imageUrl: string | null
   /** Base units per box (default presentation). */
   factor: number
   /** Whole boxes available (not reserved, not expired). */
@@ -78,6 +83,7 @@ export async function listTransferableBoxes(
         productId: products.id,
         name: products.name,
         sku: products.sku,
+        imageUrl: products.imageUrl,
         factor: presentations.factor,
         units: sql<number>`sum(${lots.onHand} - ${lots.reserved})::int`,
       })
@@ -98,7 +104,13 @@ export async function listTransferableBoxes(
           isNull(products.archivedAt),
         ),
       )
-      .groupBy(products.id, products.name, products.sku, presentations.factor)
+      .groupBy(
+        products.id,
+        products.name,
+        products.sku,
+        products.imageUrl,
+        presentations.factor,
+      )
       .orderBy(asc(products.name))
     return rows
       .map(({ units, ...row }) => ({
@@ -109,10 +121,59 @@ export async function listTransferableBoxes(
   })
 }
 
+type TakenLot = {
+  lot: typeof lots.$inferSelect
+  quantity: number
+}
+
+/** Validates one line and picks the lots (FEFO) that cover it, locking them. */
+async function planLine(
+  tx: Tx,
+  fromWarehouseId: string,
+  line: OwnerTransferLine,
+): Promise<Array<TakenLot>> {
+  const product = (
+    await tx
+      .select({ id: products.id, archivedAt: products.archivedAt })
+      .from(products)
+      .where(eq(products.id, line.productId))
+  ).at(0)
+  if (!product) throw new AppError('not_found', 'No encontramos ese producto.')
+  if (product.archivedAt) throw productArchived()
+  const factor = await defaultFactor(tx, line.productId)
+  if (!factor) {
+    throw new AppError(
+      'invalid',
+      'Ese producto no tiene una presentación predeterminada.',
+    )
+  }
+  const quantity = line.boxes * factor
+  assertFitsInt4(quantity, `La cantidad no puede ser mayor que ${MAX_INT4}.`)
+  const candidates = (
+    await tx
+      .select()
+      .from(lots)
+      .where(takeable(fromWarehouseId, [line.productId]))
+      .orderBy(asc(lots.id))
+      .for('update')
+  ).sort((a, b) => byFefo(a, b) || (a.id < b.id ? -1 : 1))
+  const taken: Array<TakenLot> = []
+  let remaining = quantity
+  for (const lot of candidates) {
+    if (!remaining) break
+    const take = Math.min(lot.onHand - lot.reserved, remaining)
+    taken.push({ lot, quantity: take })
+    remaining -= take
+  }
+  if (remaining) throw notEnough()
+  return taken
+}
+
 /**
  * Owner-only immediate transfer in whole boxes: units leave the origin and
  * enter the destination at once (earliest expiry first, only free non-expired
- * units), recorded as an already received transfer so it shows in history.
+ * units), recorded as ONE already received transfer so it shows in history.
+ * Every line is validated and applied in the same transaction.
  */
 export async function transferBoxes(
   actor: Actor,
@@ -125,52 +186,39 @@ export async function transferBoxes(
       'El origen y el destino del traspaso deben ser distintos.',
     )
   }
-  if (!isWholeNumber(input.boxes) || input.boxes < 1) {
+  if (!input.lines.length) {
+    throw new AppError('invalid', 'Agrega al menos un producto al traspaso.')
+  }
+  for (const line of input.lines) {
+    if (!isWholeNumber(line.boxes) || line.boxes < 1) {
+      throw new AppError(
+        'invalid',
+        'Indica un número entero de cajas, de 1 en adelante.',
+      )
+    }
+  }
+  if (
+    new Set(input.lines.map((line) => line.productId)).size !==
+    input.lines.length
+  ) {
     throw new AppError(
       'invalid',
-      'Indica un número entero de cajas, de 1 en adelante.',
+      'Cada producto solo puede aparecer una vez en el traspaso.',
     )
   }
+  const totalBoxes = input.lines.reduce((sum, line) => sum + line.boxes, 0)
+  // Stable order keeps concurrent multi-line transfers from deadlocking.
+  const ordered = [...input.lines].sort((a, b) =>
+    a.productId < b.productId ? -1 : 1,
+  )
   return db.transaction(async (tx) => {
     await requireWarehouse(tx, input.fromWarehouseId)
     await requireWarehouse(tx, input.toWarehouseId)
     await expireOverdueOrders(tx, input.fromWarehouseId)
-    const product = (
-      await tx
-        .select({ id: products.id, archivedAt: products.archivedAt })
-        .from(products)
-        .where(eq(products.id, input.productId))
-    ).at(0)
-    if (!product)
-      throw new AppError('not_found', 'No encontramos ese producto.')
-    if (product.archivedAt) throw productArchived()
-    const factor = await defaultFactor(tx, input.productId)
-    if (!factor) {
-      throw new AppError(
-        'invalid',
-        'Ese producto no tiene una presentación predeterminada.',
-      )
+    const taken: Array<TakenLot> = []
+    for (const line of ordered) {
+      taken.push(...(await planLine(tx, input.fromWarehouseId, line)))
     }
-    const quantity = input.boxes * factor
-    assertFitsInt4(quantity, `La cantidad no puede ser mayor que ${MAX_INT4}.`)
-    const candidates = (
-      await tx
-        .select()
-        .from(lots)
-        .where(takeable(input.fromWarehouseId, [input.productId]))
-        .orderBy(asc(lots.id))
-        .for('update')
-    ).sort((a, b) => byFefo(a, b) || (a.id < b.id ? -1 : 1))
-    const taken: Array<{ lot: (typeof candidates)[number]; quantity: number }> =
-      []
-    let remaining = quantity
-    for (const lot of candidates) {
-      if (!remaining) break
-      const take = Math.min(lot.onHand - lot.reserved, remaining)
-      taken.push({ lot, quantity: take })
-      remaining -= take
-    }
-    if (remaining) throw notEnough()
     const names = new Map(
       (
         await tx
@@ -190,7 +238,7 @@ export async function transferBoxes(
         fromWarehouseId: input.fromWarehouseId,
         toWarehouseId: input.toWarehouseId,
         status: 'Recibido',
-        notes: `Traspaso inmediato de ${input.boxes} ${input.boxes === 1 ? 'caja' : 'cajas'}`,
+        notes: `Traspaso inmediato de ${totalBoxes} ${totalBoxes === 1 ? 'caja' : 'cajas'}`,
         createdBy: actor.userId,
         closedBy: actor.userId,
         closedAt: now(),
