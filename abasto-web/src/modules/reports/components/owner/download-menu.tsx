@@ -12,13 +12,24 @@ type DownloadMenuProps = {
   onPdf: (choice: PdfChoice) => Promise<void>
   /** Absent when the period on screen has no sales to export. */
   onCsv?: () => void
+  /** The two month Excel files; absent when there is no period on screen. */
+  excel?: {
+    /** "noviembre 2026": the month the files cover. */
+    month: string
+    onDownload: (kind: 'daily' | 'boxes') => Promise<void>
+  }
 }
 
 const item =
   'flex min-h-10 w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm text-ink-row hover:bg-muted focus-visible:bg-muted focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50'
 
-/** "Descargar PDF": the day, week and month reports, and the sales CSV. */
-export function DownloadMenu({ choices, onPdf, onCsv }: DownloadMenuProps) {
+/** "Descargar PDF": the day, week and month reports, the month Excel files and the sales CSV. */
+export function DownloadMenu({
+  choices,
+  onPdf,
+  onCsv,
+  excel,
+}: DownloadMenuProps) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
   const root = useRef<HTMLDivElement>(null)
@@ -39,10 +50,10 @@ export function DownloadMenu({ choices, onPdf, onCsv }: DownloadMenuProps) {
     }
   }, [open])
 
-  const download = async (choice: PdfChoice) => {
-    setBusy(choice.id)
+  const run = async (id: string, task: () => Promise<void>) => {
+    setBusy(id)
     try {
-      await onPdf(choice)
+      await task()
       setOpen(false)
     } catch (cause) {
       // A toast outlives the menu, so closing it does not hide the failure.
@@ -57,6 +68,8 @@ export function DownloadMenu({ choices, onPdf, onCsv }: DownloadMenuProps) {
       setBusy(null)
     }
   }
+
+  const download = (choice: PdfChoice) => run(choice.id, () => onPdf(choice))
 
   return (
     <div ref={root} className="relative">
@@ -98,6 +111,34 @@ export function DownloadMenu({ choices, onPdf, onCsv }: DownloadMenuProps) {
               </button>
             </li>
           ))}
+          {excel && (
+            <li role="none" className="mt-1.5 border-t border-border pt-1.5">
+              {(
+                [
+                  ['daily', 'Venta diaria'],
+                  ['boxes', 'Cajas por producto'],
+                ] as const
+              ).map(([kind, name]) => (
+                <button
+                  key={kind}
+                  type="button"
+                  role="menuitem"
+                  className={item}
+                  disabled={busy !== null}
+                  onClick={() =>
+                    void run(`excel-${kind}`, () => excel.onDownload(kind))
+                  }
+                >
+                  {`Excel · ${name} · ${excel.month}`}
+                  {busy === `excel-${kind}` && (
+                    <small className="text-xs text-muted-foreground">
+                      Generando…
+                    </small>
+                  )}
+                </button>
+              ))}
+            </li>
+          )}
           {onCsv && (
             <li role="none" className="mt-1.5 border-t border-border pt-1.5">
               <button

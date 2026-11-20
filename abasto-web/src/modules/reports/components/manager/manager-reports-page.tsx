@@ -6,6 +6,13 @@ import { businessDate } from '#/modules/orders/services/clock'
 import { ManagerBreakdown } from '#/modules/reports/components/manager/manager-breakdown'
 import { WarehouseTodayRail } from '#/modules/reports/components/manager/warehouse-today-rail'
 import { ControlSummary } from '#/modules/reports/components/owner/control-summary'
+import {
+  downloadMonthExcel,
+  monthOfRange,
+} from '#/modules/reports/components/monthly/monthly-excel-download'
+import type { MonthlyExcelKind } from '#/modules/reports/components/monthly/monthly-excel-download'
+import { monthLabel } from '#/modules/reports/components/monthly/monthly-format'
+import { monthlyExportMeta } from '#/modules/reports/lib/monthly-results-export-meta'
 import { DownloadMenu } from '#/modules/reports/components/owner/download-menu'
 import {
   ColumnHeading,
@@ -96,6 +103,27 @@ export function ManagerReportsPage({
       await import('#/modules/reports/lib/pdf-render')
     await downloadPdfReport(report)
   }
+  const downloadExcel = async (kind: MonthlyExcelKind) => {
+    if (!dashboard) return
+    await downloadMonthExcel(
+      kind,
+      {
+        month: monthOfRange(dashboard.sales.range),
+        warehouseId: dashboard.warehouse.id,
+        supplierId: search.proveedor,
+      },
+      monthlyExportMeta(
+        business.name,
+        [
+          `Almacén ${dashboard.warehouse.name}`,
+          supplier && `Proveedor ${supplier.name}`,
+        ]
+          .filter(Boolean)
+          .join(' · '),
+        userName,
+      ),
+    )
+  }
   return (
     <>
       <ReportViewSwitch value="tablero" onChange={onSearch} />
@@ -114,6 +142,10 @@ export function ManagerReportsPage({
             <DownloadMenu
               choices={pdfChoices(businessDate())}
               onPdf={downloadPdf}
+              excel={{
+                month: monthLabel(monthOfRange(dashboard.sales.range)),
+                onDownload: downloadExcel,
+              }}
               onCsv={() =>
                 downloadText(
                   salesCsv('day', dashboard.sales.byDay),

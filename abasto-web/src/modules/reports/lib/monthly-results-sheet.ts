@@ -220,3 +220,10 @@ export const boxesSheetName = 'Cajas por producto'
 /** Download filename: resultados-YYYY-MM.<ext>. */
 export const monthlyFilename = (month: string, extension: 'xlsx' | 'pdf') =>
   `resultados-${month}.${extension}`
+
+/** ventas-diarias-YYYY-MM.xlsx: the daily sale and margin file. */
+export const dailyFilename = (month: string) => `ventas-diarias-${month}.xlsx`
+
+/** cajas-por-producto-YYYY-MM.xlsx: the boxes by product file. */
+export const boxesFilename = (month: string) =>
+  `cajas-por-producto-${month}.xlsx`

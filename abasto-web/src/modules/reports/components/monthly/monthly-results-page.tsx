@@ -5,10 +5,12 @@ import { businessDate } from '#/modules/orders/services/clock'
 import { MonthlyDailyTable } from '#/modules/reports/components/monthly/monthly-daily-table'
 import { monthName } from '#/modules/reports/components/monthly/monthly-format'
 import { MonthlyHeader } from '#/modules/reports/components/monthly/monthly-header'
+import type { MonthlyDownload } from '#/modules/reports/components/monthly/monthly-header'
 import { MonthlyKpis } from '#/modules/reports/components/monthly/monthly-kpis'
 import { MonthlyProducts } from '#/modules/reports/components/monthly/monthly-products'
 import { ReportEmpty } from '#/modules/reports/components/report-empty'
 import { ReportViewSwitch } from '#/modules/reports/components/report-view-switch'
+import { monthlyExportMeta } from '#/modules/reports/lib/monthly-results-export-meta'
 import { monthOf, shiftMonth } from '#/modules/reports/lib/monthly-search'
 import type { MonthlySearch } from '#/modules/reports/lib/monthly-search'
 import type { MonthlyResultsPageLoad } from '#/modules/reports/server/load-monthly-results'
@@ -44,7 +46,7 @@ export function MonthlyResultsPage({
   today = businessDate(),
 }: MonthlyResultsPageProps) {
   const business = useBusiness()
-  const [busy, setBusy] = useState<'xlsx' | 'pdf' | null>(null)
+  const [busy, setBusy] = useState<MonthlyDownload | null>(null)
   const [failed, setFailed] = useState(false)
   if (!load.allowed) {
     return (
@@ -71,26 +73,25 @@ export function MonthlyResultsPage({
     .filter(Boolean)
     .join(' · ')
 
-  const download = async (kind: 'xlsx' | 'pdf') => {
+  const download = async (kind: MonthlyDownload) => {
     if (!data) return
     setBusy(kind)
     setFailed(false)
     try {
-      const meta = {
-        business: business.name,
-        scope: picked ? `Almacén ${scope}` : scope,
-        generatedAt: new Intl.DateTimeFormat('es-MX', {
-          dateStyle: 'medium',
-          timeStyle: 'short',
-          timeZone: 'America/Mexico_City',
-        }).format(new Date()),
-        generatedBy: userName,
-      }
+      const meta = monthlyExportMeta(
+        business.name,
+        picked ? `Almacén ${scope}` : scope,
+        userName,
+      )
       // Loaded on click: the document libraries stay out of the first bundle.
-      if (kind === 'xlsx') {
-        const { downloadMonthlyResultsXlsx } =
+      if (kind === 'daily') {
+        const { downloadDailySalesXlsx } =
           await import('#/modules/reports/lib/monthly-results-xlsx')
-        await downloadMonthlyResultsXlsx(data, meta)
+        await downloadDailySalesXlsx(data, meta)
+      } else if (kind === 'boxes') {
+        const { downloadBoxesXlsx } =
+          await import('#/modules/reports/lib/monthly-results-xlsx')
+        await downloadBoxesXlsx(data, meta)
       } else {
         const { downloadMonthlyResultsPdf } =
           await import('#/modules/reports/lib/monthly-results-pdf')

@@ -3,11 +3,14 @@ import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { cn } from '#/lib/utils/cn'
 import { monthHeading } from '#/modules/reports/components/monthly/monthly-format'
 import { toolbarControl } from '#/modules/reports/components/owner/owner-toolbar'
+import { ExcelMenu } from '#/modules/reports/components/monthly/monthly-excel-menu'
 import { ActionButton } from '#/modules/reports/components/report-buttons'
 import type {
   ReportSupplier,
   ReportWarehouse,
 } from '#/modules/reports/types/reports'
+
+export type MonthlyDownload = 'daily' | 'boxes' | 'pdf'
 
 type MonthlyHeaderProps = {
   month: string
@@ -20,14 +23,14 @@ type MonthlyHeaderProps = {
   supplierId?: string
   /** A manager picks among their own warehouses only: no "all" choice. */
   managed: boolean
-  busy: 'xlsx' | 'pdf' | null
+  busy: MonthlyDownload | null
   /** Nothing to download yet. */
   canDownload: boolean
   error?: string
   onMonth: (step: 1 | -1) => void
   onWarehouse: (id: string | undefined) => void
   onSupplier: (id: string | undefined) => void
-  onDownload: (kind: 'xlsx' | 'pdf') => void
+  onDownload: (kind: MonthlyDownload) => void
 }
 
 const select = cn(toolbarControl, 'max-md:min-h-11')
@@ -123,13 +126,11 @@ export function MonthlyHeader({
           ))}
         </select>
         <div className="flex gap-2.5">
-          <ActionButton
-            tone="primary"
+          <ExcelMenu
+            busy={busy === 'daily' || busy === 'boxes'}
             disabled={!canDownload || busy !== null}
-            onClick={() => onDownload('xlsx')}
-          >
-            {busy === 'xlsx' ? 'Generando…' : 'Descargar Excel'}
-          </ActionButton>
+            onDownload={onDownload}
+          />
           <ActionButton
             disabled={!canDownload || busy !== null}
             onClick={() => onDownload('pdf')}

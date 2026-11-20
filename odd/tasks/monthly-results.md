@@ -28,3 +28,10 @@ Client asked (WhatsApp, file `RESULTADOS NOVIEMBRE 2026.xlsx`, sheet "VENTA Y GA
 - L6 (evidence): `bun test` 1618 pass, 2 skip, 0 fail; tsc clean; eslint and prettier clean on touched files; `bun run build` OK, exceljs in its own lazy chunk.
 - L7 (slice): service, export and UI shipped as three commits; the UI commit is over the ~400-line slice because the view cannot ship half-built. The feature closes here; no more code goes on this slice.
 - L8 (open): switching back to Tablero keeps `mes` in the URL; a manager asking for a warehouse that is not theirs sees the generic reports message.
+
+## Round 2 (client format feedback)
+
+- S7 Two separate Excel files instead of one workbook with two sheets: `ventas-diarias-YYYY-MM.xlsx` (Fecha · Venta diaria · Ganancia diaria, weekly subtotals, month total) and `cajas-por-producto-YYYY-MM.xlsx` (product × day matrix, Total cajas, Ganancia por caja, Ganancia; bottom "Total cajas vendidas" and "Total de ganancia"). Brand colours kept.
+- S8 Tablero download menu also offers both Excel files for the month of the period on screen (same warehouse and supplier); the old CSV stays.
+- T5 [S7, S8] writer — split Excel and wire both downloads. Status: done. Commit: this commit. Evidence: bun test 1621 pass, 2 skip, 0 fail; tsc, eslint, prettier clean; build OK with exceljs lazy. Open menus not browser-clicked.
+- L9 (user): showed the old Tablero CSV ("Este es el excel que quedo") next to the client's sheet; chose two separate files, brand colours, matrix with total, per-box margin and margin, and the Excel also from Tablero.

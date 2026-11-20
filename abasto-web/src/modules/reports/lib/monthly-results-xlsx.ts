@@ -1,22 +1,18 @@
 import type { Worksheet } from 'exceljs'
 import { downloadBlob } from '#/modules/reports/lib/csv'
 import {
+  boxesFilename,
   boxesSheetName,
   buildBoxesSheet,
   buildDailySheet,
+  dailyFilename,
   dailySheetName,
-  monthlyFilename,
   monthTitle,
 } from '#/modules/reports/lib/monthly-results-sheet'
+import type { MonthlyExportMeta } from '#/modules/reports/lib/monthly-results-export-meta'
 import type { MonthlyResults } from '#/modules/reports/types/monthly-results'
 
-export type MonthlyExportMeta = {
-  business: string
-  scope: string
-  /** Already formatted, e.g. "2026-11-19 10:30". */
-  generatedAt: string
-  generatedBy?: string
-}
+export type { MonthlyExportMeta }
 
 const plum = 'FF5B2A86'
 const band = 'FFFFF8F0'
@@ -190,29 +186,56 @@ function boxesWorksheet(
   sheet.views = [{ state: 'frozen', xSplit: 1, ySplit: header }]
 }
 
-/** Builds the two-sheet workbook and returns its bytes. ExcelJS loads here. */
-export async function buildMonthlyResultsXlsx(
-  results: MonthlyResults,
+const xlsxType =
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+/** One-sheet workbook; ExcelJS loads here, on demand. */
+async function build(
+  sheetName: string,
+  populate: (sheet: Worksheet) => void,
   meta: MonthlyExportMeta,
 ): Promise<ArrayBuffer> {
   const { default: ExcelJS } = await import('exceljs')
   const workbook = new ExcelJS.Workbook()
   workbook.creator = meta.business
-  dailyWorksheet(workbook.addWorksheet(dailySheetName), results, meta)
-  boxesWorksheet(workbook.addWorksheet(boxesSheetName), results, meta)
+  populate(workbook.addWorksheet(sheetName))
   return workbook.xlsx.writeBuffer()
 }
 
-/** Builds and downloads resultados-YYYY-MM.xlsx. */
-export async function downloadMonthlyResultsXlsx(
+/** Bytes of ventas-diarias-YYYY-MM.xlsx. */
+export const buildDailySalesXlsx = (
+  results: MonthlyResults,
+  meta: MonthlyExportMeta,
+) =>
+  build(dailySheetName, (sheet) => dailyWorksheet(sheet, results, meta), meta)
+
+/** Bytes of cajas-por-producto-YYYY-MM.xlsx. */
+export const buildBoxesXlsx = (
+  results: MonthlyResults,
+  meta: MonthlyExportMeta,
+) =>
+  build(boxesSheetName, (sheet) => boxesWorksheet(sheet, results, meta), meta)
+
+/** Builds and downloads ventas-diarias-YYYY-MM.xlsx. */
+export async function downloadDailySalesXlsx(
   results: MonthlyResults,
   meta: MonthlyExportMeta,
 ) {
-  const buffer = await buildMonthlyResultsXlsx(results, meta)
+  const buffer = await buildDailySalesXlsx(results, meta)
   downloadBlob(
-    new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    }),
-    monthlyFilename(results.month, 'xlsx'),
+    new Blob([buffer], { type: xlsxType }),
+    dailyFilename(results.month),
+  )
+}
+
+/** Builds and downloads cajas-por-producto-YYYY-MM.xlsx. */
+export async function downloadBoxesXlsx(
+  results: MonthlyResults,
+  meta: MonthlyExportMeta,
+) {
+  const buffer = await buildBoxesXlsx(results, meta)
+  downloadBlob(
+    new Blob([buffer], { type: xlsxType }),
+    boxesFilename(results.month),
   )
 }

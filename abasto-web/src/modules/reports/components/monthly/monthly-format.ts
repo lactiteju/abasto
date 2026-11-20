@@ -33,6 +33,10 @@ export const monthHeading = (month: string) => {
   return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${month.slice(0, 4)}`
 }
 
+/** "noviembre 2026": lowercase, for running text and menu labels. */
+export const monthLabel = (month: string) =>
+  `${monthName(month)} ${month.slice(0, 4)}`
+
 /** "12.5 cajas", "1 caja". */
 export const boxesText = (boxes: number) =>
   `${boxesLabel(boxes)} ${boxes === 1 ? 'caja' : 'cajas'}`

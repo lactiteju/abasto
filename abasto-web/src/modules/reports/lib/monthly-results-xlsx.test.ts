@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import ExcelJS from 'exceljs'
-import { buildMonthlyResultsXlsx } from '#/modules/reports/lib/monthly-results-xlsx'
+import {
+  buildBoxesXlsx,
+  buildDailySalesXlsx,
+} from '#/modules/reports/lib/monthly-results-xlsx'
 import type { MonthlyResults } from '#/modules/reports/types/monthly-results'
 
 const zero = { orders: 0, revenueCents: 0, costCents: 0, marginCents: 0 }
@@ -40,22 +43,26 @@ const results: MonthlyResults = {
   previous: { ...zero, boxes: 0 },
 }
 
-describe('buildMonthlyResultsXlsx', () => {
-  test('writes both sheets with titles, headers, totals and "—" for future days', async () => {
-    const buffer = await buildMonthlyResultsXlsx(results, {
-      business: 'Abasto',
-      scope: 'Todos los almacenes',
-      generatedAt: '2026-11-19 10:30',
-      generatedBy: 'Ana',
-    })
-    const book = new ExcelJS.Workbook()
-    await book.xlsx.load(buffer)
+const meta = {
+  business: 'Abasto',
+  scope: 'Todos los almacenes',
+  generatedAt: '2026-11-19 10:30',
+  generatedBy: 'Ana',
+}
+
+const load = async (buffer: ArrayBuffer) => {
+  const book = new ExcelJS.Workbook()
+  await book.xlsx.load(buffer)
+  return book
+}
+
+describe('buildDailySalesXlsx', () => {
+  test('one sheet with titles, long dates, week subtotal, total and "—" for future days', async () => {
+    const book = await load(await buildDailySalesXlsx(results, meta))
     expect(book.worksheets.map((s) => s.name)).toEqual([
       'Venta y ganancia por día',
-      'Cajas por producto',
     ])
-
-    const daily = book.getWorksheet('Venta y ganancia por día')!
+    const daily = book.worksheets[0]
     expect(daily.getCell('A1').value).toBe('Abasto')
     expect(daily.getCell('A2').value).toBe('Resultados de noviembre 2026')
     expect(daily.getCell('A3').value).toBe('Todos los almacenes')
@@ -72,20 +79,37 @@ describe('buildMonthlyResultsXlsx', () => {
     expect(daily.getCell('A10').value).toBe('Total de ganancia')
     expect(daily.getCell('C10').value).toBe(58925.7)
     expect(daily.views[0]).toMatchObject({ state: 'frozen', ySplit: 5 })
+  })
+})
 
-    const boxes = book.getWorksheet('Cajas por producto')!
+describe('buildBoxesXlsx', () => {
+  test('one sheet with the matrix, per-product totals and the two summary rows', async () => {
+    const book = await load(await buildBoxesXlsx(results, meta))
+    expect(book.worksheets.map((s) => s.name)).toEqual(['Cajas por producto'])
+    const boxes = book.worksheets[0]
+    expect(boxes.getCell('A1').value).toBe('Abasto')
     expect(boxes.getCell('A5').value).toBe('PRODUCTO')
     expect(boxes.getCell('B5').value).toBe('02')
     expect(boxes.getCell('E5').value).toBe('TOTAL CAJAS')
+    expect(boxes.getCell('F5').value).toBe('GANANCIA X CAJA')
     expect(boxes.getCell('G5').value).toBe('GANANCIA')
     expect(boxes.getCell('A6').value).toBe('Leche')
     expect(boxes.getCell('B6').value).toBe(10)
     expect(boxes.getCell('D6').value).toBe('—')
+    expect(boxes.getCell('F6').value).toBe(5892.57)
     expect(boxes.getCell('G6').value).toBe(58925.7)
     expect(boxes.getCell('A7').value).toBe('Total cajas vendidas')
     expect(boxes.getCell('E7').value).toBe(10)
     expect(boxes.getCell('A8').value).toBe('Total de ganancia')
     expect(boxes.getCell('G8').value).toBe(58925.7)
     expect(boxes.views[0]).toMatchObject({ xSplit: 1, ySplit: 5 })
+  })
+
+  test('total ganancia equals the daily file total', async () => {
+    const daily = (await load(await buildDailySalesXlsx(results, meta)))
+      .worksheets[0]
+    const boxes = (await load(await buildBoxesXlsx(results, meta)))
+      .worksheets[0]
+    expect(boxes.getCell('G8').value).toBe(daily.getCell('C10').value)
   })
 })

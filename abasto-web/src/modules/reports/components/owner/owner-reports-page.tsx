@@ -16,6 +16,13 @@ import {
 import { OwnerToolbar } from '#/modules/reports/components/owner/owner-toolbar'
 import { PeriodResult } from '#/modules/reports/components/owner/period-result'
 import { SalesBreakdown } from '#/modules/reports/components/owner/sales-breakdown'
+import {
+  downloadMonthExcel,
+  monthOfRange,
+} from '#/modules/reports/components/monthly/monthly-excel-download'
+import type { MonthlyExcelKind } from '#/modules/reports/components/monthly/monthly-excel-download'
+import { monthLabel } from '#/modules/reports/components/monthly/monthly-format'
+import { monthlyExportMeta } from '#/modules/reports/lib/monthly-results-export-meta'
 import { DownloadMenu } from '#/modules/reports/components/owner/download-menu'
 import { ReportEmpty } from '#/modules/reports/components/report-empty'
 import { ReportViewSwitch } from '#/modules/reports/components/report-view-switch'
@@ -109,6 +116,24 @@ export function OwnerReportsPage({
       await import('#/modules/reports/lib/pdf-render')
     await downloadPdfReport(report)
   }
+  const scope = [
+    warehouse
+      ? `Almacén ${warehouse.name}`
+      : `Todo el negocio · ${load.warehouses.length} almacenes`,
+    supplier && `Proveedor ${supplier.name}`,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  // The Excel files cover the month the period on screen ends in.
+  const month = data && monthOfRange(data.sales.range)
+  const downloadExcel = async (kind: MonthlyExcelKind) => {
+    if (!month) return
+    await downloadMonthExcel(
+      kind,
+      { month, warehouseId: search.almacen, supplierId: search.proveedor },
+      monthlyExportMeta(business.name, scope, userName),
+    )
+  }
   return (
     <>
       <ReportViewSwitch value="tablero" onChange={onSearch} />
@@ -122,6 +147,11 @@ export function OwnerReportsPage({
           <DownloadMenu
             choices={pdfChoices(businessDate())}
             onPdf={downloadPdf}
+            excel={
+              month
+                ? { month: monthLabel(month), onDownload: downloadExcel }
+                : undefined
+            }
             onCsv={
               data
                 ? () =>
