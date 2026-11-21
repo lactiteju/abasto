@@ -40,6 +40,6 @@ export function summarizeTransfer(
   return `${lines.length} ${lines.length === 1 ? 'producto' : 'productos'} · ${boxes} ${boxes === 1 ? 'caja' : 'cajas'}`
 }
 
-/** «1 caja disponible» / «N cajas disponibles». */
+/** «Solamente hay 1 caja disponible» / «Solamente hay N cajas disponibles». */
 export const boxesAvailableLabel = (boxes: number) =>
-  `${boxes} ${boxes === 1 ? 'caja disponible' : 'cajas disponibles'}`
+  `Solamente hay ${boxes} ${boxes === 1 ? 'caja disponible' : 'cajas disponibles'}`

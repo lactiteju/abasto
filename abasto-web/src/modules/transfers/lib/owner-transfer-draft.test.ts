@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  boxesAvailableLabel,
   clampBoxes,
   summarizeTransfer,
   transferLines,
@@ -30,5 +31,12 @@ describe('summarizeTransfer', () => {
     expect(summarizeTransfer([{ boxes: 2 }, { boxes: 3 }])).toBe(
       '2 productos · 5 cajas',
     )
+  })
+})
+
+describe('boxesAvailableLabel', () => {
+  test('tells how many boxes the origin has, singular and plural', () => {
+    expect(boxesAvailableLabel(1)).toBe('Solamente hay 1 caja disponible')
+    expect(boxesAvailableLabel(4)).toBe('Solamente hay 4 cajas disponibles')
   })
 })

@@ -77,6 +77,7 @@ export function OwnerTransferTable({
           <thead className="sticky top-0 z-10">
             <tr>
               <Th>Producto</Th>
+              <Th>Disponible</Th>
               <Th>Cajas</Th>
             </tr>
           </thead>
@@ -101,8 +102,19 @@ export function OwnerTransferTable({
                     <span>
                       <strong className="font-semibold">{product.name}</strong>
                       <CellNote>{product.sku}</CellNote>
-                      <CellNote>{boxesAvailableLabel(product.boxes)}</CellNote>
                     </span>
+                  </span>
+                </Td>
+                <Td>
+                  <span
+                    className={cn(
+                      'inline-flex rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap',
+                      quantities[product.productId] === String(product.boxes)
+                        ? 'bg-[#f6e6e2] text-[#b26357]'
+                        : 'bg-[#f4eef0] text-[#785e67]',
+                    )}
+                  >
+                    {boxesAvailableLabel(product.boxes)}
                   </span>
                 </Td>
                 <Td>
@@ -124,7 +136,7 @@ export function OwnerTransferTable({
             ))}
             {visible.length === 0 && (
               <tr>
-                <Td colSpan={2} className="text-center text-[#907e84]">
+                <Td colSpan={3} className="text-center text-[#907e84]">
                   {empty}
                 </Td>
               </tr>
