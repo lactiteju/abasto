@@ -15,17 +15,17 @@ import type { MonthlyResults } from '#/modules/reports/types/monthly-results'
 
 export type { MonthlyExportMeta }
 
-const plum = 'FF5B2A86'
-const band = 'FFFFF8F0'
+export const plum = 'FF5B2A86'
+export const band = 'FFFFF8F0'
 const weekFill = 'FFF1EAF6'
-const moneyFormat = '$ #,##0.00'
+export const moneyFormat = '$ #,##0.00'
 // Past days without sales keep a numeric 0 that Excel prints as "—"; days to
 // come are left blank (same rule as the PDF, see `noSalesMark`).
 const quietMoneyFormat = '$ #,##0.00;-$ #,##0.00;"—"'
 const quietBoxesFormat = '#,##0;-#,##0;"—"'
 const empty = '—'
 
-const fill = (argb: string) =>
+export const fill = (argb: string) =>
   ({ type: 'pattern', pattern: 'solid', fgColor: { argb } }) as const
 
 const dollars = (cents: number) => cents / 100
@@ -215,7 +215,7 @@ function boxesWorksheet(
   sheet.views = [{ state: 'frozen', xSplit: lead, ySplit: header }]
 }
 
-const xlsxType =
+export const xlsxType =
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
 /** One-sheet workbook; ExcelJS loads here, on demand. */

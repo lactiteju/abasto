@@ -23,8 +23,8 @@ Client request 24 nov 2026: weekly report of the 3 repartos (mainly LALA) like t
 ## Tasks
 
 - T1 [S1,S2] writer — schema, migration 0041, catalog field, freeze, settle merma. Status: done. Merma ledger: loss movement fromReserved (load only reserves). Full bun test 1710 pass.
-- T2 [S3,S4,S5] writer — report service, view, Excel. Depends on T1. Status: pending.
-- T3 [S6] verify. Status: pending.
+- T2 [S3,S4,S5] writer — report service, view, Excel. Status: done (on-screen Merma column added; cost rounded per cell).
+- T3 [S6] verify. Status: done: bun test 1745 pass 2 skip 0 fail, tsc clean. Not checked in browser.
 
 ## Log
 

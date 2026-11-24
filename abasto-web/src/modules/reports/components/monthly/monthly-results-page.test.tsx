@@ -276,10 +276,15 @@ describe('ReportViewSwitch', () => {
       value: 'tablero',
       onChange: (patch) => patches.push(patch),
     })
-    const [tablero, resultados] = buttons(tree)
+    const [tablero, resultados, repartos] = buttons(tree)
     resultados.props.onClick?.()
+    repartos.props.onClick?.()
     tablero.props.onClick?.()
-    expect(patches).toEqual([{ vista: 'resultados' }, { vista: undefined }])
+    expect(patches).toEqual([
+      { vista: 'resultados' },
+      { vista: 'repartos' },
+      { vista: undefined },
+    ])
   })
 })
 

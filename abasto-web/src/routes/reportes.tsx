@@ -5,21 +5,29 @@ import type { ExecutiveSearch } from '#/modules/executive/lib/search'
 import { ManagerReportsPage } from '#/modules/reports/components/manager/manager-reports-page'
 import { MonthlyResultsPage } from '#/modules/reports/components/monthly/monthly-results-page'
 import { OwnerReportsPage } from '#/modules/reports/components/owner/owner-reports-page'
+import { RiderWeeklyPage } from '#/modules/reports/components/rider-weekly/rider-weekly-page'
 import { parseManagerReportsSearch } from '#/modules/reports/lib/manager-search'
 import type { ManagerReportsSearch } from '#/modules/reports/lib/manager-search'
 import { parseMonthlySearch } from '#/modules/reports/lib/monthly-search'
 import type { MonthlySearch } from '#/modules/reports/lib/monthly-search'
 import { loadManagerReports } from '#/modules/reports/server/load-manager-reports'
 import { loadMonthlyResults } from '#/modules/reports/server/load-monthly-results'
+import { parseRiderWeeklySearch } from '#/modules/reports/lib/rider-weekly-search'
+import type { RiderWeeklySearch } from '#/modules/reports/lib/rider-weekly-search'
 import { loadOwnerReports } from '#/modules/reports/server/load-owner-reports'
+import { loadRiderWeekly } from '#/modules/reports/server/load-rider-weekly'
 
 /** The owner and manager views share one URL; each reads only its own keys. */
-type ReportsSearch = ManagerReportsSearch & ExecutiveSearch & MonthlySearch
+type ReportsSearch = ManagerReportsSearch &
+  ExecutiveSearch &
+  MonthlySearch &
+  RiderWeeklySearch
 
 const parseReportsSearch = (raw: Record<string, unknown>): ReportsSearch => ({
   ...parseManagerReportsSearch(raw),
   ...parseExecutiveSearch(raw),
   ...parseMonthlySearch(raw),
+  ...parseRiderWeeklySearch(raw),
 })
 
 export const Route = createFileRoute('/reportes')({
@@ -33,6 +41,9 @@ export const Route = createFileRoute('/reportes')({
         managed: context.user?.role !== 'owner',
         load: await loadMonthlyResults(deps),
       } as const
+    }
+    if (deps.vista === 'repartos') {
+      return { role: 'repartos', load: await loadRiderWeekly(deps) } as const
     }
     return context.user?.role === 'owner'
       ? ({ role: 'owner', load: await loadOwnerReports(deps) } as const)
@@ -58,6 +69,16 @@ function ReportsRoute() {
         onSearch={onSearch}
         userName={user?.name}
         managed={data.managed}
+      />
+    )
+  }
+  if (data.role === 'repartos') {
+    return (
+      <RiderWeeklyPage
+        load={data.load}
+        search={search}
+        onSearch={onSearch}
+        userName={user?.name}
       />
     )
   }

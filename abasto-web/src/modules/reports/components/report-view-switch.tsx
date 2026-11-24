@@ -2,7 +2,7 @@ import { cn } from '#/lib/utils/cn'
 import type { MonthlySearch } from '#/modules/reports/lib/monthly-search'
 
 type ReportViewSwitchProps = {
-  value: 'tablero' | 'resultados'
+  value: 'tablero' | 'resultados' | 'repartos'
   /** Merges the view into the URL; "tablero" is the absence of `vista`. */
   onChange: (patch: Partial<MonthlySearch>) => void
 }
@@ -13,9 +13,10 @@ const views: Array<{
 }> = [
   { value: 'tablero', label: 'Tablero' },
   { value: 'resultados', label: 'Resultados del mes' },
+  { value: 'repartos', label: 'Repartos' },
 ]
 
-/** "Tablero | Resultados del mes": the two views of /reportes. */
+/** "Tablero | Resultados del mes | Repartos": the views of /reportes. */
 export function ReportViewSwitch({ value, onChange }: ReportViewSwitchProps) {
   return (
     <div
@@ -30,7 +31,7 @@ export function ReportViewSwitch({ value, onChange }: ReportViewSwitchProps) {
           aria-pressed={value === view.value}
           onClick={() =>
             onChange({
-              vista: view.value === 'resultados' ? 'resultados' : undefined,
+              vista: view.value === 'tablero' ? undefined : view.value,
             })
           }
           className={cn(

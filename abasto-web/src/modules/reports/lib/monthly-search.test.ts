@@ -22,6 +22,12 @@ describe('monthly search params', () => {
     })
   })
 
+  test('keeps the repartos view', () => {
+    expect(parseMonthlySearch({ vista: 'repartos' })).toEqual({
+      vista: 'repartos',
+    })
+  })
+
   test('the month defaults to the current one', () => {
     expect(monthOf({}, '2026-11-19')).toBe('2026-11')
     expect(monthOf({ mes: '2026-09' }, '2026-11-19')).toBe('2026-09')

@@ -14,7 +14,11 @@ const parse = (date: string) => new Date(`${date}T12:00:00Z`)
 /** A real calendar date written as YYYY-MM-DD. */
 export function isBusinessDate(date: string | undefined): date is string {
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return false
-  return parse(date).toISOString().slice(0, 10) === date
+  const parsed = parse(date)
+  return (
+    !Number.isNaN(parsed.getTime()) &&
+    parsed.toISOString().slice(0, 10) === date
+  )
 }
 
 export function addDays(date: string, days: number) {

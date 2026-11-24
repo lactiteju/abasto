@@ -1,7 +1,7 @@
 /** URL state of "Resultados del mes": the view switch and the month shown. */
 export type MonthlySearch = {
   /** Absent means the usual dashboard ("Tablero"). */
-  vista?: 'resultados'
+  vista?: 'resultados' | 'repartos'
   /** YYYY-MM; absent means the current month. */
   mes?: string
 }
@@ -13,7 +13,9 @@ export function parseMonthlySearch(
   raw: Record<string, unknown>,
 ): MonthlySearch {
   return {
-    ...(raw.vista === 'resultados' ? { vista: 'resultados' as const } : {}),
+    ...(raw.vista === 'resultados' || raw.vista === 'repartos'
+      ? { vista: raw.vista }
+      : {}),
     ...(typeof raw.mes === 'string' && monthPattern.test(raw.mes)
       ? { mes: raw.mes }
       : {}),

@@ -42,14 +42,16 @@ const totalsOf = (row: RawRow): SalesTotals => {
 }
 
 /**
- * Settled rider deliveries, one row per allocation that sold something. A
- * delivery counts as one ticket (`order_id` is the assignment id) on the day
- * it was settled, valued like the settlement itself (`priceSold`): sold units
- * come from the oldest allocation first; the first floor(sold ÷ box) × box
- * units are whole boxes at the frozen box price, the rest loose pieces at the
- * frozen piece price (or the prorated box price without one), half-up rounded.
+ * Settled rider deliveries, one row per allocation that sold or lost
+ * something (merma). A delivery counts as one ticket (`order_id` is the
+ * assignment id) on the day it was settled, valued like the settlement itself
+ * (`priceSold`): sold units come from the oldest allocation first; the first
+ * floor(sold ÷ box) × box units are whole boxes at the frozen box price, the
+ * rest loose pieces at the frozen piece price (or the prorated box price
+ * without one), half-up rounded. Besides the sales columns it exposes the
+ * line, rider, merma, frozen route pay and box factor, for the rider reports.
  */
-function settledRiderLines(
+export function riderAllocationLines(
   range: DateRange,
   warehouseIds: ReadonlyArray<string>,
   supplierId?: string,
@@ -71,7 +73,11 @@ function settledRiderLines(
           + (ra.sold_quantity - ra.in_boxes)::bigint * ra.piece_cents
       end)::bigint as line_total_cents,
       ra.sold_quantity as base_quantity,
-      ra.sold_quantity::numeric * ra.lot_cost as cost
+      ra.sold_quantity::numeric * ra.lot_cost as cost,
+      a.rider_id, ln.id as line_id, ln.box_factor,
+      ln.route_pay_cents, coalesce(ra.scrap_quantity, 0) as scrap_quantity,
+      coalesce(ra.piece_cents, (2 * ra.price_cents + ra.price_factor)
+        / (2 * ra.price_factor)) as unit_cents
     from rider_assignments a
     join rider_assignment_lines ln on ln.assignment_id = a.id
     join (
@@ -90,10 +96,23 @@ function settledRiderLines(
         lot_order as (partition by r.line_id order by l.received_at, l.id)
     ) ra on ra.line_id = ln.id
     where a.status = 'Liquidada'
-      and ra.sold_quantity > 0
+      and (ra.sold_quantity > 0 or ra.scrap_quantity > 0)
       and a.warehouse_id in (${uuidList(warehouseIds)})
       and ${inRange(sql`a.closed_at`, range)}
       ${supplier}`
+}
+
+/** The sales columns of the settled deliveries that sold something. */
+function settledRiderLines(
+  range: DateRange,
+  warehouseIds: ReadonlyArray<string>,
+  supplierId?: string,
+) {
+  return sql`
+    select order_id, warehouse_id, customer_id, closed_at, channel, product_id,
+      line_total_cents, base_quantity, cost
+    from (${riderAllocationLines(range, warehouseIds, supplierId)}) rl
+    where rl.base_quantity > 0`
 }
 
 /**
