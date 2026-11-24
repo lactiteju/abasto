@@ -8,6 +8,7 @@ import {
   lossInput,
   minimumInput,
   overviewInput,
+  productLossInput,
   standardPricesInput,
   warehouseStockInput,
 } from '#/modules/inventory/lib/inventory-inputs'
@@ -16,6 +17,7 @@ import {
   adjustLot,
   registerLoss,
 } from '#/modules/inventory/services/stock-adjustments'
+import { registerProductLoss } from '#/modules/inventory/services/product-loss'
 import { countStock } from '#/modules/inventory/services/stock-counts'
 import { setMinimumStock } from '#/modules/inventory/services/stock-minimums'
 import {
@@ -112,6 +114,14 @@ export const registerLossFn = createServerFn({ method: 'POST' })
   .validator((data: unknown) => data)
   .handler(({ data }) =>
     runWithActor((actor) => registerLoss(actor, parseInput(lossInput, data))),
+  )
+
+export const registerProductLossFn = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => data)
+  .handler(({ data }) =>
+    runWithActor((actor) =>
+      registerProductLoss(actor, parseInput(productLossInput, data)),
+    ),
   )
 
 export const countStockFn = createServerFn({ method: 'POST' })

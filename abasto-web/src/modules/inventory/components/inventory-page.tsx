@@ -6,6 +6,7 @@ import {
   PrinterIcon,
   RotateCcwIcon,
   ScaleIcon,
+  Trash2Icon,
   TruckIcon,
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -25,6 +26,7 @@ import { SupplierPendingsTab } from '#/modules/inventory/components/supplier-pen
 import { WarehouseSummary } from '#/modules/inventory/components/warehouse-summary'
 import { CountDialog } from '#/modules/inventory/forms/count-dialog'
 import { LotsDialog } from '#/modules/inventory/forms/lots-dialog'
+import { MermaDialog } from '#/modules/inventory/forms/merma-dialog'
 import { MinimumDialog } from '#/modules/inventory/forms/minimum-dialog'
 import { CancelOrderDialog } from '#/modules/inventory/forms/cancel-order-dialog'
 import { OrderDetailDialog } from '#/modules/inventory/forms/order-detail-dialog'
@@ -115,6 +117,7 @@ type Dialog =
   | { kind: 'return'; pending: PendingBalance }
   | { kind: 'scrap'; pending: PendingBalance }
   | { kind: 'count' }
+  | { kind: 'merma' }
   | { kind: 'transfer' }
   | { kind: 'receive'; transfer: TransferListItem }
   | { kind: 'cancel'; transfer: TransferListItem }
@@ -253,6 +256,15 @@ export function InventoryPage({
         actions={
           canManage ? (
             <div className="grid w-full grid-cols-2 gap-2.5 md:contents">
+              {selected.canAdjustStock && (
+                <ActionButton
+                  className={headingButton}
+                  onClick={() => setDialog({ kind: 'merma' })}
+                >
+                  <Trash2Icon size={18} />
+                  Merma
+                </ActionButton>
+              )}
               <ActionButton
                 className={headingButton}
                 disabled={!hasCountableStock(stock, supplierId)}
@@ -391,6 +403,27 @@ export function InventoryPage({
         </TabsContent>
       </Tabs>
 
+      {dialog?.kind === 'merma' && (
+        <MermaDialog
+          warehouseId={selected.id}
+          warehouseName={selected.name}
+          products={stock.flatMap((row) => {
+            const available = row.onHand - row.reserved
+            return available > 0
+              ? [
+                  {
+                    productId: row.productId,
+                    name: row.name,
+                    sku: row.sku,
+                    imageUrl: row.imageUrl,
+                    available,
+                  },
+                ]
+              : []
+          })}
+          onClose={closeDialog}
+        />
+      )}
       {dialog?.kind === 'order' && (
         <OrderDialog
           warehouses={managed}

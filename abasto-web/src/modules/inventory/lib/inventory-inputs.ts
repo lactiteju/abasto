@@ -33,6 +33,13 @@ export const lossInput = z.object({
   reason: z.string(),
 })
 
+export const productLossInput = z.object({
+  warehouseId: id,
+  lines: z.array(z.object({ productId: id, pieces: whole })),
+  category: z.enum(['dañado', 'caducado']),
+  note: z.string().optional(),
+})
+
 export const countInput = z.object({
   productId: id,
   warehouseId: id,

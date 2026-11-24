@@ -6,6 +6,7 @@ import {
   adjustLotFn,
   countStockFn,
   purchaseStandardPricesFn,
+  registerProductLossFn,
   registerLossFn,
   setMinimumFn,
   warehouseStockFn,
@@ -156,6 +157,19 @@ export function useInventoryActions() {
       category: LossCategory
       reason: string
     }) => run(() => registerLossFn({ data: input }), 'Existencias quitadas.'),
+    /** «Merma»: damaged or expired pieces of several products, taken FEFO. */
+    registerProductLoss: (input: {
+      warehouseId: string
+      lines: Array<{ productId: string; pieces: number }>
+      category: 'dañado' | 'caducado'
+      note?: string
+    }) =>
+      run(() => registerProductLossFn({ data: input }), {
+        onSuccess: ({ pieces }) =>
+          toast.success(
+            `Merma registrada: ${pieces} ${pieces === 1 ? 'pieza' : 'piezas'} fuera del inventario.`,
+          ),
+      }),
     /** "Quitar existencias" for another reason: a negative adjustment in the ledger. */
     adjustLot: (input: { lotId: string; quantity: number; reason: string }) =>
       run(() => adjustLotFn({ data: input }), 'Existencias quitadas.'),
