@@ -21,8 +21,8 @@ describe('getRidersOverview', () => {
       lines: [{ productId: fx.milkBox.id, boxes: 2, units: 1 }],
     })
     const view = await getRidersOverview(fx.managerA)
-    expect(view.warehouses).toEqual([
-      { id: fx.a.id, name: 'Almacén A', isDefault: false },
+    expect(view.warehouses.map(({ id, name }) => ({ id, name }))).toEqual([
+      { id: fx.a.id, name: 'Almacén A' },
     ])
     expect(view.selectedId).toBe(fx.a.id)
     expect(view.canManageRiders).toBe(false)

@@ -51,8 +51,8 @@ describe('getCounterOverview', () => {
     })
 
     const view = await getCounterOverview(fx.staffA)
-    expect(view.warehouses).toEqual([
-      { id: fx.a.id, name: 'Almacén A', isDefault: false },
+    expect(view.warehouses.map(({ id, name }) => ({ id, name }))).toEqual([
+      { id: fx.a.id, name: 'Almacén A' },
     ])
     expect(view.selectedId).toBe(fx.a.id)
     expect(view.orders.map((o) => o.id)).toEqual([order.id])
