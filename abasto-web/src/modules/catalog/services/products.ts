@@ -42,6 +42,8 @@ export type ProductFields = {
   listPricePerPiece?: number
   fixedDiscountPerPiece?: number
   promotionPerPiece?: number
+  /** Pay to a delivery rider per box sold on a route, in cents; owner-only. */
+  routePayCents?: number
 }
 export type ProductInput = ProductFields & PresentationSet
 /** Sale price of the default presentation in one warehouse, saved with the product. */
@@ -76,6 +78,15 @@ const badAmount = () =>
   new AppError(
     'invalid',
     'Los montos del proveedor deben ser enteros en diezmilésimas, de cero o más.',
+  )
+
+/** Largest value of a Postgres `integer`. */
+const MAX_INT4 = 2_147_483_647
+
+const badRoutePay = () =>
+  new AppError(
+    'invalid',
+    'El pago a ruta debe ser un monto en centavos entero, de cero o más.',
   )
 
 const aboveListPrice = () =>
@@ -143,6 +154,16 @@ function cleaned(input: ProductPatch): ProductPatch {
       throw badAmount()
     }
     values[key] = amount
+  }
+  if (input.routePayCents !== undefined) {
+    if (
+      !Number.isSafeInteger(input.routePayCents) ||
+      input.routePayCents < 0 ||
+      input.routePayCents > MAX_INT4
+    ) {
+      throw badRoutePay()
+    }
+    values.routePayCents = input.routePayCents
   }
   if (input.published !== undefined) values.published = input.published
   return values

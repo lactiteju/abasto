@@ -8,11 +8,27 @@ import {
   formatTenThousandths,
   parseTenThousandths,
 } from '#/lib/utils/supplier-cost'
+import { parsePesosToCents } from '#/modules/inventory/lib/cents'
 import { parsePesos } from '#/modules/pricing/lib/money'
 import type {
   NewProductInput,
   ProductPatch,
 } from '#/modules/catalog/services/products'
+
+const centsText = (cents: number) => (cents / 100).toFixed(2)
+
+/** Error of the typed «Pago a ruta por caja»; blank is zero and valid. */
+export function routePayError(draft: Pick<ProductDraft, 'routePay'>) {
+  if (!draft.routePay.trim()) return undefined
+  const parsed = parsePesosToCents(draft.routePay, { allowZero: true })
+  return parsed.ok ? undefined : parsed.message
+}
+
+const routePayCentsOf = (draft: Pick<ProductDraft, 'routePay'>) => {
+  if (!draft.routePay.trim()) return 0
+  const parsed = parsePesosToCents(draft.routePay, { allowZero: true })
+  return parsed.ok ? parsed.value : 0
+}
 
 export const emptyProductDraft = (): ProductDraft => ({
   name: '',
@@ -29,6 +45,7 @@ export const emptyProductDraft = (): ProductDraft => ({
   listPrice: '',
   fixedDiscount: '',
   promotion: '',
+  routePay: '',
 })
 
 export const draftFromProduct = (product: CatalogProduct): ProductDraft => ({
@@ -46,6 +63,7 @@ export const draftFromProduct = (product: CatalogProduct): ProductDraft => ({
   listPrice: formatTenThousandths(product.listPricePerPiece),
   fixedDiscount: formatTenThousandths(product.fixedDiscountPerPiece),
   promotion: formatTenThousandths(product.promotionPerPiece),
+  routePay: product.routePayCents ? centsText(product.routePayCents) : '',
 })
 
 /**
@@ -130,6 +148,7 @@ const fieldsFromDraft = (draft: ProductDraft) => ({
   supplierId: draft.supplierId || null,
   published: draft.published,
   supplierCode: draft.supplierCode,
+  routePayCents: routePayCentsOf(draft),
 })
 
 const costAmountsFromDraft = (draft: ProductDraft) => ({

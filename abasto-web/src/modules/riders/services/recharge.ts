@@ -119,6 +119,7 @@ export async function addToAssignment(
           productId: line.productId,
           boxFactor: line.product.boxFactor,
           assignedQuantity: line.baseQuantity,
+          routePayCents: line.product.routePayCents,
         })
         .returning({ id: riderAssignmentLines.id })
       lineId = stored.id

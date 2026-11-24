@@ -119,8 +119,14 @@ export const riderAssignmentLines = pgTable(
     assignedQuantity: integer('assigned_quantity').notNull(),
     /** Base units that came back; null until settled. */
     leftoverQuantity: integer('leftover_quantity'),
+    /**
+     * Route pay per box (cents) frozen from the product when the line was
+     * created, so later catalog edits never rewrite the history.
+     */
+    routePayCents: integer('route_pay_cents').notNull().default(0),
   },
   (table) => [
+    check('rider_lines_route_pay_min', sql`${table.routePayCents} >= 0`),
     check('rider_lines_assigned_min', sql`${table.assignedQuantity} > 0`),
     check('rider_lines_box_factor_min', sql`${table.boxFactor} > 0`),
     check(
@@ -156,8 +162,10 @@ export const riderAllocations = pgTable(
     pieceCents: integer('piece_cents'),
     /** Units given back to the lot; null until settled. */
     leftoverQuantity: integer('leftover_quantity'),
-    /** Units sold (quantity − leftover); null until settled. */
+    /** Units sold (quantity − leftover − scrap); null until settled. */
     soldQuantity: integer('sold_quantity'),
+    /** Damaged units (merma): neither sold nor returned; null until settled. */
+    scrapQuantity: integer('scrap_quantity'),
   },
   (table) => [
     check('rider_allocations_quantity_min', sql`${table.quantity} > 0`),
@@ -169,7 +177,7 @@ export const riderAllocations = pgTable(
     ),
     check(
       'rider_allocations_settlement_range',
-      sql`(${table.leftoverQuantity} is null and ${table.soldQuantity} is null) or (${table.leftoverQuantity} >= 0 and ${table.soldQuantity} >= 0 and ${table.leftoverQuantity} + ${table.soldQuantity} = ${table.quantity})`,
+      sql`(${table.leftoverQuantity} is null and ${table.soldQuantity} is null and ${table.scrapQuantity} is null) or (${table.leftoverQuantity} >= 0 and ${table.soldQuantity} >= 0 and ${table.scrapQuantity} >= 0 and ${table.leftoverQuantity} + ${table.soldQuantity} + ${table.scrapQuantity} = ${table.quantity})`,
     ),
     index('rider_allocations_line_idx').on(table.lineId),
     index('rider_allocations_lot_idx').on(table.lotId),

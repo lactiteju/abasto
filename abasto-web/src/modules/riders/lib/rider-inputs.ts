@@ -23,7 +23,9 @@ export const assignInput = z.object({
 export const settleInput = z.object({
   assignmentId: id,
   deliveredCents: whole,
-  lines: z.array(z.object({ lineId: id, ...boxesAndUnits })),
+  lines: z.array(
+    z.object({ lineId: id, ...boxesAndUnits, scrap: whole.optional() }),
+  ),
 })
 
 export const cancelAssignmentInput = z.object({ assignmentId: id })

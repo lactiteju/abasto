@@ -41,6 +41,8 @@ export type AllocationDetail = {
   pieceCents: number | null
   leftoverQuantity: number | null
   soldQuantity: number | null
+  /** Merma: damaged units, neither sold nor returned; null until settled. */
+  scrapQuantity: number | null
 }
 
 export type AssignmentLineDetail = {
@@ -51,7 +53,11 @@ export type AssignmentLineDetail = {
   /** Base units. */
   assignedQuantity: number
   leftoverQuantity: number | null
+  /** Merma in base units; null until settled. */
+  scrapQuantity: number | null
   soldQuantity: number | null
+  /** Pago a ruta por caja frozen when the line was created. */
+  routePayCents: number
   allocations: Array<AllocationDetail>
 }
 
@@ -120,6 +126,7 @@ export async function readAssignment(
       boxFactor: riderAssignmentLines.boxFactor,
       assignedQuantity: riderAssignmentLines.assignedQuantity,
       leftoverQuantity: riderAssignmentLines.leftoverQuantity,
+      routePayCents: riderAssignmentLines.routePayCents,
     })
     .from(riderAssignmentLines)
     .innerJoin(products, eq(products.id, riderAssignmentLines.productId))
@@ -136,6 +143,7 @@ export async function readAssignment(
       pieceCents: riderAllocations.pieceCents,
       leftoverQuantity: riderAllocations.leftoverQuantity,
       soldQuantity: riderAllocations.soldQuantity,
+      scrapQuantity: riderAllocations.scrapQuantity,
     })
     .from(riderAllocations)
     .innerJoin(
@@ -146,22 +154,28 @@ export async function readAssignment(
     .where(eq(riderAssignmentLines.assignmentId, assignmentId))
   return {
     ...head,
-    lines: lines.map((line) => ({
-      ...line,
-      soldQuantity:
-        line.leftoverQuantity == null
-          ? null
-          : line.assignedQuantity - line.leftoverQuantity,
-      allocations: allocations
-        .filter((a) => a.lineId === line.id)
-        .sort((a, b) =>
-          byFifo(
-            { receivedAt: a.receivedAt, id: a.lotId },
-            { receivedAt: b.receivedAt, id: b.lotId },
-          ),
-        )
-        .map(({ lineId: _lineId, receivedAt: _receivedAt, ...a }) => a),
-    })),
+    lines: lines.map((line) => {
+      const own = allocations.filter((a) => a.lineId === line.id)
+      const settled = line.leftoverQuantity != null
+      const scrap = settled
+        ? own.reduce((sum, a) => sum + (a.scrapQuantity ?? 0), 0)
+        : null
+      return {
+        ...line,
+        scrapQuantity: scrap,
+        soldQuantity: settled
+          ? line.assignedQuantity - line.leftoverQuantity! - scrap!
+          : null,
+        allocations: own
+          .sort((a, b) =>
+            byFifo(
+              { receivedAt: a.receivedAt, id: a.lotId },
+              { receivedAt: b.receivedAt, id: b.lotId },
+            ),
+          )
+          .map(({ lineId: _lineId, receivedAt: _receivedAt, ...a }) => a),
+      }
+    }),
   }
 }
 

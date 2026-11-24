@@ -14,6 +14,7 @@ const allocation = (quantity: number, pieceCents: number | null = 150) => ({
   pieceCents,
   leftoverQuantity: null,
   soldQuantity: null,
+  scrapQuantity: null,
 })
 
 const line = (
@@ -29,6 +30,8 @@ const line = (
   assignedQuantity: assigned,
   leftoverQuantity: leftover,
   soldQuantity: assigned - leftover,
+  scrapQuantity: 0,
+  routePayCents: 0,
   allocations,
 })
 

@@ -8,6 +8,7 @@ import {
   supplierChange,
   productPatchFromDraft,
   supplierCostErrors,
+  routePayError,
 } from '#/modules/catalog/lib/product-draft'
 import { newPresentationDraft } from '#/modules/catalog/lib/presentation-draft'
 import type { CatalogProduct } from '#/modules/catalog/lib/catalog-types'
@@ -26,6 +27,7 @@ const stored: CatalogProduct = {
   listPricePerPiece: 12055,
   fixedDiscountPerPiece: 1000,
   promotionPerPiece: 500,
+  routePayCents: 1250,
   published: false,
   archivedAt: null,
   createdAt: new Date(0),
@@ -101,6 +103,7 @@ describe('product draft ↔ service input', () => {
   test('the edit patch never carries unit, barcode or presentations', () => {
     const patch = productPatchFromDraft(draftFromProduct(stored))
     expect(patch).toEqual({
+      routePayCents: 1250,
       name: 'Leche entera',
       sku: 'LEC-001',
       brand: 'Lala',
@@ -282,5 +285,39 @@ describe('choosing a supplier', () => {
       supplierId: 's2',
       brand: 'Boing',
     })
+  })
+})
+
+describe('route pay per box', () => {
+  test('is typed in pesos and sent as cents; blank is zero', () => {
+    expect(
+      productPatchFromDraft({ ...emptyProductDraft(), routePay: '12.5' })
+        .routePayCents,
+    ).toBe(1250)
+    expect(
+      productPatchFromDraft({ ...emptyProductDraft(), routePay: '' })
+        .routePayCents,
+    ).toBe(0)
+    expect(
+      productInputFromDraft({ ...emptyProductDraft(), routePay: '3' })
+        .routePayCents,
+    ).toBe(300)
+  })
+
+  test('is loaded from the product as pesos', () => {
+    expect(draftFromProduct(stored).routePay).toBe('12.50')
+    expect(draftFromProduct({ ...stored, routePayCents: 0 }).routePay).toBe('')
+  })
+
+  test('reports an invalid amount', () => {
+    expect(
+      routePayError({ ...emptyProductDraft(), routePay: '' }),
+    ).toBeUndefined()
+    expect(
+      routePayError({ ...emptyProductDraft(), routePay: '1.234' }),
+    ).toBeString()
+    expect(
+      routePayError({ ...emptyProductDraft(), routePay: 'abc' }),
+    ).toBeString()
   })
 })

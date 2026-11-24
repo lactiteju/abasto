@@ -26,6 +26,7 @@ export function AssignmentProductsDialog({
 }: AssignmentProductsDialogProps) {
   const settled = assignment.status === 'Liquidada'
   const summary = loadSummary(assignment.lines)
+  const hasScrap = assignment.lines.some((l) => (l.scrapQuantity ?? 0) > 0)
   return (
     <InventoryDialog
       title={`Productos de ${assignment.riderName}`}
@@ -56,6 +57,7 @@ export function AssignmentProductsDialog({
               <>
                 <th className={th}>Vendió</th>
                 <th className={th}>Regresó</th>
+                {hasScrap && <th className={th}>Merma</th>}
               </>
             )}
           </tr>
@@ -80,6 +82,16 @@ export function AssignmentProductsDialog({
                       line.boxFactor,
                     )}
                   </td>
+                  {hasScrap && (
+                    <td className={td}>
+                      {(line.scrapQuantity ?? 0) > 0
+                        ? describeQuantity(
+                            line.scrapQuantity ?? 0,
+                            line.boxFactor,
+                          )
+                        : '—'}
+                    </td>
+                  )}
                 </>
               )}
             </tr>

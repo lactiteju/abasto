@@ -59,6 +59,12 @@ export const products = pgTable(
       .notNull()
       .default(0),
     promotionPerPiece: integer('promotion_per_piece').notNull().default(0),
+    /**
+     * What the warehouse pays a delivery rider per box (cents, per the
+     * product's box factor) sold on a route; copied to rider assignment lines
+     * when the rider is loaded. Owner-only.
+     */
+    routePayCents: integer('route_pay_cents').notNull().default(0),
     published: boolean('published').notNull().default(true),
     /**
      * Set when the owner archives the product: it leaves the catalog, the
@@ -73,6 +79,7 @@ export const products = pgTable(
       'products_supplier_amounts_min',
       sql`${table.listPricePerPiece} >= 0 and ${table.fixedDiscountPerPiece} >= 0 and ${table.promotionPerPiece} >= 0`,
     ),
+    check('products_route_pay_min', sql`${table.routePayCents} >= 0`),
   ],
 )
 

@@ -12,12 +12,16 @@ export type PreviewLine = {
   /** Typed leftover, boxes and loose units. */
   boxes: string
   units: string
+  /** Typed merma in pieces; blank is zero. */
+  scrap?: string
 }
 
 export type LinePreview = {
   /** Base units that come back. */
   leftover: number
-  /** Base units sold (assigned − leftover). */
+  /** Merma in base units: damaged, neither sold nor returned. */
+  scrap: number
+  /** Base units sold (assigned − leftover − merma). */
   sold: number
   expectedCents: number
   error?: string
@@ -47,31 +51,37 @@ function parseWhole(text: string): number | null {
 function previewLine(line: PreviewLine): LinePreview {
   const boxes = parseWhole(line.boxes)
   const units = parseWhole(line.units)
-  if (boxes === null || units === null) {
+  const scrap = parseWhole(line.scrap ?? '')
+  if (boxes === null || units === null || scrap === null) {
     return {
       leftover: 0,
+      scrap: 0,
       sold: line.assignedQuantity,
       expectedCents: 0,
       error: wholeError,
     }
   }
   const leftover = boxes * line.boxFactor + units
-  if (leftover > line.assignedQuantity) {
+  if (leftover + scrap > line.assignedQuantity) {
     return {
       leftover,
+      scrap,
       sold: 0,
       expectedCents: 0,
-      error: 'No puede regresar más de lo que se asignó.',
+      error:
+        scrap > 0
+          ? 'Lo que regresó más la merma no puede ser más de lo que se asignó.'
+          : 'No puede regresar más de lo que se asignó.',
     }
   }
-  const sold = line.assignedQuantity - leftover
+  const sold = line.assignedQuantity - leftover - scrap
   // Same split as the server: whole boxes at the box price, loose pieces at
   // the piece price, sold from the oldest allocations first.
   const expectedCents = priceSold(line.allocations, sold).reduce(
     (sum, item) => sum + item.cents,
     0,
   )
-  return { leftover, sold, expectedCents }
+  return { leftover, scrap, sold, expectedCents }
 }
 
 /**

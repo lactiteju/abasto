@@ -23,6 +23,7 @@ import {
   draftFromProduct,
   emptyProductDraft,
   newProductCostErrors,
+  routePayError,
   supplierChange,
 } from '#/modules/catalog/lib/product-draft'
 import { netCostOf } from '#/modules/pricing/lib/product-costs'
@@ -150,6 +151,7 @@ export function ProductFormDialog({
         presentations.defaultKey,
         Boolean(warehouseName),
       )
+  const routePayMessage = routePayError(draft)
   const net = draft.listPrice.trim() ? netCostOf(draft, 1) : null
   const errorOf = (key: keyof ProductDraft) =>
     showErrors ? costErrors[key] : undefined
@@ -158,7 +160,11 @@ export function ProductFormDialog({
     setFailure(null)
     setShowErrors(true)
     if (costErrors.fixedDiscount || costErrors.promotion) setShowDiscounts(true)
-    if (Object.keys(costErrors).length || Object.keys(priceErrors).length) {
+    if (
+      Object.keys(costErrors).length ||
+      Object.keys(priceErrors).length ||
+      routePayMessage
+    ) {
       return
     }
     setSaving(true)
@@ -298,6 +304,24 @@ export function ProductFormDialog({
               }
             />
           </div>
+          <Field label="Pago a ruta por caja">
+            <TextInput
+              inputMode="decimal"
+              maxDecimals={2}
+              placeholder="0.00"
+              aria-label="Pago a ruta por caja"
+              aria-invalid={Boolean(showErrors && routePayMessage)}
+              value={draft.routePay}
+              onChange={(event) => patch({ routePay: event.target.value })}
+            />
+            {showErrors && routePayMessage && (
+              <span className="text-xs text-[#b42318]">{routePayMessage}</span>
+            )}
+          </Field>
+          <p className={hintClass}>
+            Lo que se paga al repartidor por cada caja vendida en ruta. Se copia
+            al cargar un reparto; cambiarlo no altera repartos ya cargados.
+          </p>
           {product && (
             <p className={hintClass}>
               Las equivalencias existentes no se cambian: desactiva la

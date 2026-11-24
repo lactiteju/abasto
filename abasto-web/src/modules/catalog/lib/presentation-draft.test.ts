@@ -24,6 +24,7 @@ const product: CatalogProduct = {
   listPricePerPiece: 0,
   fixedDiscountPerPiece: 0,
   promotionPerPiece: 0,
+  routePayCents: 0,
   published: true,
   archivedAt: null,
   createdAt: new Date(0),

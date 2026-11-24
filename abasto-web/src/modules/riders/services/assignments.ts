@@ -47,7 +47,11 @@ import type { AssignmentDetail } from '#/modules/riders/services/assignment-read
 import { riderNotFound } from '#/modules/riders/services/riders'
 
 export type AssignLineInput = BoxesAndUnits & { productId: string }
-export type SettleLineInput = BoxesAndUnits & { lineId: string }
+/** `scrap` is the merma in pieces (damaged: neither sold nor returned); default 0. */
+export type SettleLineInput = BoxesAndUnits & {
+  lineId: string
+  scrap?: number
+}
 
 const notEnRoute = () =>
   new AppError('conflict', 'Este reparto ya no está en ruta.')
@@ -87,6 +91,8 @@ export type ProductInfo = {
   defaultPresentationId: string | null
   defaultFactor: number
   pieceId: string | null
+  /** Pago a ruta por caja of the product now; frozen on the line when created. */
+  routePayCents: number
 }
 
 /** Name, box (largest active presentation) and default presentation of each product. */
@@ -95,6 +101,7 @@ export async function readProducts(tx: Tx, productIds: Array<string>) {
     .select({
       productId: products.id,
       name: products.name,
+      routePayCents: products.routePayCents,
       presentationId: presentations.id,
       factor: presentations.factor,
       isDefault: presentations.isDefault,
@@ -111,6 +118,7 @@ export async function readProducts(tx: Tx, productIds: Array<string>) {
       defaultPresentationId: null,
       defaultFactor: 1,
       pieceId: null,
+      routePayCents: row.routePayCents,
     }
     if (row.presentationId && row.active) {
       current.boxFactor = Math.max(current.boxFactor, row.factor ?? 1)
@@ -281,6 +289,7 @@ export async function assignRider(
           productId: line.productId,
           boxFactor: line.product.boxFactor,
           assignedQuantity: line.baseQuantity,
+          routePayCents: line.product.routePayCents,
         })
         .returning({ id: riderAssignmentLines.id })
       await tx
@@ -335,6 +344,8 @@ export async function cancelAssignment(
 
 /**
  * Closes the day: the leftover goes back to available stock in the same lots,
+ * the merma (damaged pieces, newest allocations first) is written off as `loss`
+ * movements on its lots and never returns to stock or counts as sold,
  * the sold remainder (assigned − leftover, taken from the oldest allocations
  * first) is a `sale` movement per allocation, and its value at the frozen
  * prices is one cash `sale` in the warehouse's open drawer. The difference
@@ -362,6 +373,7 @@ export async function settleAssignment(
       .where(eq(riderAssignmentLines.assignmentId, assignment.id))
       .orderBy(asc(riderAssignmentLines.id))
     const leftoverOf = new Map<string, number>()
+    const scrapOf = new Map<string, number>()
     for (const entry of input.lines) {
       const line = lines.find((candidate) => candidate.id === entry.lineId)
       if (!line || leftoverOf.has(line.id)) {
@@ -377,7 +389,21 @@ export async function settleAssignment(
           'Lo que regresó no puede ser más de lo que se asignó.',
         )
       }
+      const scrap = entry.scrap ?? 0
+      if (!Number.isSafeInteger(scrap) || scrap < 0) {
+        throw new AppError(
+          'invalid',
+          'La merma debe ser un número entero de piezas, cero o más.',
+        )
+      }
+      if (leftover + scrap > line.assignedQuantity) {
+        throw new AppError(
+          'invalid',
+          'Lo que regresó más la merma no puede ser más de lo que se asignó.',
+        )
+      }
       leftoverOf.set(line.id, leftover)
+      scrapOf.set(line.id, scrap)
     }
     if (leftoverOf.size !== lines.length) {
       throw new AppError(
@@ -409,6 +435,10 @@ export async function settleAssignment(
       tx,
       allocations.map((a) => a.lotId),
     )
+    const [rider] = await tx
+      .select({ name: riders.name })
+      .from(riders)
+      .where(eq(riders.id, assignment.riderId))
     const released = new Map<string, number>()
     let expectedCents = 0
     for (const line of lines) {
@@ -420,14 +450,29 @@ export async function settleAssignment(
             { receivedAt: b.receivedAt, id: b.lotId },
           ),
         )
+      const lineScrap = scrapOf.get(line.id)!
       // Whole boxes at the box price, loose pieces at the piece price.
       const priced = priceSold(
         own,
-        line.assignedQuantity - leftoverOf.get(line.id)!,
+        line.assignedQuantity - leftoverOf.get(line.id)! - lineScrap,
       )
+      // Merma comes out of what was not sold, newest allocation first (the
+      // same end the leftover is taken from); the rest of it goes back.
+      const scrapped = new Map<string, number>()
+      let scrapLeft = lineScrap
+      for (const position of own.keys()) {
+        const index = own.length - 1 - position
+        const take = Math.min(
+          own[index].quantity - priced[index].sold,
+          scrapLeft,
+        )
+        scrapped.set(own[index].id, take)
+        scrapLeft -= take
+      }
       for (const [position, allocation] of own.entries()) {
         const { sold, cents } = priced[position]
-        const leftover = allocation.quantity - sold
+        const scrap = scrapped.get(allocation.id)!
+        const leftover = allocation.quantity - sold - scrap
         if (sold > 0) {
           await appendMovement(
             tx,
@@ -443,6 +488,22 @@ export async function settleAssignment(
           )
           expectedCents += cents
         }
+        if (scrap > 0) {
+          // Held by the rider (reserved), now written off: the lot loses the
+          // units and the reservation together, and is not replenished.
+          await appendMovement(
+            tx,
+            locked.get(allocation.lotId)!,
+            {
+              type: 'loss',
+              quantity: -scrap,
+              reason: `dañado: Reparto ${rider.name}`,
+              reference: assignment.id,
+              actorId: actor.userId,
+            },
+            { fromReserved: true },
+          )
+        }
         if (leftover > 0) {
           released.set(
             allocation.lotId,
@@ -451,7 +512,11 @@ export async function settleAssignment(
         }
         await tx
           .update(riderAllocations)
-          .set({ soldQuantity: sold, leftoverQuantity: leftover })
+          .set({
+            soldQuantity: sold,
+            leftoverQuantity: leftover,
+            scrapQuantity: scrap,
+          })
           .where(eq(riderAllocations.id, allocation.id))
       }
       await tx
@@ -476,10 +541,6 @@ export async function settleAssignment(
             actorId: actor.userId,
           })
         : null
-    const [rider] = await tx
-      .select({ name: riders.name })
-      .from(riders)
-      .where(eq(riders.id, assignment.riderId))
     const differenceMovement =
       difference === 0
         ? null

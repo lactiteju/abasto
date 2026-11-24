@@ -22,6 +22,7 @@ import { deliveredText } from '#/modules/riders/lib/delivered-prefill'
 import { exactAmountText } from '#/modules/riders/lib/exact-amount'
 import {
   clampBoxesText,
+  clampScrapText,
   clampUnitsText,
 } from '#/modules/riders/lib/leftover-caps'
 import { previewSettlement } from '#/modules/riders/lib/settlement-preview'
@@ -36,7 +37,7 @@ type SettleDialogProps = {
   onClose: () => void
 }
 
-type Typed = Record<string, { boxes: string; units: string }>
+type Typed = Record<string, { boxes: string; units: string; scrap: string }>
 
 /** Per product: what was assigned, what came back and what was sold; then the cash. */
 export function SettleDialog({
@@ -53,7 +54,7 @@ export function SettleDialog({
   const [pending, setPending] = useState(false)
 
   const leftoverOf = (lineId: string) =>
-    typed[lineId] ?? { boxes: '', units: '' }
+    typed[lineId] ?? { boxes: '', units: '', scrap: '' }
   const previewLines = assignment.lines.map((line) => ({
     assignedQuantity: line.assignedQuantity,
     boxFactor: line.boxFactor,
@@ -81,11 +82,12 @@ export function SettleDialog({
       assignmentId: assignment.id,
       deliveredCents: preview.deliveredCents,
       lines: assignment.lines.map((line) => {
-        const { boxes, units } = leftoverOf(line.id)
+        const { boxes, units, scrap } = leftoverOf(line.id)
         return {
           lineId: line.id,
           boxes: Number(boxes || 0),
           units: Number(units || 0),
+          scrap: Number(scrap || 0),
         }
       }),
     })
@@ -100,7 +102,7 @@ export function SettleDialog({
   return (
     <InventoryDialog
       title={`Liquidar reparto de ${assignment.riderName}`}
-      description="Escribe lo que regresó de cada producto y el dinero que entregó. Lo que regresó vuelve al almacén y el resto se vende. A la caja entra el dinero entregado; la diferencia queda en el reparto."
+      description="Escribe lo que regresó de cada producto y el dinero que entregó. Lo que regresó vuelve al almacén, la merma (dañado) se da de baja y el resto se vende. A la caja entra el dinero entregado; la diferencia queda en el reparto."
       onClose={onClose}
       size="count"
     >
@@ -121,9 +123,15 @@ export function SettleDialog({
         )}
         {assignment.lines.map((line, index) => {
           const row = preview.lines[index]
-          const { boxes, units } = leftoverOf(line.id)
-          const update = (change: Partial<{ boxes: string; units: string }>) =>
-            setTyped({ ...typed, [line.id]: { boxes, units, ...change } })
+          const { boxes, units, scrap } = leftoverOf(line.id)
+          const scrapUnits = Number(scrap || 0)
+          const update = (
+            change: Partial<{ boxes: string; units: string; scrap: string }>,
+          ) =>
+            setTyped({
+              ...typed,
+              [line.id]: { boxes, units, scrap, ...change },
+            })
           return (
             <div
               key={line.id}
@@ -137,7 +145,7 @@ export function SettleDialog({
                   caja = {line.boxFactor} unidades
                 </small>
               </div>
-              <div className="grid items-end gap-3 md:grid-cols-[110px_110px_minmax(0,1fr)]">
+              <div className="grid items-end gap-3 md:grid-cols-[110px_110px_110px_minmax(0,1fr)]">
                 <Field label="Regresó (cajas)">
                   <FieldInput
                     inputMode="numeric"
@@ -148,6 +156,7 @@ export function SettleDialog({
                         event.target.value,
                         line.assignedQuantity,
                         line.boxFactor,
+                        scrapUnits,
                       )
                       update({
                         boxes: nextBoxes,
@@ -156,6 +165,7 @@ export function SettleDialog({
                           line.assignedQuantity,
                           line.boxFactor,
                           nextBoxes,
+                          scrapUnits,
                         ),
                       })
                     }}
@@ -173,6 +183,24 @@ export function SettleDialog({
                           line.assignedQuantity,
                           line.boxFactor,
                           boxes,
+                          scrapUnits,
+                        ),
+                      })
+                    }
+                  />
+                </Field>
+                <Field label="Merma (pzas)">
+                  <FieldInput
+                    inputMode="numeric"
+                    placeholder="0"
+                    value={scrap}
+                    onChange={(event) =>
+                      update({
+                        scrap: clampScrapText(
+                          event.target.value,
+                          line.assignedQuantity,
+                          Number(boxes || 0) * line.boxFactor +
+                            Number(units || 0),
                         ),
                       })
                     }
@@ -190,6 +218,7 @@ export function SettleDialog({
                         {describeQuantity(row.sold, line.boxFactor)}
                       </strong>{' '}
                       · {formatCents(row.expectedCents)}
+                      {row.scrap > 0 && ` · merma ${row.scrap} pzas`}
                     </>
                   )}
                 </p>

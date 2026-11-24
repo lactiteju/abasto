@@ -34,6 +34,8 @@ export type ProductDraft = {
   listPrice: string
   fixedDiscount: string
   promotion: string
+  /** Pago a ruta por caja as typed (pesos, up to 2 decimals; blank means zero). */
+  routePay: string
 }
 
 /** Editable row of the presentations dialog. */

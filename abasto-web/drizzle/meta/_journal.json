@@ -288,6 +288,13 @@
       "when": 1795542757819,
       "tag": "0040_default_warehouse",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1795544707438,
+      "tag": "0041_rider_route_pay_and_merma",
+      "breakpoints": true
     }
   ]
 }

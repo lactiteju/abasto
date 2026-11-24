@@ -17,6 +17,7 @@ const productFields = z.object({
   listPricePerPiece: z.number().optional(),
   fixedDiscountPerPiece: z.number().optional(),
   promotionPerPiece: z.number().optional(),
+  routePayCents: z.number().optional(),
 })
 
 export const productInput = productFields.extend(presentationSetInput.shape)

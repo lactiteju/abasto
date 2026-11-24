@@ -249,6 +249,40 @@ describe('updateProduct', () => {
     expect(cleared.supplierId).toBeNull()
   })
 
+  test('route pay per box defaults to zero, persists on create and edit, rejects bad amounts and non-owners', async () => {
+    const { owner, staff } = await setupActors()
+    const plain = await createProduct(owner, base)
+    expect(plain.routePayCents).toBe(0)
+    const paid = await createProduct(owner, {
+      ...base,
+      sku: 'LEC-002',
+      presentations: [{ name: 'Pieza', factor: 1 }],
+      defaultIndex: 0,
+      routePayCents: 1250,
+    })
+    expect(paid.routePayCents).toBe(1250)
+    const edited = await updateProduct(owner, plain.id, { routePayCents: 900 })
+    expect(edited.routePayCents).toBe(900)
+    expect((await getProduct(owner, plain.id)).routePayCents).toBe(900)
+    for (const bad of [-1, 1.5, 2_147_483_648]) {
+      expect(
+        (
+          await errorOf(() =>
+            updateProduct(owner, plain.id, { routePayCents: bad }),
+          )
+        ).code,
+      ).toBe('invalid')
+    }
+    expect(
+      (
+        await errorOf(() =>
+          updateProduct(staff, plain.id, { routePayCents: 5 }),
+        )
+      ).message,
+    ).toBe(forbidden)
+    expect((await getProduct(owner, plain.id)).routePayCents).toBe(900)
+  })
+
   test('sets, rejects and clears the image URL', async () => {
     const { owner } = await setupActors()
     const product = await createProduct(owner, base)

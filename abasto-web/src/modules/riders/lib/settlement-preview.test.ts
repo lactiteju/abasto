@@ -157,4 +157,18 @@ describe('previewSettlement with a piece price', () => {
     // 30 × 44000 / 12
     expect(preview.expectedCents).toBe(110_000)
   })
+
+  test('merma is neither sold nor returned and is not charged', () => {
+    // 4 back, 6 of merma: 20 sold, all from the oldest lot.
+    const preview = previewSettlement([line({ units: '4', scrap: '6' })], '200')
+    expect(preview.lines[0]).toMatchObject({ leftover: 4, scrap: 6, sold: 20 })
+    expect(preview.expectedCents).toBe(20 * 1000)
+    expect(preview.valid).toBe(true)
+  })
+
+  test('returned plus merma above assigned is an error', () => {
+    const preview = previewSettlement([line({ units: '25', scrap: '6' })], '0')
+    expect(preview.lines[0].error).toBeString()
+    expect(preview.valid).toBe(false)
+  })
 })

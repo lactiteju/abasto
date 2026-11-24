@@ -87,6 +87,43 @@ describe('sales report with rider deliveries', () => {
     expect(margin.summary.costCents).toBe(report.summary.costCents)
   })
 
+  test('merma pieces are neither revenue, units nor cost', async () => {
+    const fx = await setupReports()
+    await receive(fx, {
+      productId: fx.milkBox.id,
+      quantity: 100,
+      totalCostCents: 5000,
+    })
+    await receive(fx, {
+      productId: fx.milkBox.id,
+      quantity: 100,
+      totalCostCents: 2000,
+      salePriceCents: 900,
+    })
+    const rider = await createRider(fx.owner, {
+      warehouseId: fx.a.id,
+      name: 'Luis',
+    })
+    useClock(() => new Date('2026-11-03T18:00:00Z'))
+    const assignment = await assignRider(fx.staffA, {
+      riderId: rider.id,
+      lines: [{ productId: fx.milkBox.id, boxes: 0, units: 150 }],
+    })
+    // 5 back and 10 damaged: 135 sold, 100 from the oldest lot and 35 from the next.
+    const settled = await settleAssignment(fx.staffA, {
+      assignmentId: assignment.id,
+      deliveredCents: 100 * 1000 + 35 * 900,
+      lines: [
+        { lineId: assignment.lines[0].id, boxes: 0, units: 5, scrap: 10 },
+      ],
+    })
+    expect(settled.expectedCents).toBe(100 * 1000 + 35 * 900)
+    const report = await getSalesReport(fx.owner, wide)
+    expect(report.summary.units).toBe(135)
+    expect(report.summary.revenueCents).toBe(settled.expectedCents!)
+    expect(report.byChannel[0].costCents).toBe(100 * 50 + 35 * 20)
+  })
+
   test('boxes are priced like the settlement does, and open or cancelled deliveries are not sales', async () => {
     const fx = await setupReports()
     await receive(fx, { productId: fx.milkBox.id, quantity: 100 })
