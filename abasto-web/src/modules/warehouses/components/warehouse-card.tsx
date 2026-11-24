@@ -3,6 +3,7 @@ import { ArrowRightIcon } from 'lucide-react'
 
 import { EXPIRY_WARNING_DAYS } from '#/modules/inventory/lib/stock-metrics'
 import { isAlertMetric } from '#/modules/warehouses/lib/card-metrics'
+import { SetDefaultWarehouseButton } from '#/modules/warehouses/components/set-default-warehouse-button'
 import { RenameWarehouseDialog } from '#/modules/warehouses/components/rename-warehouse-dialog'
 import type { WarehouseWithMetrics } from '#/modules/warehouses/server/warehouses'
 
@@ -53,9 +54,16 @@ export function WarehouseCard({
   const { metrics } = warehouse
   return (
     <article className="rounded-[13px] border border-[#eee7e0] bg-white px-4 py-5 md:p-5 wide:p-6">
-      <h2 className="text-xl font-[650] tracking-[-0.5px] md:text-[21px]">
-        {warehouse.name}
-      </h2>
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+        <h2 className="text-xl font-[650] tracking-[-0.5px] md:text-[21px]">
+          {warehouse.name}
+        </h2>
+        {warehouse.isDefault ? (
+          <span className="rounded-full bg-[#f1ece6] px-2.5 py-0.5 text-xs font-[650] text-ink-muted">
+            Predeterminado
+          </span>
+        ) : null}
+      </div>
       <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">
         <Metric
           label="Productos con existencias"
@@ -95,7 +103,14 @@ export function WarehouseCard({
         >
           Ver inventario <ArrowRightIcon size={15} />
         </Link>
-        {canRename ? <RenameWarehouseDialog warehouse={warehouse} /> : null}
+        {canRename ? (
+          <div className="flex flex-wrap items-center">
+            {warehouse.isDefault ? null : (
+              <SetDefaultWarehouseButton warehouse={warehouse} />
+            )}
+            <RenameWarehouseDialog warehouse={warehouse} />
+          </div>
+        ) : null}
       </div>
     </article>
   )

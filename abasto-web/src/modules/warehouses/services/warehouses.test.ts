@@ -15,6 +15,7 @@ import {
   createWarehouse,
   listWarehouses,
   renameWarehouse,
+  setDefaultWarehouse,
 } from '#/modules/warehouses/services/warehouses'
 
 async function setup() {
@@ -53,7 +54,9 @@ describe('createWarehouse', () => {
     const { owner } = await setup()
     const created = await createWarehouse(owner, { name: '  Centro ' })
     expect(created.name).toBe('Centro')
-    expect(await listWarehouses(owner)).toEqual([created])
+    expect(await listWarehouses(owner)).toEqual([
+      { ...created, isDefault: false },
+    ])
   })
 
   test('rejects a duplicate name regardless of case and spaces', async () => {
@@ -122,7 +125,9 @@ describe('listWarehouses', () => {
       'Norte',
       'Sur',
     ])
-    expect(await listWarehouses(staff)).toEqual([norte])
+    expect(await listWarehouses(staff)).toEqual([
+      { ...norte, isDefault: false },
+    ])
     expect([centro.id, sur.id]).not.toContain(norte.id)
   })
 })
@@ -136,7 +141,9 @@ describe('renameWarehouse', () => {
       name: '  Tejupilco ',
     })
     expect(renamed).toEqual({ id: created.id, name: 'Tejupilco' })
-    expect(await listWarehouses(owner)).toEqual([renamed])
+    expect(await listWarehouses(owner)).toEqual([
+      { ...renamed, isDefault: false },
+    ])
   })
 
   test('rejects a name another warehouse has, regardless of case', async () => {
@@ -191,5 +198,94 @@ describe('renameWarehouse', () => {
     )
     expect(error.code).toBe('forbidden')
     expect((await listWarehouses(owner))[0]?.name).toBe('Centro')
+  })
+})
+
+describe('setDefaultWarehouse', () => {
+  const defaults = async (owner: Parameters<typeof listWarehouses>[0]) =>
+    (await listWarehouses(owner))
+      .filter(({ isDefault }) => isDefault)
+      .map(({ name }) => name)
+
+  test('no warehouse is the default until one is marked', async () => {
+    const { owner } = await setup()
+    await createWarehouse(owner, { name: 'Centro' })
+    expect(await defaults(owner)).toEqual([])
+  })
+
+  test('marks one warehouse and clears the previous default', async () => {
+    const { owner } = await setup()
+    const centro = await createWarehouse(owner, { name: 'Centro' })
+    const sur = await createWarehouse(owner, { name: 'Sur' })
+    await setDefaultWarehouse(owner, { id: centro.id })
+    expect(await defaults(owner)).toEqual(['Centro'])
+    const marked = await setDefaultWarehouse(owner, { id: sur.id })
+    expect(marked).toEqual({ ...sur, isDefault: true })
+    expect(await defaults(owner)).toEqual(['Sur'])
+  })
+
+  test('the default comes first, then the rest by name', async () => {
+    const { owner } = await setup()
+    await createWarehouse(owner, { name: 'Centro' })
+    const sur = await createWarehouse(owner, { name: 'Sur' })
+    await createWarehouse(owner, { name: 'Norte' })
+    await setDefaultWarehouse(owner, { id: sur.id })
+    expect((await listWarehouses(owner)).map(({ name }) => name)).toEqual([
+      'Sur',
+      'Centro',
+      'Norte',
+    ])
+  })
+
+  test('staff see their own warehouses with the default first', async () => {
+    const { owner, staffUser } = await setup()
+    const centro = await createWarehouse(owner, { name: 'Centro' })
+    const sur = await createWarehouse(owner, { name: 'Sur' })
+    for (const warehouse of [centro, sur]) {
+      await assignWarehouse(owner, {
+        userId: staffUser.id,
+        warehouseId: warehouse.id,
+        role: 'manager',
+      })
+    }
+    await setDefaultWarehouse(owner, { id: sur.id })
+    const staff = await requireActor(
+      await signIn('cajero@abasto.test', 'secreto-456'),
+    )
+    expect((await listWarehouses(staff)).map(({ name }) => name)).toEqual([
+      'Sur',
+      'Centro',
+    ])
+  })
+
+  test('reports an unknown warehouse and keeps the current default', async () => {
+    const { owner } = await setup()
+    const centro = await createWarehouse(owner, { name: 'Centro' })
+    await setDefaultWarehouse(owner, { id: centro.id })
+    const error = await errorOf(() =>
+      setDefaultWarehouse(owner, {
+        id: '00000000-0000-0000-0000-000000000000',
+      }),
+    )
+    expect(error.code).toBe('not_found')
+    expect(await defaults(owner)).toEqual(['Centro'])
+  })
+
+  test('a manager cannot change the default', async () => {
+    const { owner, staffUser } = await setup()
+    const centro = await createWarehouse(owner, { name: 'Centro' })
+    await assignWarehouse(owner, {
+      userId: staffUser.id,
+      warehouseId: centro.id,
+      role: 'manager',
+    })
+    const manager = await requireActor(
+      await signIn('cajero@abasto.test', 'secreto-456'),
+    )
+    const error = await errorOf(() =>
+      setDefaultWarehouse(manager, { id: centro.id }),
+    )
+    expect(error.code).toBe('forbidden')
+    expect(await defaults(owner)).toEqual([])
   })
 })

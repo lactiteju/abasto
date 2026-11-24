@@ -10,13 +10,17 @@ import {
   createWarehouse,
   listWarehouses,
   renameWarehouse,
+  setDefaultWarehouse,
 } from '#/modules/warehouses/services/warehouses'
-import type { Warehouse } from '#/modules/warehouses/services/warehouses'
+import type { ListedWarehouse } from '#/modules/warehouses/services/warehouses'
 
 const createInput = z.object({ name: z.string() })
+const defaultInput = z.object({ id: z.string().min(1) })
 const renameInput = z.object({ id: z.string().min(1), name: z.string() })
 
-export type WarehouseWithMetrics = Warehouse & { metrics: WarehouseMetrics }
+export type WarehouseWithMetrics = ListedWarehouse & {
+  metrics: WarehouseMetrics
+}
 
 export const listWarehousesFn = createServerFn({ method: 'GET' }).handler(() =>
   runWithActor((actor) => listWarehouses(actor)),
@@ -52,5 +56,13 @@ export const renameWarehouseFn = createServerFn({ method: 'POST' })
   .handler(({ data }) =>
     runWithActor((actor) =>
       renameWarehouse(actor, parseInput(renameInput, data)),
+    ),
+  )
+
+export const setDefaultWarehouseFn = createServerFn({ method: 'POST' })
+  .validator((data: { id: string }) => data)
+  .handler(({ data }) =>
+    runWithActor((actor) =>
+      setDefaultWarehouse(actor, parseInput(defaultInput, data)),
     ),
   )

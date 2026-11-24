@@ -83,7 +83,11 @@ export const availabilityOf = (units: number): Availability =>
  */
 export async function listStoreWarehouses(): Promise<Array<StoreWarehouse>> {
   const rows = await db
-    .select({ id: warehouses.id, name: warehouses.name })
+    .select({
+      id: warehouses.id,
+      name: warehouses.name,
+      isDefault: warehouses.isDefault,
+    })
     .from(warehouses)
   // Independent reads on the pool (no shared transaction), so they can overlap.
   const sellable = await Promise.all(
@@ -98,7 +102,12 @@ export async function listStoreWarehouses(): Promise<Array<StoreWarehouse>> {
   )
   return rows
     .filter((_, index) => sellable[index])
-    .sort((a, b) => a.name.localeCompare(b.name, 'es'))
+    .sort(
+      (a, b) =>
+        Number(b.isDefault) - Number(a.isDefault) ||
+        a.name.localeCompare(b.name, 'es'),
+    )
+    .map(({ id, name }) => ({ id, name }))
 }
 
 /**
