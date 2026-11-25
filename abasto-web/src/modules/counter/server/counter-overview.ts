@@ -26,6 +26,7 @@ export async function getCounterOverview(
     now: new Date(),
     reservationHours: await getReservationHours(actor),
     canSetHours: can(actor, 'warehouses.manage'),
+    canReopenSales: can(actor, 'sales.reopen'),
   }
   if (!selected) {
     return {

@@ -128,6 +128,7 @@ export function CounterPage({ overview, onSelectWarehouse }: CounterPageProps) {
         orders={orders}
         now={overview.now}
         warehouseName={selected.name}
+        canReopen={overview.canReopenSales}
         onOpen={setOpenId}
       />
       {composing && (
@@ -151,6 +152,7 @@ export function CounterPage({ overview, onSelectWarehouse }: CounterPageProps) {
           now={overview.now}
           warehouseName={selected.name}
           drawerOpen={overview.cash !== null}
+          canReopen={overview.canReopenSales}
           onClose={() => setOpenId(undefined)}
         />
       )}

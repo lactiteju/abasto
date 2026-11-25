@@ -14,6 +14,8 @@ export type CounterOverview = {
   reservationHours: number
   /** Only the owner changes how long a reservation lasts. */
   canSetHours: boolean
+  /** Only the owner takes a delivered sale back to Reservado. */
+  canReopenSales: boolean
   /** The selected warehouse's open drawer with its movements, or null. */
   cash: CashSessionDetail | null
   /** Owner and the warehouse's manager read the session history. */

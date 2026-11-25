@@ -8,6 +8,7 @@ import {
 import { EmptyState } from '#/modules/counter/components/empty-state'
 import { ActionButton } from '#/modules/counter/components/action-button'
 import { RemissionNoteButton } from '#/modules/counter/components/remission-note-button'
+import { ReopenSaleButton } from '#/modules/counter/components/reopen-sale-button'
 import { StatusBadge } from '#/modules/counter/components/status-badge'
 import { expiryLabel, orderCode } from '#/modules/counter/lib/order-format'
 import { formatCents } from '#/modules/pricing/lib/money'
@@ -18,6 +19,8 @@ type OrderListProps = {
   /** Server time the expiry labels are computed against. */
   now: Date
   warehouseName: string
+  /** Owner only: shows «Editar venta» on delivered rows. */
+  canReopen: boolean
   onOpen: (orderId: string) => void
 }
 
@@ -25,6 +28,7 @@ export function OrderList({
   orders,
   now,
   warehouseName,
+  canReopen,
   onOpen,
 }: OrderListProps) {
   if (orders.length === 0) {
@@ -61,6 +65,13 @@ export function OrderList({
                   <RemissionNoteButton
                     orderId={order.id}
                     warehouseName={warehouseName}
+                  />
+                )}
+                {canReopen && order.status === 'Recogido' && (
+                  <ReopenSaleButton
+                    orderId={order.id}
+                    totalCents={order.totalCents}
+                    onReopened={(reopened) => onOpen(reopened.id)}
                   />
                 )}
                 <ActionButton onClick={() => onOpen(order.id)}>
@@ -108,6 +119,13 @@ export function OrderList({
                       <RemissionNoteButton
                         orderId={order.id}
                         warehouseName={warehouseName}
+                      />
+                    )}
+                    {canReopen && order.status === 'Recogido' && (
+                      <ReopenSaleButton
+                        orderId={order.id}
+                        totalCents={order.totalCents}
+                        onReopened={(reopened) => onOpen(reopened.id)}
                       />
                     )}
                     <ActionButton onClick={() => onOpen(order.id)}>

@@ -90,6 +90,8 @@ export const cashMovements = pgTable(
     changeCents: integer('change_cents'),
     reason: text('reason').notNull().default(''),
     orderId: uuid('order_id').references(() => orders.id),
+    /** Which delivery of the order a sale belongs to (grows when a sale is reopened). */
+    saleCycle: integer('sale_cycle').notNull().default(0),
     customerId: uuid('customer_id').references(() => customers.id),
     actorId: text('actor_id')
       .notNull()
@@ -100,8 +102,8 @@ export const cashMovements = pgTable(
   },
   (table) => [
     index('cash_movements_session_idx').on(table.sessionId, table.createdAt),
-    uniqueIndex('cash_movements_one_sale_per_order')
-      .on(table.orderId)
+    uniqueIndex('cash_movements_one_sale_per_order_cycle')
+      .on(table.orderId, table.saleCycle)
       .where(sql`${table.type} = 'sale'`),
     check(
       'cash_movements_type_check',

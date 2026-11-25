@@ -14,6 +14,7 @@ import {
   createOrderFn,
   editOrderFn,
   orderDetailFn,
+  reopenSaleFn,
   setReservationHoursFn,
 } from '#/modules/orders/server/orders'
 
@@ -97,6 +98,11 @@ export function useOrderActions() {
       ),
     cancel: (orderId: string) =>
       run(() => cancelOrderFn({ data: { orderId } }), 'Pedido cancelado.'),
+    reopenSale: (orderId: string) =>
+      run(
+        () => reopenSaleFn({ data: { orderId } }),
+        'Venta reabierta. Ya puedes editarla.',
+      ),
     setHours: (hours: number) =>
       run(
         () => setReservationHoursFn({ data: { hours } }),

@@ -9,6 +9,7 @@ import {
   addToReservedOrder,
   editReservedOrder,
 } from '#/modules/orders/services/order-edit'
+import { reopenSale } from '#/modules/orders/services/reopen-sale'
 import { getOrder } from '#/modules/orders/services/order-reads'
 import { createOrder } from '#/modules/orders/services/orders'
 import { setReservationHours } from '#/modules/orders/services/reservation-settings'
@@ -68,6 +69,14 @@ export const cancelOrderFn = createServerFn({ method: 'POST' })
   .handler(({ data }) =>
     runWithActor((actor) =>
       cancelOrder(actor, parseInput(orderIdInput, data).orderId),
+    ),
+  )
+
+export const reopenSaleFn = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => data)
+  .handler(({ data }) =>
+    runWithActor((actor) =>
+      reopenSale(actor, parseInput(orderIdInput, data).orderId),
     ),
   )
 

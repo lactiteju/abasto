@@ -15,7 +15,8 @@ export type Actor = {
  * presentations, suppliers, CSV import, archive and warehouse prices.
  * `stock.adjust` (add or remove stock from a lot), `riders.manage` (the
  * riders catalog: create, rename, activate) and `business.manage` (business
- * name and location) are strictly owner only.
+ * name and location), and `sales.reopen` (take a delivered sale back to
+ * Reservado) are strictly owner only.
  */
 export type GlobalPermission =
   | 'catalog.manage'
@@ -25,6 +26,7 @@ export type GlobalPermission =
   | 'stock.adjust'
   | 'riders.manage'
   | 'business.manage'
+  | 'sales.reopen'
 
 /** Permissions scoped to one warehouse. */
 export type WarehousePermission =

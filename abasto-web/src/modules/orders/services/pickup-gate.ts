@@ -47,6 +47,7 @@ export async function settlePickup(
     tenderedCents: payment.tenderedCents,
     changeCents,
     orderId: order.id,
+    saleCycle: order.reopenCount,
     customerId: order.customerId,
     reason: 'Pedido recogido',
     actorId,

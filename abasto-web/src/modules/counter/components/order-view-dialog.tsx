@@ -13,6 +13,7 @@ import {
 import { PaymentStep } from '#/modules/counter/components/payment-step'
 import { RemissionNoteButton } from '#/modules/counter/components/remission-note-button'
 import { ReceiptView } from '#/modules/counter/components/receipt-view'
+import { ReopenSaleButton } from '#/modules/counter/components/reopen-sale-button'
 import { StatusBadge } from '#/modules/counter/components/status-badge'
 import { messageOf } from '#/hooks/use-action-runner'
 import { useOrderActions } from '#/modules/counter/hooks/use-order-actions'
@@ -40,6 +41,8 @@ type OrderViewDialogProps = {
   warehouseName: string
   /** The warehouse's drawer is open, so cash can be collected. */
   drawerOpen: boolean
+  /** Owner only: shows «Editar venta» on a delivered order. */
+  canReopen: boolean
   onClose: () => void
 }
 
@@ -50,6 +53,7 @@ export function OrderViewDialog({
   now,
   warehouseName,
   drawerOpen,
+  canReopen,
   onClose,
 }: OrderViewDialogProps) {
   const actions = useOrderActions()
@@ -215,6 +219,16 @@ export function OrderViewDialog({
             <ActionButton disabled={busy} onClick={() => setAdding(true)}>
               Editar pedido
             </ActionButton>
+          )}
+          {canReopen && order.status === 'Recogido' && (
+            <ReopenSaleButton
+              orderId={order.id}
+              totalCents={order.totalCents}
+              onReopened={(reopened) => {
+                setOrder(reopened)
+                setAdding(true)
+              }}
+            />
           )}
           {order.status === 'Recogido' && (
             <RemissionNoteButton

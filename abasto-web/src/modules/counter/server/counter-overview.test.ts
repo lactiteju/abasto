@@ -74,6 +74,7 @@ describe('getCounterOverview', () => {
     ])
     expect(view.reservationHours).toBe(24)
     expect(view.canSetHours).toBe(false)
+    expect(view.canReopenSales).toBe(false)
     // setupOrders leaves A's drawer open with no cash in it; its manager may read the history.
     expect(view.cash?.session.warehouseId).toBe(fx.a.id)
     expect(view.cash?.expectedCents).toBe(0)
@@ -106,6 +107,7 @@ describe('getCounterOverview', () => {
     ])
     expect(view.selectedId).toBe(fx.b.id)
     expect(view.canSetHours).toBe(true)
+    expect(view.canReopenSales).toBe(true)
     expect(view.sellable).toEqual([])
     // Warehouse B has no open drawer; the owner may read its history.
     expect(view.cash).toBeNull()

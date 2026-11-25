@@ -87,6 +87,7 @@ export async function postCashMovement(
     tenderedCents?: number
     changeCents?: number
     orderId?: string
+    saleCycle?: number
     customerId?: string
   },
 ): Promise<CashMovement> {

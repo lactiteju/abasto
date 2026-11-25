@@ -67,6 +67,11 @@ export const orders = pgTable(
     expiresAt: timestamp('expires_at').notNull(),
     /** When the order was picked up, cancelled or expired. */
     closedAt: timestamp('closed_at'),
+    /** Times a delivered sale was reopened; stamps the cash sale of each cycle. */
+    reopenCount: integer('reopen_count').notNull().default(0),
+    /** Audit of the last reopen: when and who (owner). */
+    reopenedAt: timestamp('reopened_at'),
+    reopenedBy: text('reopened_by').references(() => user.id),
   },
   (table) => [
     check('orders_total_min', sql`${table.totalCents} > 0`),
