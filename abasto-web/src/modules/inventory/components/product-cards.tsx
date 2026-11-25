@@ -1,7 +1,7 @@
 import { StatusBadge } from '#/components/status-badge'
 import { ProductImage } from '#/components/product-image'
-import { ActionButton } from '#/modules/inventory/components/action-button'
 import { HeldBreakdown } from '#/modules/inventory/components/held-breakdown'
+import { ProductActions } from '#/modules/inventory/components/product-actions'
 import { StockBadge } from '#/modules/inventory/components/stock-badge'
 import { dateLabel } from '#/modules/inventory/lib/format'
 import { formatQuantity } from '#/modules/inventory/lib/quantity'
@@ -17,8 +17,10 @@ type ProductCardsProps = {
   packs: ReadonlyMap<string, PackInfo>
   today: string
   canManage: boolean
+  canAdjustStock: boolean
   onLots: (row: ProductStock) => void
   onMinimum: (productId: string) => void
+  onMerma: (row: ProductStock) => void
 }
 
 /** Phone version of the Productos list: one block per product (the table shows from md up). */
@@ -27,8 +29,10 @@ export function ProductCards({
   packs,
   today,
   canManage,
+  canAdjustStock,
   onLots,
   onMinimum,
+  onMerma,
 }: ProductCardsProps) {
   return (
     <ul className="flex flex-col gap-2.5 md:hidden">
@@ -88,21 +92,15 @@ export function ProductCards({
                 </small>
               )}
             </div>
-            <div className="mt-3 flex justify-end gap-2">
-              <ActionButton
-                className="min-h-9 px-3"
-                onClick={() => onLots(row)}
-              >
-                Lotes
-              </ActionButton>
-              {canManage && (
-                <ActionButton
-                  className="min-h-9 px-3"
-                  onClick={() => onMinimum(row.productId)}
-                >
-                  Mínimo
-                </ActionButton>
-              )}
+            <div className="mt-3 flex justify-end">
+              <ProductActions
+                row={row}
+                canManage={canManage}
+                canAdjustStock={canAdjustStock}
+                onLots={onLots}
+                onMinimum={onMinimum}
+                onMerma={onMerma}
+              />
             </div>
           </li>
         )

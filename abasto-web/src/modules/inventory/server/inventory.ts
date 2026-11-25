@@ -22,6 +22,7 @@ import { countStock } from '#/modules/inventory/services/stock-counts'
 import { setMinimumStock } from '#/modules/inventory/services/stock-minimums'
 import {
   getWarehouseStock,
+  listLossMovements,
   listStockMovements,
 } from '#/modules/inventory/services/stock-reads'
 import type { InventoryOverview } from '#/modules/inventory/types/stock'
@@ -47,13 +48,25 @@ export const inventoryOverviewFn = createServerFn({ method: 'GET' })
         warehouses.find(({ id }) => id === warehouseId) ?? warehouses.at(0)
       const today = businessDate()
       if (!selected) {
-        return { warehouses, selectedId: null, today, stock: [], movements: [] }
+        return {
+          warehouses,
+          selectedId: null,
+          today,
+          stock: [],
+          movements: [],
+          losses: [],
+        }
       }
-      const [stock, movements] = await Promise.all([
+      const [stock, movements, losses] = await Promise.all([
         getWarehouseStock(actor, selected.id),
         listStockMovements(actor, {
           warehouseId: selected.id,
           limit: MOVEMENT_LIMIT,
+        }),
+        listLossMovements(actor, {
+          warehouseId: selected.id,
+          limit: MOVEMENT_LIMIT,
+          withCost: selected.canManage,
         }),
       ])
       return {
@@ -62,6 +75,7 @@ export const inventoryOverviewFn = createServerFn({ method: 'GET' })
         today,
         stock,
         movements: await withProducts(movements),
+        losses,
       }
     }),
   )

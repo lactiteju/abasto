@@ -1,7 +1,6 @@
 import { StatusBadge } from '#/components/status-badge'
 import { SupplierSelect } from '#/components/supplier-select'
 import { ProductImage } from '#/components/product-image'
-import { ActionButton } from '#/modules/inventory/components/action-button'
 import { EmptyPanel } from '#/modules/inventory/components/empty-panel'
 import { HeldBreakdown } from '#/modules/inventory/components/held-breakdown'
 import {
@@ -12,6 +11,7 @@ import {
   ListRow,
   ListTable,
 } from '#/modules/inventory/components/list-panel'
+import { ProductActions } from '#/modules/inventory/components/product-actions'
 import { ProductCards } from '#/modules/inventory/components/product-cards'
 import { Picker } from '#/modules/inventory/components/picker'
 import { SearchBox } from '#/components/search-box'
@@ -33,6 +33,7 @@ type ProductsTabProps = {
   packs: ReadonlyMap<string, PackInfo>
   today: string
   canManage: boolean
+  canAdjustStock: boolean
   query: string
   onQueryChange: (value: string) => void
   filter: StatusFilter
@@ -42,6 +43,7 @@ type ProductsTabProps = {
   onSupplierChange: (id: string) => void
   onLots: (row: ProductStock) => void
   onMinimum: (productId: string) => void
+  onMerma: (row: ProductStock) => void
 }
 
 /** Stock per product in the selected warehouse. */
@@ -51,6 +53,7 @@ export function ProductsTab({
   packs,
   today,
   canManage,
+  canAdjustStock,
   query,
   onQueryChange,
   filter,
@@ -60,6 +63,7 @@ export function ProductsTab({
   onSupplierChange,
   onLots,
   onMinimum,
+  onMerma,
 }: ProductsTabProps) {
   return (
     <>
@@ -90,8 +94,10 @@ export function ProductsTab({
             packs={packs}
             today={today}
             canManage={canManage}
+            canAdjustStock={canAdjustStock}
             onLots={onLots}
             onMinimum={onMinimum}
+            onMerma={onMerma}
           />
           <ListPanel scroll className="max-md:hidden">
             <ListTable>
@@ -177,21 +183,15 @@ export function ProductsTab({
                           '—'
                         )}
                       </ListCell>
-                      <ListCell className="flex justify-end gap-2">
-                        <ActionButton
-                          className="min-h-9 px-3"
-                          onClick={() => onLots(row)}
-                        >
-                          Lotes
-                        </ActionButton>
-                        {canManage && (
-                          <ActionButton
-                            className="min-h-9 px-3"
-                            onClick={() => onMinimum(row.productId)}
-                          >
-                            Mínimo
-                          </ActionButton>
-                        )}
+                      <ListCell className="flex justify-end">
+                        <ProductActions
+                          row={row}
+                          canManage={canManage}
+                          canAdjustStock={canAdjustStock}
+                          onLots={onLots}
+                          onMinimum={onMinimum}
+                          onMerma={onMerma}
+                        />
                       </ListCell>
                     </ListRow>
                   )

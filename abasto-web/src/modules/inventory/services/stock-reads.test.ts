@@ -8,9 +8,11 @@ import { resetDatabase } from '#/db/testing'
 import { setMinimumStock } from '#/modules/inventory/services/stock-minimums'
 import {
   getWarehouseStock,
+  listLossMovements,
   listStockMovements,
 } from '#/modules/inventory/services/stock-reads'
 import { countStock } from '#/modules/inventory/services/stock-counts'
+import { registerProductLoss } from '#/modules/inventory/services/product-loss'
 import { adjustLot } from '#/modules/inventory/services/stock-adjustments'
 import {
   errorOf,
@@ -221,5 +223,47 @@ describe('listStockMovements', () => {
       listStockMovements(fx.staffA, { warehouseId: fx.b.id }),
     )
     expect(error.code).toBe('forbidden')
+  })
+})
+
+describe('listLossMovements', () => {
+  test('lists only loss movements newest first, with pieces, expiry and cost for managers', async () => {
+    const fx = await setupInventory()
+    const lot = await receive(fx, {
+      quantity: 10,
+      expiresOn: '2026-12-01',
+      totalCostCents: 5000,
+    })
+    await adjustLot(fx.owner, { lotId: lot.id, quantity: -1, reason: 'Ajuste' })
+    await registerProductLoss(fx.owner, {
+      warehouseId: fx.a.id,
+      category: 'dañado',
+      note: 'Se cayó',
+      lines: [{ productId: fx.milk.id, pieces: 3 }],
+    })
+
+    const withCost = await listLossMovements(fx.owner, {
+      warehouseId: fx.a.id,
+      withCost: true,
+    })
+    expect(withCost).toHaveLength(1)
+    expect(withCost[0]).toMatchObject({
+      productId: fx.milk.id,
+      quantity: 3,
+      reason: 'dañado: Se cayó',
+      expiresOn: '2026-12-01',
+      costCents: 1500,
+    })
+    const hidden = await listLossMovements(fx.staffA, {
+      warehouseId: fx.a.id,
+      withCost: false,
+    })
+    expect(hidden[0]?.costCents).toBeNull()
+    expect(
+      await listLossMovements(fx.owner, {
+        warehouseId: fx.b.id,
+        withCost: true,
+      }),
+    ).toEqual([])
   })
 })

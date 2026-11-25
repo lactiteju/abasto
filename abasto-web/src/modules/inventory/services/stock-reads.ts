@@ -12,6 +12,7 @@ import {
 import type { MovementType } from '#/modules/inventory/db/schema'
 import { businessDate } from '#/modules/orders/services/clock'
 import { expireOverdueOrders } from '#/modules/orders/services/expiry'
+import { lossCostCents } from '#/modules/inventory/lib/loss-ledger'
 import { byFefo } from '#/modules/inventory/services/stock-ledger'
 import {
   riderAllocations,
@@ -222,4 +223,63 @@ export async function listStockMovements(
     )
     .orderBy(desc(stockMovements.createdAt), desc(stockMovements.id))
     .limit(limit)
+}
+
+export type LossMovementRow = {
+  id: string
+  productId: string
+  /** Positive pieces taken out of the lot. */
+  quantity: number
+  reason: string
+  actorName: string
+  lotCode: string
+  expiresOn: string | null
+  createdAt: Date
+  /** Cost of the lost pieces from the lot's cost; null when `withCost` is off. */
+  costCents: number | null
+}
+
+/**
+ * `loss` movements of one warehouse, newest first, with the lot's expiry and,
+ * for managers only (`withCost`), what the lost pieces cost.
+ */
+export async function listLossMovements(
+  actor: Actor,
+  input: { warehouseId: string; limit?: number; withCost: boolean },
+): Promise<Array<LossMovementRow>> {
+  authorize(actor, 'warehouse.view', input.warehouseId)
+  const limit = Math.min(Math.max(Math.trunc(input.limit ?? 200), 1), 500)
+  const rows = await db
+    .select({
+      id: stockMovements.id,
+      productId: stockMovements.productId,
+      quantity: stockMovements.quantity,
+      reason: stockMovements.reason,
+      actorName: user.name,
+      lotCode: lots.code,
+      expiresOn: lots.expiresOn,
+      receivedQuantity: lots.receivedQuantity,
+      receivedCostCents: lots.receivedCostCents,
+      createdAt: stockMovements.createdAt,
+    })
+    .from(stockMovements)
+    .innerJoin(lots, eq(lots.id, stockMovements.lotId))
+    .innerJoin(user, eq(user.id, stockMovements.actorId))
+    .where(
+      and(
+        eq(stockMovements.warehouseId, input.warehouseId),
+        eq(stockMovements.type, 'loss'),
+      ),
+    )
+    .orderBy(desc(stockMovements.createdAt), desc(stockMovements.id))
+    .limit(limit)
+  return rows.map(
+    ({ receivedQuantity, receivedCostCents, quantity, ...row }) => ({
+      ...row,
+      quantity: -quantity,
+      costCents: input.withCost
+        ? lossCostCents(-quantity, receivedQuantity, receivedCostCents)
+        : null,
+    }),
+  )
 }

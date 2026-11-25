@@ -17,6 +17,7 @@ import { PageHeading } from '#/components/page-heading'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { ActionButton } from '#/modules/inventory/components/action-button'
 import { CountsTab } from '#/modules/inventory/components/counts-tab'
+import { LossesTab } from '#/modules/inventory/components/losses-tab'
 import { MovementsTab } from '#/modules/inventory/components/movements-tab'
 import type { ProductLabel } from '#/modules/inventory/components/movement-table'
 import { activeProducts } from '#/modules/inventory/lib/active-products'
@@ -38,6 +39,7 @@ import {
   buildInventoryCountPdf,
   hasCountableStock,
 } from '#/modules/inventory/lib/inventory-count-pdf'
+import { freePieces } from '#/modules/inventory/lib/loss-ledger'
 import { tabBadges } from '#/modules/inventory/lib/tab-badges'
 import type { InventoryAction } from '#/modules/inventory/lib/inventory-action'
 import {
@@ -101,6 +103,7 @@ const tabs: Array<{ name: string; icon: LucideIcon }> = [
   { name: 'Por recibir', icon: ClockIcon },
   { name: 'Saldos', icon: ScaleIcon },
   { name: 'Movimientos', icon: RotateCcwIcon },
+  { name: 'Mermas', icon: Trash2Icon },
   { name: 'Conteos', icon: ClipboardCheckIcon },
   { name: 'Traslados', icon: TruckIcon },
 ]
@@ -117,7 +120,7 @@ type Dialog =
   | { kind: 'return'; pending: PendingBalance }
   | { kind: 'scrap'; pending: PendingBalance }
   | { kind: 'count' }
-  | { kind: 'merma' }
+  | { kind: 'merma'; productId: string }
   | { kind: 'transfer' }
   | { kind: 'receive'; transfer: TransferListItem }
   | { kind: 'cancel'; transfer: TransferListItem }
@@ -224,6 +227,10 @@ export function InventoryPage({
     dialog?.kind === 'lots'
       ? stock.find((row) => row.productId === dialog.productId)
       : undefined
+  const mermaRow: ProductStock | undefined =
+    dialog?.kind === 'merma'
+      ? stock.find((row) => row.productId === dialog.productId)
+      : undefined
   const lotsProduct = products.find(({ id }) => id === lotsRow?.productId)
 
   const badges = tabBadges({
@@ -244,6 +251,12 @@ export function InventoryPage({
       await import('#/modules/reports/lib/pdf-render')
     await downloadPdfReport(document)
   }
+  const lossProducts = new Map(
+    stock.map((row) => [
+      row.productId,
+      { name: row.name, sku: row.sku, imageUrl: row.imageUrl },
+    ]),
+  )
   const supplierNames = new Map(
     suppliers.map((supplier) => [supplier.id, supplier.name]),
   )
@@ -256,15 +269,6 @@ export function InventoryPage({
         actions={
           canManage ? (
             <div className="grid w-full grid-cols-2 gap-2.5 md:contents">
-              {selected.canAdjustStock && (
-                <ActionButton
-                  className={headingButton}
-                  onClick={() => setDialog({ kind: 'merma' })}
-                >
-                  <Trash2Icon size={18} />
-                  Merma
-                </ActionButton>
-              )}
               <ActionButton
                 className={headingButton}
                 disabled={!hasCountableStock(stock, supplierId)}
@@ -338,6 +342,7 @@ export function InventoryPage({
             packs={packs}
             today={overview.today}
             canManage={canManage}
+            canAdjustStock={selected.canAdjustStock}
             query={query}
             onQueryChange={setQuery}
             filter={filter}
@@ -349,6 +354,9 @@ export function InventoryPage({
               setDialog({ kind: 'lots', productId: row.productId })
             }
             onMinimum={(productId) => setDialog({ kind: 'minimum', productId })}
+            onMerma={(row) =>
+              setDialog({ kind: 'merma', productId: row.productId })
+            }
           />
         </TabsContent>
         <TabsContent value="Por recibir" className="text-base">
@@ -383,6 +391,13 @@ export function InventoryPage({
             onTypeChange={setMoveType}
           />
         </TabsContent>
+        <TabsContent value="Mermas" className="text-base">
+          <LossesTab
+            rows={overview.losses}
+            products={lossProducts}
+            today={overview.today}
+          />
+        </TabsContent>
         <TabsContent value="Conteos" className="text-base">
           <CountsTab
             rows={overview.movements}
@@ -403,24 +418,16 @@ export function InventoryPage({
         </TabsContent>
       </Tabs>
 
-      {dialog?.kind === 'merma' && (
+      {mermaRow && (
         <MermaDialog
           warehouseId={selected.id}
-          warehouseName={selected.name}
-          products={stock.flatMap((row) => {
-            const available = row.onHand - row.reserved
-            return available > 0
-              ? [
-                  {
-                    productId: row.productId,
-                    name: row.name,
-                    sku: row.sku,
-                    imageUrl: row.imageUrl,
-                    available,
-                  },
-                ]
-              : []
-          })}
+          product={{
+            productId: mermaRow.productId,
+            name: mermaRow.name,
+            sku: mermaRow.sku,
+            imageUrl: mermaRow.imageUrl,
+            available: freePieces(mermaRow),
+          }}
           onClose={closeDialog}
         />
       )}

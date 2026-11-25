@@ -1,10 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import {
   clampPieces,
-  mermaLines,
   piecesAvailableLabel,
-  summarizeMerma,
-  visibleMermaProducts,
+  typedPieces,
 } from '#/modules/inventory/lib/merma-draft'
 
 describe('clampPieces', () => {
@@ -17,35 +15,17 @@ describe('clampPieces', () => {
   })
 })
 
-describe('mermaLines', () => {
-  test('drops blank and zero rows', () => {
-    expect(mermaLines({ a: '3', b: '', c: '0' })).toEqual([
-      { productId: 'a', pieces: 3 },
-    ])
+describe('typedPieces', () => {
+  test('blank and zero are no pieces', () => {
+    expect(typedPieces('')).toBe(0)
+    expect(typedPieces('0')).toBe(0)
+    expect(typedPieces('4')).toBe(4)
   })
 })
 
 describe('labels', () => {
   test('pluralises', () => {
     expect(piecesAvailableLabel(1)).toBe('1 pieza disponible')
-    expect(piecesAvailableLabel(8)).toBe('8 piezas disponibles')
-    expect(summarizeMerma([])).toBe('Sin productos')
-    expect(summarizeMerma([{ pieces: 1 }])).toBe('1 producto · 1 pieza')
-    expect(summarizeMerma([{ pieces: 2 }, { pieces: 3 }])).toBe(
-      '2 productos · 5 piezas',
-    )
-  })
-})
-
-describe('visibleMermaProducts', () => {
-  const items = [
-    { productId: '1', name: 'Leche', sku: 'LEC-1' },
-    { productId: '2', name: 'Refresco', sku: 'REF-1' },
-  ]
-  test('searches by name or SKU and can keep only typed rows', () => {
-    expect(visibleMermaProducts(items, 'ref-1')).toHaveLength(1)
-    expect(visibleMermaProducts(items, '', new Set(['1']))[0]?.name).toBe(
-      'Leche',
-    )
+    expect(piecesAvailableLabel(5)).toBe('5 piezas disponibles')
   })
 })

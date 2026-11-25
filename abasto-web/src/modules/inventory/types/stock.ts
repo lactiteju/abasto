@@ -1,4 +1,5 @@
 import type {
+  LossMovementRow,
   ProductStock,
   StockMovementRow,
 } from '#/modules/inventory/services/stock-reads'
@@ -22,4 +23,6 @@ export type InventoryOverview = {
   today: string
   stock: Array<ProductStock>
   movements: Array<MovementEntry>
+  /** `loss` ledger rows, newest first (the Mermas tab). */
+  losses: Array<LossMovementRow>
 }
