@@ -6,11 +6,10 @@ import {
   Th,
 } from '#/modules/counter/components/data-table'
 import { EmptyState } from '#/modules/counter/components/empty-state'
-import { ActionButton } from '#/modules/counter/components/action-button'
-import { RemissionNoteButton } from '#/modules/counter/components/remission-note-button'
-import { ReopenSaleButton } from '#/modules/counter/components/reopen-sale-button'
+import { OrderRowActions } from '#/modules/counter/components/order-row-actions'
 import { StatusBadge } from '#/modules/counter/components/status-badge'
 import { expiryLabel, orderCode } from '#/modules/counter/lib/order-format'
+import { openOnRowKey } from '#/modules/counter/lib/order-row-menu'
 import { formatCents } from '#/modules/pricing/lib/money'
 import type { OrderSummary } from '#/modules/orders/services/order-reads'
 
@@ -19,7 +18,7 @@ type OrderListProps = {
   /** Server time the expiry labels are computed against. */
   now: Date
   warehouseName: string
-  /** Owner only: shows «Editar venta» on delivered rows. */
+  /** Owner only: «Editar venta» in the menu of delivered rows. */
   canReopen: boolean
   onOpen: (orderId: string) => void
 }
@@ -40,7 +39,10 @@ export function OrderList({
         {orders.map((order) => (
           <li
             key={order.id}
-            className="rounded-xl border border-[#f0eae3] bg-white p-3.5"
+            tabIndex={0}
+            onClick={() => onOpen(order.id)}
+            onKeyDown={openOnRowKey(() => onOpen(order.id))}
+            className="cursor-pointer rounded-xl border border-[#f0eae3] bg-white p-3.5 outline-none focus-visible:ring-2 focus-visible:ring-[#3b2251]/40"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -60,24 +62,12 @@ export function OrderList({
                   <CellNote>{expiryLabel(order.expiresAt, now)}</CellNote>
                 )}
               </div>
-              <div className="flex flex-wrap justify-end gap-2">
-                {order.status === 'Recogido' && (
-                  <RemissionNoteButton
-                    orderId={order.id}
-                    warehouseName={warehouseName}
-                  />
-                )}
-                {canReopen && order.status === 'Recogido' && (
-                  <ReopenSaleButton
-                    orderId={order.id}
-                    totalCents={order.totalCents}
-                    onReopened={(reopened) => onOpen(reopened.id)}
-                  />
-                )}
-                <ActionButton onClick={() => onOpen(order.id)}>
-                  Ver pedido
-                </ActionButton>
-              </div>
+              <OrderRowActions
+                order={order}
+                warehouseName={warehouseName}
+                canReopen={canReopen}
+                onOpen={onOpen}
+              />
             </div>
           </li>
         ))}
@@ -97,7 +87,13 @@ export function OrderList({
           </thead>
           <tbody>
             {orders.map((order) => (
-              <tr key={order.id} className="hover:bg-[#fefdfb]">
+              <tr
+                key={order.id}
+                tabIndex={0}
+                onClick={() => onOpen(order.id)}
+                onKeyDown={openOnRowKey(() => onOpen(order.id))}
+                className="cursor-pointer outline-none hover:bg-[#fefdfb] focus-visible:bg-[#fefdfb] focus-visible:ring-2 focus-visible:ring-[#3b2251]/40 focus-visible:ring-inset"
+              >
                 <Td>
                   <strong>{orderCode(order.id)}</strong>
                   <CellNote>
@@ -114,24 +110,12 @@ export function OrderList({
                   {formatCents(order.totalCents)}
                 </Td>
                 <Td className="text-right">
-                  <div className="flex justify-end gap-2">
-                    {order.status === 'Recogido' && (
-                      <RemissionNoteButton
-                        orderId={order.id}
-                        warehouseName={warehouseName}
-                      />
-                    )}
-                    {canReopen && order.status === 'Recogido' && (
-                      <ReopenSaleButton
-                        orderId={order.id}
-                        totalCents={order.totalCents}
-                        onReopened={(reopened) => onOpen(reopened.id)}
-                      />
-                    )}
-                    <ActionButton onClick={() => onOpen(order.id)}>
-                      Ver pedido
-                    </ActionButton>
-                  </div>
+                  <OrderRowActions
+                    order={order}
+                    warehouseName={warehouseName}
+                    canReopen={canReopen}
+                    onOpen={onOpen}
+                  />
                 </Td>
               </tr>
             ))}

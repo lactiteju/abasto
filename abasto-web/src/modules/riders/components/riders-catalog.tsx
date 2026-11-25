@@ -12,7 +12,7 @@ import {
   ListTable,
 } from '#/modules/inventory/components/list-panel'
 import { SectionRow } from '#/modules/inventory/components/section-row'
-import { RowActionsMenu } from '#/modules/riders/components/row-actions-menu'
+import { RowActionsMenu } from '#/components/row-actions-menu'
 import { useRiderActions } from '#/modules/riders/hooks/use-rider-actions'
 import type { Rider } from '#/modules/riders/services/riders'
 

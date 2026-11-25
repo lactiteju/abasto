@@ -8,7 +8,7 @@ import {
   XIcon,
 } from 'lucide-react'
 
-import { RowActionsMenu } from '#/modules/riders/components/row-actions-menu'
+import { RowActionsMenu } from '#/components/row-actions-menu'
 import {
   rowActionLabels,
   rowActionsFor,
