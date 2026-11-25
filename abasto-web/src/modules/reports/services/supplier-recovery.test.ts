@@ -14,7 +14,9 @@ import {
   returnPendings,
   scrapPendings,
 } from '#/modules/inventory/services/supplier-pendings'
+import { editLoss, voidLoss } from '#/modules/inventory/services/loss-edit'
 import { registerLoss } from '#/modules/inventory/services/stock-adjustments'
+import { listLossMovements } from '#/modules/inventory/services/stock-reads'
 import {
   errorOf,
   lineFor,
@@ -271,6 +273,38 @@ describe('lost', () => {
     })
     // round(66.67) + round(33.33)
     expect((await read(fx)).inventoryLossCents).toBe(67 + 33)
+  })
+
+  test('an edited or voided merma counts only what is still lost', async () => {
+    const fx = await setupSupplierOrders()
+    await receiveMilk(fx, 10, 0, 0)
+    const [lot] = await db.select().from(lots)
+    await db
+      .update(lots)
+      .set({ receivedCostCents: 100, receivedQuantity: 10 })
+      .where(eq(lots.id, lot.id))
+    const lossOf = async () =>
+      (
+        await listLossMovements(fx.owner, {
+          warehouseId: fx.a.id,
+          withCost: true,
+        })
+      )[0]
+    await registerLoss(fx.owner, {
+      lotId: lot.id,
+      quantity: 5,
+      category: 'dañado',
+      reason: 'golpe',
+    })
+    await editLoss(fx.owner, {
+      movementId: (await lossOf()).id,
+      pieces: 2,
+      category: 'dañado',
+      note: 'golpe',
+    })
+    expect((await read(fx)).inventoryLossCents).toBe(20)
+    await voidLoss(fx.owner, { movementId: (await lossOf()).id })
+    expect((await read(fx)).inventoryLossCents).toBe(0)
   })
 })
 

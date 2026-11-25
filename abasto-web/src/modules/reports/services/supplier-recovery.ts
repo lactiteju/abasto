@@ -72,7 +72,7 @@ export async function getSupplierRecovery(
         where s.type = 'returned' and s.resolution = 'discount'
           and ${inRange(sql`s.created_at`, range)}
           ${bySupplier('s.supplier_id')}) as unrecognized,
-      (select coalesce(sum(round(abs(m.quantity)::numeric * l.received_cost_cents / l.received_quantity)), 0)
+      (select coalesce(sum(round(-m.quantity::numeric * l.received_cost_cents / l.received_quantity)), 0)
         from stock_movements m
         join lots l on l.id = m.lot_id
         join products p on p.id = m.product_id

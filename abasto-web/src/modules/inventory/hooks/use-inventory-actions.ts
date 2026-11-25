@@ -6,7 +6,9 @@ import {
   adjustLotFn,
   countStockFn,
   purchaseStandardPricesFn,
+  editLossFn,
   registerProductLossFn,
+  voidLossFn,
   registerLossFn,
   setMinimumFn,
   warehouseStockFn,
@@ -168,6 +170,21 @@ export function useInventoryActions() {
         onSuccess: ({ pieces }) =>
           toast.success(
             `Merma registrada: ${pieces} ${pieces === 1 ? 'pieza' : 'piezas'} fuera del inventario.`,
+          ),
+      }),
+    /** «Editar merma»: corrects the pieces and motive of one merma row. */
+    editLoss: (input: {
+      movementId: string
+      pieces: number
+      category: LossCategory
+      note: string
+    }) => run(() => editLossFn({ data: input }), 'Merma actualizada.'),
+    /** «Anular merma»: its pieces go back to the lot. */
+    voidLoss: (movementId: string) =>
+      run(() => voidLossFn({ data: { movementId } }), {
+        onSuccess: ({ pieces }) =>
+          toast.success(
+            `Merma anulada: ${pieces} ${pieces === 1 ? 'pieza regresó' : 'piezas regresaron'} al inventario.`,
           ),
       }),
     /** "Quitar existencias" for another reason: a negative adjustment in the ledger. */

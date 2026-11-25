@@ -1,4 +1,5 @@
-import { and, desc, eq, gt, sql } from 'drizzle-orm'
+import { and, desc, eq, gt, lt, notExists, sql } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 import { db } from '#/db'
 import { authorize } from '#/modules/access/lib/policy'
 import type { Actor } from '#/modules/access/lib/policy'
@@ -13,6 +14,11 @@ import type { MovementType } from '#/modules/inventory/db/schema'
 import { businessDate } from '#/modules/orders/services/clock'
 import { expireOverdueOrders } from '#/modules/orders/services/expiry'
 import { lossCostCents } from '#/modules/inventory/lib/loss-ledger'
+import {
+  editedLossReference,
+  isEditableLossReference,
+  voidedLossReference,
+} from '#/modules/inventory/lib/loss-edits'
 import { byFefo } from '#/modules/inventory/services/stock-ledger'
 import {
   riderAllocations,
@@ -231,17 +237,26 @@ export type LossMovementRow = {
   /** Positive pieces taken out of the lot. */
   quantity: number
   reason: string
+  /** Who first registered the merma. */
   actorName: string
   lotCode: string
   expiresOn: string | null
+  /** When the merma was first registered; an edit keeps it. */
   createdAt: Date
   /** Cost of the lost pieces from the lot's cost; null when `withCost` is off. */
   costCents: number | null
+  /** The owner may still edit or void it (not a rider settlement's). */
+  editable: boolean
+  /** Who corrected it and when; null when never edited. */
+  editedBy: string | null
+  editedAt: Date | null
 }
 
 /**
- * `loss` movements of one warehouse, newest first, with the lot's expiry and,
- * for managers only (`withCost`), what the lost pieces cost.
+ * Current mermas of one warehouse, newest first, with the lot's expiry and,
+ * for managers only (`withCost`), what the lost pieces cost. Rows the owner
+ * voided or replaced by an edit are left out; an edit shows the first
+ * registration's date and author.
  */
 export async function listLossMovements(
   actor: Actor,
@@ -249,13 +264,20 @@ export async function listLossMovements(
 ): Promise<Array<LossMovementRow>> {
   authorize(actor, 'warehouse.view', input.warehouseId)
   const limit = Math.min(Math.max(Math.trunc(input.limit ?? 200), 1), 500)
+  const root = alias(stockMovements, 'loss_root')
+  const rootActor = alias(user, 'loss_root_actor')
+  const voids = alias(stockMovements, 'loss_void')
+  const registeredAt = sql<Date>`coalesce(${root.createdAt}, ${stockMovements.createdAt})`
   const rows = await db
     .select({
       id: stockMovements.id,
       productId: stockMovements.productId,
       quantity: stockMovements.quantity,
       reason: stockMovements.reason,
+      reference: stockMovements.reference,
       actorName: user.name,
+      rootActorName: rootActor.name,
+      rootCreatedAt: root.createdAt,
       lotCode: lots.code,
       expiresOn: lots.expiresOn,
       receivedQuantity: lots.receivedQuantity,
@@ -265,21 +287,53 @@ export async function listLossMovements(
     .from(stockMovements)
     .innerJoin(lots, eq(lots.id, stockMovements.lotId))
     .innerJoin(user, eq(user.id, stockMovements.actorId))
+    .leftJoin(
+      root,
+      sql`${stockMovements.reference} = ${editedLossReference('')} || ${root.id}::text`,
+    )
+    .leftJoin(rootActor, eq(rootActor.id, root.actorId))
     .where(
       and(
         eq(stockMovements.warehouseId, input.warehouseId),
         eq(stockMovements.type, 'loss'),
+        lt(stockMovements.quantity, 0),
+        notExists(
+          db
+            .select({ id: voids.id })
+            .from(voids)
+            .where(
+              sql`${voids.reference} = ${voidedLossReference('')} || ${stockMovements.id}::text`,
+            ),
+        ),
       ),
     )
-    .orderBy(desc(stockMovements.createdAt), desc(stockMovements.id))
+    .orderBy(desc(registeredAt), desc(stockMovements.id))
     .limit(limit)
   return rows.map(
-    ({ receivedQuantity, receivedCostCents, quantity, ...row }) => ({
-      ...row,
-      quantity: -quantity,
-      costCents: input.withCost
-        ? lossCostCents(-quantity, receivedQuantity, receivedCostCents)
-        : null,
-    }),
+    ({
+      receivedQuantity,
+      receivedCostCents,
+      quantity,
+      reference,
+      rootActorName,
+      rootCreatedAt,
+      actorName,
+      createdAt,
+      ...row
+    }) => {
+      const edited = rootCreatedAt !== null
+      return {
+        ...row,
+        quantity: -quantity,
+        actorName: rootActorName ?? actorName,
+        createdAt: rootCreatedAt ?? createdAt,
+        costCents: input.withCost
+          ? lossCostCents(-quantity, receivedQuantity, receivedCostCents)
+          : null,
+        editable: isEditableLossReference(reference),
+        editedBy: edited ? actorName : null,
+        editedAt: edited ? createdAt : null,
+      }
+    },
   )
 }

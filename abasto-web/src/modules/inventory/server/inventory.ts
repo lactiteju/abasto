@@ -5,7 +5,9 @@ import { can } from '#/modules/access/lib/policy'
 import {
   adjustInput,
   countInput,
+  lossEditInput,
   lossInput,
+  lossVoidInput,
   minimumInput,
   overviewInput,
   productLossInput,
@@ -17,6 +19,7 @@ import {
   adjustLot,
   registerLoss,
 } from '#/modules/inventory/services/stock-adjustments'
+import { editLoss, voidLoss } from '#/modules/inventory/services/loss-edit'
 import { registerProductLoss } from '#/modules/inventory/services/product-loss'
 import { countStock } from '#/modules/inventory/services/stock-counts'
 import { setMinimumStock } from '#/modules/inventory/services/stock-minimums'
@@ -136,6 +139,18 @@ export const registerProductLossFn = createServerFn({ method: 'POST' })
     runWithActor((actor) =>
       registerProductLoss(actor, parseInput(productLossInput, data)),
     ),
+  )
+
+export const editLossFn = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => data)
+  .handler(({ data }) =>
+    runWithActor((actor) => editLoss(actor, parseInput(lossEditInput, data))),
+  )
+
+export const voidLossFn = createServerFn({ method: 'POST' })
+  .validator((data: unknown) => data)
+  .handler(({ data }) =>
+    runWithActor((actor) => voidLoss(actor, parseInput(lossVoidInput, data))),
   )
 
 export const countStockFn = createServerFn({ method: 'POST' })

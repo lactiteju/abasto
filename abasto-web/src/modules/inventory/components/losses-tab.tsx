@@ -1,7 +1,8 @@
-import { Trash2Icon } from 'lucide-react'
+import { PencilIcon, Trash2Icon, Undo2Icon } from 'lucide-react'
 import { useState } from 'react'
 
 import { ProductImage } from '#/components/product-image'
+import { RowActionsMenu } from '#/components/row-actions-menu'
 import { SearchBox } from '#/components/search-box'
 import { EmptyPanel } from '#/modules/inventory/components/empty-panel'
 import {
@@ -23,6 +24,7 @@ import {
   lossTotals,
 } from '#/modules/inventory/lib/loss-ledger'
 import type { LossPeriod, LossRow } from '#/modules/inventory/lib/loss-ledger'
+import type { LossTarget } from '#/modules/inventory/forms/loss-edit-dialog'
 import type { LossMovementRow } from '#/modules/inventory/services/stock-reads'
 
 type LossesTabProps = {
@@ -33,6 +35,10 @@ type LossesTabProps = {
   >
   /** Business day (YYYY-MM-DD) the period filter counts from. */
   today: string
+  /** Owner: may edit or void the mermas they registered. */
+  canEdit: boolean
+  onEdit: (loss: LossTarget) => void
+  onVoid: (loss: LossTarget) => void
 }
 
 type Entry = LossRow & { imageUrl: string | null; row: LossMovementRow }
@@ -41,7 +47,14 @@ const pickerClass =
   'data-[size=default]:h-9 text-xs md:data-[size=default]:h-[43px] md:text-sm'
 
 /** Mermas: the warehouse's `loss` movements, newest first, with filters and totals. */
-export function LossesTab({ rows, products, today }: LossesTabProps) {
+export function LossesTab({
+  rows,
+  products,
+  today,
+  canEdit,
+  onEdit,
+  onVoid,
+}: LossesTabProps) {
   const [query, setQuery] = useState('')
   const [motive, setMotive] = useState('Todos')
   const [period, setPeriod] = useState<LossPeriod>('all')
@@ -121,13 +134,26 @@ export function LossesTab({ rows, products, today }: LossesTabProps) {
                     'Lote',
                     'Registró',
                     ...(showCost ? ['Costo'] : []),
+                    ...(canEdit ? [''] : []),
                   ]}
                 </ListHead>
                 <ListBody>
                   {visible.map((entry) => {
                     const created = new Date(entry.createdAt).toISOString()
                     const reason = lossMotive(entry.reason)
-                    const { lotCode, expiresOn, actorName } = entry.row
+                    const { lotCode, expiresOn, actorName, editedBy } =
+                      entry.row
+                    const target: LossTarget = {
+                      movementId: entry.id,
+                      productName: entry.productName,
+                      sku: entry.sku,
+                      imageUrl: entry.imageUrl,
+                      pieces: entry.quantity,
+                      reason: entry.reason,
+                      lotCode,
+                    }
+                    const fromRoute =
+                      !entry.row.editable || reason.kind === 'reparto'
                     return (
                       <ListRow key={entry.id}>
                         <ListCell className="whitespace-nowrap">
@@ -175,12 +201,56 @@ export function LossesTab({ rows, products, today }: LossesTabProps) {
                             </small>
                           )}
                         </ListCell>
-                        <ListCell>{actorName}</ListCell>
+                        <ListCell>
+                          {actorName}
+                          {editedBy && entry.row.editedAt && (
+                            <small className="block text-[#907e84]">
+                              Editada por {editedBy},{' '}
+                              {dateLabel(
+                                new Date(entry.row.editedAt).toISOString(),
+                              )}
+                            </small>
+                          )}
+                        </ListCell>
                         {showCost && (
                           <ListCell className="tabular-nums">
                             {entry.costCents === null
                               ? '—'
                               : money(entry.costCents / 100)}
+                          </ListCell>
+                        )}
+                        {canEdit && (
+                          <ListCell className="w-px text-right">
+                            <RowActionsMenu
+                              label={`Acciones de la merma de ${entry.productName}`}
+                              items={
+                                fromRoute
+                                  ? [
+                                      {
+                                        key: 'route',
+                                        label:
+                                          'Viene de una liquidación de reparto',
+                                        disabled: true,
+                                        onSelect: () => {},
+                                      },
+                                    ]
+                                  : [
+                                      {
+                                        key: 'edit',
+                                        label: 'Editar merma',
+                                        icon: <PencilIcon size={16} />,
+                                        onSelect: () => onEdit(target),
+                                      },
+                                      {
+                                        key: 'void',
+                                        label: 'Anular merma',
+                                        icon: <Undo2Icon size={16} />,
+                                        destructive: true,
+                                        onSelect: () => onVoid(target),
+                                      },
+                                    ]
+                              }
+                            />
                           </ListCell>
                         )}
                       </ListRow>

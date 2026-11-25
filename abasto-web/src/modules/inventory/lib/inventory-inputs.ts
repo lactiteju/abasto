@@ -40,6 +40,15 @@ export const productLossInput = z.object({
   note: z.string().optional(),
 })
 
+export const lossEditInput = z.object({
+  movementId: id,
+  pieces: whole,
+  category: z.enum(lossCategoryValues),
+  note: z.string(),
+})
+
+export const lossVoidInput = z.object({ movementId: id })
+
 export const countInput = z.object({
   productId: id,
   warehouseId: id,

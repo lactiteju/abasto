@@ -27,6 +27,11 @@ import { SupplierPendingsTab } from '#/modules/inventory/components/supplier-pen
 import { WarehouseSummary } from '#/modules/inventory/components/warehouse-summary'
 import { CountDialog } from '#/modules/inventory/forms/count-dialog'
 import { LotsDialog } from '#/modules/inventory/forms/lots-dialog'
+import {
+  LossEditDialog,
+  LossVoidDialog,
+} from '#/modules/inventory/forms/loss-edit-dialog'
+import type { LossTarget } from '#/modules/inventory/forms/loss-edit-dialog'
 import { MermaDialog } from '#/modules/inventory/forms/merma-dialog'
 import { MinimumDialog } from '#/modules/inventory/forms/minimum-dialog'
 import { CancelOrderDialog } from '#/modules/inventory/forms/cancel-order-dialog'
@@ -121,6 +126,8 @@ type Dialog =
   | { kind: 'scrap'; pending: PendingBalance }
   | { kind: 'count' }
   | { kind: 'merma'; productId: string }
+  | { kind: 'editLoss'; loss: LossTarget }
+  | { kind: 'voidLoss'; loss: LossTarget }
   | { kind: 'transfer' }
   | { kind: 'receive'; transfer: TransferListItem }
   | { kind: 'cancel'; transfer: TransferListItem }
@@ -396,6 +403,9 @@ export function InventoryPage({
             rows={overview.losses}
             products={lossProducts}
             today={overview.today}
+            canEdit={selected.canAdjustStock}
+            onEdit={(loss) => setDialog({ kind: 'editLoss', loss })}
+            onVoid={(loss) => setDialog({ kind: 'voidLoss', loss })}
           />
         </TabsContent>
         <TabsContent value="Conteos" className="text-base">
@@ -418,6 +428,12 @@ export function InventoryPage({
         </TabsContent>
       </Tabs>
 
+      {dialog?.kind === 'editLoss' && (
+        <LossEditDialog loss={dialog.loss} onClose={closeDialog} />
+      )}
+      {dialog?.kind === 'voidLoss' && (
+        <LossVoidDialog loss={dialog.loss} onClose={closeDialog} />
+      )}
       {mermaRow && (
         <MermaDialog
           warehouseId={selected.id}
