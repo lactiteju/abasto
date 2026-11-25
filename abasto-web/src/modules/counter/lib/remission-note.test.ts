@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 
-import { buildRemissionNote } from '#/modules/counter/lib/remission-note'
+import {
+  buildRemissionNote,
+  noteFilename,
+} from '#/modules/counter/lib/remission-note'
 import { formatCents } from '#/modules/pricing/lib/money'
 
 const order = {
@@ -38,8 +41,23 @@ describe('remission note', () => {
     expect(note.customer).toBe('Abarrotes Lupita')
     expect(note.warehouse).toBe('Central')
     expect(note.business).toBe('Abasto')
-    expect(note.filename).toBe('nota-PED-3F2A9C1E.pdf')
+    expect(note.filename).toBe('Abarrotes Lupita 17-11-2026 PED-3F2A9C1E.pdf')
     expect(note.date).toContain('17')
+  })
+
+  test('filename: party, business-day date and folio, safe for Windows', () => {
+    // 05:30 UTC on the 18th is still the 17th in Mexico City.
+    const late = new Date('2026-11-18T05:30:00Z')
+    expect(
+      noteFilename('Baratero del Sur / Luvianos', late, 'PED-9A084C59'),
+    ).toBe('Baratero del Sur - Luvianos 17-11-2026 PED-9A084C59.pdf')
+    expect(noteFilename('  José: "La Güera"?  ', late, 'PED-1')).toBe(
+      'José La Güera 17-11-2026 PED-1.pdf',
+    )
+    expect(noteFilename('  ', late, 'PED-1')).toBe('nota 17-11-2026 PED-1.pdf')
+    expect(
+      noteFilename('A'.repeat(200), late, 'PED-1').length,
+    ).toBeLessThanOrEqual(100)
   })
 
   test('one row per line and the total', () => {

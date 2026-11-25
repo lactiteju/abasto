@@ -1,4 +1,7 @@
-import { formatNoteDate } from '#/modules/counter/lib/remission-note'
+import {
+  formatNoteDate,
+  noteFilename,
+} from '#/modules/counter/lib/remission-note'
 import type {
   RemissionNote,
   RemissionNoteMeta,
@@ -101,6 +104,10 @@ export function buildSettlementNote(
           ],
     paidMark: 'LIQUIDADO',
     signature: 'Recibí de conformidad',
-    filename: `nota-${code}.pdf`,
+    filename: noteFilename(
+      assignment.riderName,
+      assignment.closedAt ?? assignment.createdAt,
+      code,
+    ),
   }
 }

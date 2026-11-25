@@ -60,7 +60,7 @@ describe('buildSettlementNote', () => {
     expect(note.customer).toBe('Beto')
     expect(note.partyLabel).toBe('Repartidor')
     expect(note.folio).toBe('REP-3F2A9C1E')
-    expect(note.filename).toBe('nota-REP-3F2A9C1E.pdf')
+    expect(note.filename).toBe('Beto 18-11-2026 REP-3F2A9C1E.pdf')
     expect(note.warehouse).toBe('Central')
     expect(note.rows).toEqual([
       ['2', 'Leche (caja de 12)', formatCents(1000), formatCents(2000)],
