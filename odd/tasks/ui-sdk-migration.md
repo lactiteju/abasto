@@ -56,6 +56,19 @@ and `modules/catalog/components/catalog-row-actions.tsx` on ui-sdk Menu,
 
 ## T4 — Consistency cleanup (after T1–T3)
 
+Split in two disjoint units:
+- **T4a forms and reports**: native `<select>/<input>/<textarea>` duplicates
+  in form-control helpers and report/store headers go through `ui/select`,
+  `ui/input`, `ui/textarea`; raw buttons in `modules/reports/**` go through
+  `ui/button` when a variant fits.
+- **T4b colors and buttons**: palette/hex colors → tokens; raw buttons in
+  store, counter, inventory, catalog and layout go through `ui/button` (or
+  ui-sdk Toggle for pressed chips) when a variant fits; bespoke controls keep
+  their look but share the focus-visible ring (`focus-visible:ring-3
+  focus-visible:ring-ring/50`).
+
+Original list:
+
 Duplicated form-control wrappers (`counter/components/form-controls.tsx`,
 `inventory/components/form-controls.tsx`, `reports/components/report-fields.tsx`,
 `product-import/components/import-fields.tsx`, `catalog/forms/form-field.tsx`,

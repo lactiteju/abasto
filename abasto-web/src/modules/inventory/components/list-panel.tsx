@@ -70,7 +70,7 @@ export function ListCell({
   return (
     <TableCell
       className={cn(
-        'p-[15px] text-sm leading-5 text-[#785e67] md:px-5 md:py-[18px] [&_small]:mt-[5px] [&_small]:text-xs [&_small]:leading-[1.4] [&_button]:leading-5 [&_strong]:font-semibold',
+        'p-[15px] text-sm leading-5 whitespace-normal text-[#785e67] md:px-5 md:py-[18px] [&_small]:mt-[5px] [&_small]:text-xs [&_small]:leading-[1.4] [&_button]:leading-5 [&_strong]:font-semibold',
         className,
       )}
       {...props}
