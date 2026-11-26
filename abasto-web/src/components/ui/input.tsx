@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { Input as InputPrimitive } from '@ui-sdk/react/input'
 import { blockNumberSymbols, withNumericChange } from '#/lib/numeric-input'
 import { cn } from '#/lib/utils/cn'
 import {
@@ -8,6 +9,8 @@ import {
 
 function Input({
   className,
+  value,
+  defaultValue,
   type,
   onInvalid,
   onInput,
@@ -17,7 +20,7 @@ function Input({
   ...props
 }: React.ComponentProps<'input'> & { maxDecimals?: number }) {
   return (
-    <input
+    <InputPrimitive
       type={type}
       data-slot="input"
       className={cn(
@@ -33,6 +36,8 @@ function Input({
         onInput?.(event)
       }}
       {...props}
+      value={value == null ? undefined : String(value)}
+      defaultValue={defaultValue == null ? undefined : String(defaultValue)}
       onChange={withNumericChange(onChange, props.inputMode, maxDecimals)}
       onKeyDown={blockNumberSymbols(type, onKeyDown)}
     />

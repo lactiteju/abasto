@@ -3,7 +3,7 @@ import { cva } from 'class-variance-authority'
 import type { VariantProps } from 'class-variance-authority'
 import { useHydrated } from '#/hooks/use-hydrated'
 import { cn } from '#/lib/utils/cn'
-import { Slot } from 'radix-ui'
+import { Button as ButtonPrimitive } from '@ui-sdk/react/button'
 
 const buttonVariants = cva(
   "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -48,25 +48,41 @@ function Button({
   size = 'default',
   asChild = false,
   disabled,
+  type = 'submit',
+  children,
   ...props
-}: React.ComponentProps<'button'> &
+}: React.ComponentProps<typeof ButtonPrimitive> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
   }) {
-  const Comp = asChild ? Slot.Root : 'button'
   // A link (asChild) works without JavaScript; a real button does not.
   const hydrating = !useHydrated() && !asChild
+  const child =
+    asChild && React.isValidElement<{ children?: React.ReactNode }>(children)
+      ? children
+      : undefined
 
   return (
-    <Comp
+    <ButtonPrimitive
       data-slot="button"
       data-variant={variant}
       data-size={size}
       data-hydrating={hydrating || undefined}
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={cn(
+        buttonVariants({
+          variant,
+          size,
+          className: className as string | undefined,
+        }),
+      )}
       disabled={disabled || hydrating || undefined}
+      // ui-sdk defaults to type="button"; keep the native submit default.
+      type={type}
+      render={child}
       {...props}
-    />
+    >
+      {child ? child.props.children : children}
+    </ButtonPrimitive>
   )
 }
 
