@@ -39,7 +39,7 @@ export function Picker({
       >
         <SelectValue placeholder={placeholder ?? label} />
       </SelectTrigger>
-      <SelectContent position="popper">
+      <SelectContent>
         {options.map((option) => {
           const optionValue = typeof option === 'string' ? option : option.value
           return (

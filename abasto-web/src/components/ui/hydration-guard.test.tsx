@@ -22,7 +22,9 @@ describe('controls before hydration', () => {
         </TabsList>
       </Tabs>,
     )
-    expect(html.match(/<button[^>]* disabled=""/g)?.length).toBe(2)
+    // ui-sdk marks a disabled tab with aria-disabled (it stays focusable).
+    expect(html.match(/<button[^>]* aria-disabled="true"/g)?.length).toBe(2)
+    expect(html.match(/<button[^>]* data-hydrating="true"/g)?.length).toBe(2)
   })
 
   test('a button rendered as a link stays a working link', () => {

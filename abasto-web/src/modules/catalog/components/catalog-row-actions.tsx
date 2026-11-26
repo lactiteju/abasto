@@ -6,7 +6,7 @@ import {
   PencilIcon,
   TagIcon,
 } from 'lucide-react'
-import { DropdownMenu } from 'radix-ui'
+import { Menu, MenuContent, MenuItem, MenuTrigger } from '@ui-sdk/react/menu'
 
 import { CatalogButton } from '#/modules/catalog/components/catalog-button'
 
@@ -21,7 +21,7 @@ type CatalogRowActionsProps = {
 }
 
 const item =
-  'flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-[#3b2251] outline-none select-none data-[highlighted]:bg-[#f8f2ec]'
+  'flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-ink-heading outline-none select-none data-highlighted:bg-muted'
 
 function Action({
   icon,
@@ -33,10 +33,10 @@ function Action({
   onSelect: () => void
 }) {
   return (
-    <DropdownMenu.Item className={item} onSelect={onSelect}>
+    <MenuItem className={item} onSelect={() => onSelect()}>
       {icon}
       {children}
-    </DropdownMenu.Item>
+    </MenuItem>
   )
 }
 
@@ -47,50 +47,51 @@ export function CatalogRowActions({
   onEdit,
   onRestore,
 }: CatalogRowActionsProps) {
-  const icon = 'size-4 text-[#927981]'
+  const icon = 'size-4 text-ink-subtle'
   return (
-    <DropdownMenu.Root modal={false}>
-      <DropdownMenu.Trigger asChild>
-        <CatalogButton
-          className="min-h-9 px-3"
-          aria-label={`Acciones de ${productName}`}
+    <Menu modal={false}>
+      <MenuTrigger
+        render={
+          <CatalogButton
+            className="min-h-9 px-3"
+            aria-label={`Acciones de ${productName}`}
+          >
+            Acciones
+            <ChevronDownIcon className="size-4" />
+          </CatalogButton>
+        }
+      />
+      <MenuContent
+        align="end"
+        sideOffset={6}
+        className="z-50 min-w-48 rounded-[10px] border border-border bg-popover p-1 shadow-md transition duration-100 data-starting-style:opacity-0 data-ending-style:opacity-0 motion-reduce:transition-none"
+      >
+        {onRestore && (
+          <Action
+            icon={<ArchiveRestoreIcon className={icon} />}
+            onSelect={onRestore}
+          >
+            Restaurar
+          </Action>
+        )}
+        {onPrices && (
+          <Action icon={<TagIcon className={icon} />} onSelect={onPrices}>
+            Precios
+          </Action>
+        )}
+        {onEdit && (
+          <Action icon={<PencilIcon className={icon} />} onSelect={onEdit}>
+            Editar
+          </Action>
+        )}
+        <MenuItem
+          className={item}
+          render={<Link to="/inventario" search={{ q: productName }} />}
         >
-          Acciones
-          <ChevronDownIcon className="size-4" />
-        </CatalogButton>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          align="end"
-          sideOffset={6}
-          className="z-50 min-w-48 rounded-[10px] border border-[#efe8e0] bg-white p-1 shadow-[0_8px_24px_rgba(59,34,81,0.12)]"
-        >
-          {onRestore && (
-            <Action
-              icon={<ArchiveRestoreIcon className={icon} />}
-              onSelect={onRestore}
-            >
-              Restaurar
-            </Action>
-          )}
-          {onPrices && (
-            <Action icon={<TagIcon className={icon} />} onSelect={onPrices}>
-              Precios
-            </Action>
-          )}
-          {onEdit && (
-            <Action icon={<PencilIcon className={icon} />} onSelect={onEdit}>
-              Editar
-            </Action>
-          )}
-          <DropdownMenu.Item asChild className={item}>
-            <Link to="/inventario" search={{ q: productName }}>
-              <PackageSearchIcon className={icon} />
-              Consultar inventario
-            </Link>
-          </DropdownMenu.Item>
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+          <PackageSearchIcon className={icon} />
+          Consultar inventario
+        </MenuItem>
+      </MenuContent>
+    </Menu>
   )
 }

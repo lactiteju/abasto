@@ -153,7 +153,7 @@ export function InventoryPage({
   // On phones the strip scrolls sideways: keep the active tab in view.
   useEffect(() => {
     tabListRef.current
-      ?.querySelector('[data-state=active]')
+      ?.querySelector('[data-slot=tabs-trigger][data-selected]')
       ?.scrollIntoView({ inline: 'center', block: 'nearest' })
   }, [tab])
   const [query, setQuery] = useState(initialQuery)
@@ -313,6 +313,7 @@ export function InventoryPage({
       <Tabs
         value={tab}
         onValueChange={(next) => {
+          if (next === null) return
           setTab(next)
           setQuery('')
         }}
@@ -327,7 +328,7 @@ export function InventoryPage({
             <TabsTrigger
               key={name}
               value={name}
-              className="h-full flex-none gap-[5px] rounded-none border-0 px-0.5 pt-0 pb-[13px] max-md:px-0 text-xs font-[550] text-[#938086] data-[state=active]:font-[650] data-[state=active]:text-[#44186a] md:gap-2 md:text-sm after:inset-x-0 after:-bottom-px after:h-[3px] after:rounded-t-[3px] after:bg-[#542280] data-[state=active]:after:opacity-100 max-md:[&_svg]:size-3.5"
+              className="h-full flex-none gap-[5px] rounded-none border-0 px-0.5 pt-0 pb-[13px] max-md:px-0 text-xs font-[550] text-[#938086] data-selected:font-[650] data-selected:text-[#44186a] md:gap-2 md:text-sm after:inset-x-0 after:-bottom-px after:h-[3px] after:rounded-t-[3px] after:bg-[#542280] data-selected:after:opacity-100 max-md:[&_svg]:size-3.5"
             >
               <Icon size={17} />
               {name}
