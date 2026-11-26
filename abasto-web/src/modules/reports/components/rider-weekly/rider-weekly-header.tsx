@@ -1,5 +1,7 @@
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 
+import { NativeSelect } from '#/components/native-select'
+import { Button } from '#/components/ui/button'
 import { cn } from '#/lib/utils/cn'
 import { toolbarControl } from '#/modules/reports/components/owner/owner-toolbar'
 import { ActionButton } from '#/modules/reports/components/report-buttons'
@@ -31,7 +33,7 @@ type RiderWeeklyHeaderProps = {
   onDownload: () => void
 }
 
-const select = cn(toolbarControl, 'max-md:min-h-11')
+const select = cn(toolbarControl, 'min-w-44 max-md:min-h-11')
 
 /** Title, week stepper, warehouse and supplier filters, and the Excel download. */
 export function RiderWeeklyHeader({
@@ -51,7 +53,7 @@ export function RiderWeeklyHeader({
   onDownload,
 }: RiderWeeklyHeaderProps) {
   const step =
-    'inline-flex size-11 items-center justify-center rounded-md text-ink-row hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent min-[820px]:size-9'
+    'size-11 rounded-md text-ink-row disabled:opacity-40 min-[820px]:size-9'
   return (
     <div className="mb-[22px] grid gap-3.5">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-3.5">
@@ -66,21 +68,25 @@ export function RiderWeeklyHeader({
           aria-label="Semana"
           className="inline-flex items-center rounded-[9px] border border-[#e6dfeb] bg-white p-[3px]"
         >
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             type="button"
             aria-label="Semana anterior"
             className={step}
             onClick={() => onWeek(-1)}
           >
             <ChevronLeftIcon size={18} aria-hidden />
-          </button>
+          </Button>
           <span
             aria-live="polite"
             className="min-w-[210px] px-2 text-center text-[13px] font-[650] text-ink-figure"
           >
             {weekHeading(weekStart)}
           </span>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             type="button"
             aria-label="Semana siguiente"
             disabled={weekStart >= currentWeek}
@@ -88,10 +94,10 @@ export function RiderWeeklyHeader({
             onClick={() => onWeek(1)}
           >
             <ChevronRightIcon size={18} aria-hidden />
-          </button>
+          </Button>
         </div>
         {warehouses.length > 1 && (
-          <select
+          <NativeSelect
             aria-label="Almacén del reporte"
             value={warehouseId ?? ''}
             onChange={(event) => onWarehouse(event.target.value)}
@@ -102,9 +108,9 @@ export function RiderWeeklyHeader({
                 {item.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         )}
-        <select
+        <NativeSelect
           aria-label="Proveedor del reporte"
           value={supplierId ?? allSuppliers}
           onChange={(event) => onSupplier(event.target.value)}
@@ -116,7 +122,7 @@ export function RiderWeeklyHeader({
               {item.active ? item.name : `${item.name} (inactivo)`}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         <ActionButton
           tone="primary"
           disabled={!canDownload || busy}

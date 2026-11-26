@@ -1,4 +1,5 @@
 import { cn } from '#/lib/utils/cn'
+import { focusRing } from '#/modules/reports/components/report-buttons'
 import type { MonthlySearch } from '#/modules/reports/lib/monthly-search'
 
 type ReportViewSwitchProps = {
@@ -35,6 +36,7 @@ export function ReportViewSwitch({ value, onChange }: ReportViewSwitchProps) {
             })
           }
           className={cn(
+            focusRing,
             'min-h-11 rounded-md px-4 py-1.5 text-[13px] whitespace-nowrap text-muted-foreground min-[820px]:min-h-9',
             value === view.value
               ? 'bg-[#3f1266] font-[650] text-white'

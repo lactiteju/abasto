@@ -10,7 +10,10 @@ import {
   ShareCell,
   numericCell,
 } from '#/modules/reports/components/owner/owner-panel'
-import { TextLink } from '#/modules/reports/components/report-buttons'
+import {
+  TextLink,
+  focusRing,
+} from '#/modules/reports/components/report-buttons'
 import { shareBps } from '#/modules/reports/lib/owner-view'
 import type { SalesReport } from '#/modules/reports/types/reports'
 
@@ -53,6 +56,7 @@ export function ManagerBreakdown({ sales }: { sales: SalesReport }) {
               aria-pressed={view === item.value}
               onClick={() => setView(item.value)}
               className={cn(
+                focusRing,
                 'min-h-[34px] rounded-[7px] px-3 py-[5px] text-[13px] text-muted-foreground hover:bg-muted',
                 view === item.value &&
                   'bg-secondary font-[650] text-secondary-foreground hover:bg-secondary',

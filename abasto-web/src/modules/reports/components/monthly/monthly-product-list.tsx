@@ -16,7 +16,10 @@ import {
   marginBps,
 } from '#/modules/reports/components/monthly/monthly-format'
 import { Panel } from '#/modules/reports/components/owner/owner-panel'
-import { TextLink } from '#/modules/reports/components/report-buttons'
+import {
+  TextLink,
+  focusRing,
+} from '#/modules/reports/components/report-buttons'
 import type { MonthlyProductRow } from '#/modules/reports/types/monthly-results'
 
 /** Rows shown before "Ver todos". */
@@ -88,7 +91,8 @@ export function MonthlyProductList({
               disabled={unsold}
               onClick={() => onMetric(item.value)}
               className={cn(
-                'min-h-11 rounded-md px-4 text-[13px] whitespace-nowrap focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-40 min-[820px]:min-h-8',
+                focusRing,
+                'min-h-11 rounded-md px-4 text-[13px] whitespace-nowrap disabled:opacity-40 min-[820px]:min-h-8',
                 metric === item.value && !unsold
                   ? 'bg-[#3f1266] font-[650] text-white'
                   : 'text-muted-foreground enabled:hover:bg-muted',
@@ -111,7 +115,8 @@ export function MonthlyProductList({
             aria-pressed={sort === item.value}
             onClick={() => onSort(item.value)}
             className={cn(
-              'min-h-11 rounded-full border px-3.5 text-[13px] whitespace-nowrap focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none min-[820px]:min-h-8',
+              focusRing,
+              'min-h-11 rounded-full border px-3.5 text-[13px] whitespace-nowrap min-[820px]:min-h-8',
               sort === item.value
                 ? 'border-secondary-foreground bg-secondary font-[650] text-secondary-foreground'
                 : 'border-border bg-card text-ink-row hover:bg-muted',

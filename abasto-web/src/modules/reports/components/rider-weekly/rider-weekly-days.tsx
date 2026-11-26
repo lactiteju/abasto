@@ -1,4 +1,5 @@
 import { cn } from '#/lib/utils/cn'
+import { focusRing } from '#/modules/reports/components/report-buttons'
 import { dayChipLabel } from '#/modules/reports/lib/rider-weekly-week'
 
 type RiderWeeklyDaysProps = {
@@ -10,8 +11,7 @@ type RiderWeeklyDaysProps = {
   onChange: (day: string | null) => void
 }
 
-const chip =
-  'min-h-11 rounded-md px-3.5 py-1.5 text-[13px] whitespace-nowrap min-[820px]:min-h-9'
+const chip = `${focusRing} min-h-11 rounded-md px-3.5 py-1.5 text-[13px] whitespace-nowrap min-[820px]:min-h-9`
 
 /** "Semana · Lun … Dom": picks the sheet shown below. */
 export function RiderWeeklyDays({

@@ -1,10 +1,13 @@
 import type { ComponentProps, ReactNode } from 'react'
 
-import { blockNumberSymbols, withNumericChange } from '#/lib/numeric-input'
+import { NativeSelect } from '#/components/native-select'
+import { Input } from '#/components/ui/input'
+import { Textarea } from '#/components/ui/textarea'
 import { cn } from '#/lib/utils/cn'
 
+/** Geometry and colors of the form fields; focus and validity come from the primitives. */
 const fieldControl =
-  'min-h-[43px] w-full rounded-lg border border-[#e8e1e3] bg-white px-3 py-2.5 text-sm font-normal text-[#3b2251] focus:outline-2 focus:outline-offset-1 focus:outline-[#d8c0e9] disabled:bg-[#f8f5f2] disabled:text-[#938288]'
+  'h-auto min-h-[43px] rounded-lg border-[#e8e1e3] bg-white px-3 py-2.5 text-sm font-normal text-[#3b2251] disabled:bg-[#f8f5f2] disabled:text-[#938288] disabled:opacity-100'
 
 /** The reference hides native number spinners everywhere. */
 export const hideSpinners =
@@ -12,7 +15,7 @@ export const hideSpinners =
 
 /** Compact controls used inside tables and filter bars. */
 export const compactControl =
-  'min-w-0 rounded-lg border border-[#dee4dc] bg-white px-3 py-2.5 text-[13px] text-[#37473c]'
+  'h-auto min-w-0 rounded-lg border-[#dee4dc] bg-white px-3 py-2.5 text-[13px] text-[#37473c]'
 
 type FieldProps = {
   label: string
@@ -36,36 +39,43 @@ export function Field({ label, hint, children }: FieldProps) {
 /** `inputMode` numeric/decimal fields drop other characters as they are typed. */
 export function FieldInput({
   className,
-  maxDecimals,
-  onChange,
-  onKeyDown,
   ...props
-}: ComponentProps<'input'> & { maxDecimals?: number }) {
+}: ComponentProps<typeof Input>) {
   return (
-    <input
+    <Input
       className={cn(
         fieldControl,
         props.type === 'number' && hideSpinners,
         className,
       )}
       {...props}
-      onChange={withNumericChange(onChange, props.inputMode, maxDecimals)}
-      onKeyDown={blockNumberSymbols(props.type, onKeyDown)}
     />
   )
 }
 
-export function FieldSelect({ className, ...props }: ComponentProps<'select'>) {
-  return <select className={cn(fieldControl, className)} {...props} />
+export function FieldSelect({
+  className,
+  ...props
+}: ComponentProps<typeof NativeSelect>) {
+  return (
+    <NativeSelect
+      className={cn('w-full', fieldControl, className)}
+      {...props}
+    />
+  )
 }
 
 export function FieldTextarea({
   className,
   ...props
-}: ComponentProps<'textarea'>) {
+}: ComponentProps<typeof Textarea>) {
   return (
-    <textarea
-      className={cn(fieldControl, 'min-h-[75px] resize-y', className)}
+    <Textarea
+      className={cn(
+        fieldControl,
+        'min-h-[75px] resize-y field-sizing-fixed',
+        className,
+      )}
       {...props}
     />
   )
@@ -74,23 +84,15 @@ export function FieldTextarea({
 export function CompactSelect({
   className,
   ...props
-}: ComponentProps<'select'>) {
-  return <select className={cn(compactControl, className)} {...props} />
+}: ComponentProps<typeof NativeSelect>) {
+  return <NativeSelect className={cn(compactControl, className)} {...props} />
 }
 
 export function CompactInput({
   className,
-  maxDecimals,
-  onChange,
   ...props
-}: ComponentProps<'input'> & { maxDecimals?: number }) {
-  return (
-    <input
-      className={cn(compactControl, className)}
-      {...props}
-      onChange={withNumericChange(onChange, props.inputMode, maxDecimals)}
-    />
-  )
+}: ComponentProps<typeof Input>) {
+  return <Input className={cn(compactControl, className)} {...props} />
 }
 
 /** Checkbox with an inline label (accent-colored like the reference). */

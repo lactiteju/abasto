@@ -131,13 +131,12 @@ describe('ManagerReportsPage', () => {
       dashboard: dashboard(2),
     }
     const all = await render(load)
-    expect(all).toContain('Todos los proveedores')
-    expect(all).toContain('LALA')
-    expect(all).toContain('Alpura')
+    expect(all).toMatch(/data-slot="select-value"[^>]*>Todos los proveedores</)
     expect(all).not.toContain('La caja no se filtra por proveedor.')
 
     const picked = await render(load, { proveedor: 's1' })
-    expect(picked).toMatch(/<option value="s1" selected/)
+    expect(picked).toMatch(/data-slot="select-value"[^>]*>LALA</)
+    expect(picked).toMatch(/>s1<\/textarea>/)
     expect(picked).toContain('La caja no se filtra por proveedor.')
   })
 })
@@ -256,8 +255,8 @@ describe('ManagerReportsPage on one screen', () => {
 
   test('a manager of several picks among their own warehouses, never all of them', async () => {
     const html = await render(load([tejupilco, { id: 'w2', name: 'Sultepec' }]))
-    expect(html).toMatch(/<option value="w1" selected/)
-    expect(html).toContain('Sultepec')
+    expect(html).toMatch(/data-slot="select-value"[^>]*>Tejupilco</)
+    expect(html).toMatch(/>w1<\/textarea>/)
     expect(html).not.toContain('Todos los almacenes')
   })
 })

@@ -7,6 +7,10 @@ type ActionButtonProps = ComponentProps<typeof Button> & {
   tone?: 'primary' | 'secondary'
 }
 
+/** The focus ring of every ui primitive, for bespoke toggles and chips. */
+export const focusRing =
+  'outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
+
 const base =
   'h-auto min-h-11 gap-[9px] rounded-[9px] px-[17px] py-2.5 text-sm font-[650] disabled:opacity-50'
 
@@ -33,12 +37,16 @@ export function ActionButton({
 }
 
 /** Inline link-style button. */
-export function TextLink({ className, ...props }: ComponentProps<'button'>) {
+export function TextLink({
+  className,
+  ...props
+}: ComponentProps<typeof Button>) {
   return (
-    <button
+    <Button
       type="button"
+      variant="link"
       className={cn(
-        'inline-flex items-center gap-[7px] text-sm font-[650] text-ink-link hover:underline',
+        'h-auto gap-[7px] p-0 text-sm font-[650] text-ink-link hover:underline',
         className,
       )}
       {...props}
@@ -47,12 +55,17 @@ export function TextLink({ className, ...props }: ComponentProps<'button'>) {
 }
 
 /** Square 36px button that only holds an icon. */
-export function IconButton({ className, ...props }: ComponentProps<'button'>) {
+export function IconButton({
+  className,
+  ...props
+}: ComponentProps<typeof Button>) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="icon-lg"
       className={cn(
-        'inline-flex size-9 items-center justify-center rounded-[7px] text-[#826c73] hover:bg-[#f6f0e9]',
+        'rounded-[7px] text-[#826c73] hover:bg-[#f6f0e9]',
         className,
       )}
       {...props}

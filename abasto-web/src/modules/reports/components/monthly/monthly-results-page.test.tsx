@@ -17,6 +17,7 @@ import {
 } from '#/modules/reports/components/monthly/monthly-chart-math'
 import { MonthlyResultsPage } from '#/modules/reports/components/monthly/monthly-results-page'
 import type { MonthlyViewSearch } from '#/modules/reports/components/monthly/monthly-results-page'
+import { whileHydrated } from '#/modules/reports/components/hydrated-test-helper'
 import { ReportViewSwitch } from '#/modules/reports/components/report-view-switch'
 import type { MonthlyResultsPageLoad } from '#/modules/reports/server/load-monthly-results'
 import type {
@@ -141,10 +142,15 @@ describe('MonthlyResultsPage', () => {
     expect(html).toContain('Noviembre 2026')
     expect(html).toContain('Descargar Excel')
     expect(html).toContain('>PDF<')
-    expect(html).toContain('Todos los almacenes')
+    expect(html).toMatch(/data-slot="select-value"[^>]*>Todos los almacenes</)
     // The current month cannot be stepped past.
-    expect(html).toMatch(/aria-label="Mes siguiente" disabled=""/)
-    expect(html).not.toMatch(/aria-label="Mes anterior" disabled=""/)
+    const hydrated = await whileHydrated(() => render(load(results)))
+    expect(hydrated).toMatch(
+      /aria-label="Mes siguiente" type="button" disabled=""/,
+    )
+    expect(hydrated).not.toMatch(
+      /aria-label="Mes anterior" type="button" disabled=""/,
+    )
   })
 
   test('an earlier month enables the next step', async () => {

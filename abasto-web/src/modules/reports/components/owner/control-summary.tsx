@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { cn } from '#/lib/utils/cn'
+import { focusRing } from '#/modules/reports/components/report-buttons'
 import { formatDeltaCents } from '#/modules/executive/lib/format'
 import { formatCents } from '#/modules/pricing/lib/money'
 import {
@@ -187,6 +188,7 @@ function Cell({
       aria-controls={`control-${detail}`}
       onClick={() => onToggle(detail)}
       className={cn(
+        focusRing,
         'grid gap-0.5 border-b border-border px-[22px] pt-3.5 pb-4 text-left last:border-b-0 hover:bg-[#fdf9f4] min-[820px]:border-r min-[820px]:border-b-0 min-[820px]:last:border-r-0',
         expanded && 'bg-secondary hover:bg-secondary',
       )}

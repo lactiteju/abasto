@@ -1,5 +1,4 @@
-import { ChevronDownIcon } from 'lucide-react'
-
+import { NativeSelect } from '#/components/native-select'
 import type { StoreWarehouse } from '#/modules/store/services/storefront'
 
 type WarehousePickerProps = {
@@ -8,7 +7,7 @@ type WarehousePickerProps = {
   onChange: (warehouseId: string) => void
 }
 
-/** Names the pickup warehouse. A native select stays the best phone picker. */
+/** Names the pickup warehouse. */
 export function WarehousePicker({
   warehouses,
   value,
@@ -19,25 +18,18 @@ export function WarehousePicker({
       <label htmlFor="warehouse" className="st-card sm:whitespace-nowrap">
         Recoges tu pedido en
       </label>
-      <div className="relative">
-        <select
-          id="warehouse"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className="h-12 w-full appearance-none rounded-[10px] border border-st-control bg-st-card pr-11 pl-3 text-[18px] font-semibold text-st-ink sm:h-11 sm:min-w-72"
-        >
-          {warehouses.map((warehouse) => (
-            <option key={warehouse.id} value={warehouse.id}>
-              {warehouse.name}
-            </option>
-          ))}
-        </select>
-        <ChevronDownIcon
-          aria-hidden
-          strokeWidth={2}
-          className="pointer-events-none absolute top-1/2 right-3 size-5 -translate-y-1/2"
-        />
-      </div>
+      <NativeSelect
+        id="warehouse"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-[10px] border-st-control bg-st-card px-3 text-[18px] font-semibold text-st-ink data-[size=default]:h-12 sm:min-w-72 sm:data-[size=default]:h-11"
+      >
+        {warehouses.map((warehouse) => (
+          <option key={warehouse.id} value={warehouse.id}>
+            {warehouse.name}
+          </option>
+        ))}
+      </NativeSelect>
       <p className="text-[13px] leading-snug text-st-ink-soft sm:text-[14px]">
         Precios, existencias y hoja de surtido propios de este almacén.
       </p>

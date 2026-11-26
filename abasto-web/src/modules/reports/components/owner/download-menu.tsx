@@ -2,6 +2,7 @@ import { ChevronDownIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
+import { Button } from '#/components/ui/button'
 import { ClientError } from '#/lib/boundary'
 import { ActionButton } from '#/modules/reports/components/report-buttons'
 import type { PdfChoice } from '#/modules/reports/lib/pdf-choices'
@@ -24,7 +25,7 @@ type DownloadMenuProps = {
 }
 
 const item =
-  'flex min-h-10 w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm text-ink-row hover:bg-muted focus-visible:bg-muted focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50'
+  'h-auto min-h-10 w-full justify-between gap-3 rounded-lg px-3 py-2 text-left font-normal text-ink-row'
 
 /** "Descargar PDF": the day, week and month reports, the Excel files of the period on screen and the sales CSV. */
 export function DownloadMenu({
@@ -100,7 +101,8 @@ export function DownloadMenu({
                 index === 3 ? 'mt-1.5 border-t border-border pt-1.5' : undefined
               }
             >
-              <button
+              <Button
+                variant="ghost"
                 type="button"
                 role="menuitem"
                 className={item}
@@ -111,7 +113,7 @@ export function DownloadMenu({
                 <small className="text-xs text-muted-foreground">
                   {busy === choice.id ? 'Generando…' : choice.hint}
                 </small>
-              </button>
+              </Button>
             </li>
           ))}
           {excel && (
@@ -122,8 +124,9 @@ export function DownloadMenu({
                   ['boxes', 'Cajas por producto'],
                 ] as const
               ).map(([kind, name]) => (
-                <button
+                <Button
                   key={kind}
+                  variant="ghost"
                   type="button"
                   role="menuitem"
                   className={item}
@@ -138,7 +141,7 @@ export function DownloadMenu({
                       Generando…
                     </small>
                   )}
-                </button>
+                </Button>
               ))}
               {excel.tooLong && (
                 <p className="px-3 pb-1 text-xs text-muted-foreground">
@@ -150,7 +153,8 @@ export function DownloadMenu({
           )}
           {onCsv && (
             <li role="none" className="mt-1.5 border-t border-border pt-1.5">
-              <button
+              <Button
+                variant="ghost"
                 type="button"
                 role="menuitem"
                 className={item}
@@ -160,7 +164,7 @@ export function DownloadMenu({
                 }}
               >
                 Exportar ventas CSV
-              </button>
+              </Button>
             </li>
           )}
         </ul>

@@ -39,15 +39,21 @@ describe('OwnerToolbar', () => {
   })
 
   test('offers all warehouses and suppliers and marks the ones in the URL', () => {
-    const html = render({
+    const all = render({ preset: 'week', search: {} })
+    expect(all).toMatch(/data-slot="select-value"[^>]*>Todos los almacenes</)
+    expect(all).toMatch(/data-slot="select-value"[^>]*>Todos los proveedores</)
+
+    const picked = render({
       preset: 'week',
       search: { almacen: 'w2', proveedor: 's1' },
     })
-    expect(html).toContain('Todos los almacenes')
-    expect(html).toContain('Todos los proveedores')
-    expect(html).toContain('Alpura (inactivo)')
-    expect(html).toMatch(/<option value="w2" selected="">Sultepec/)
-    expect(html).toMatch(/<option value="s1" selected="">LALA/)
+    expect(picked).toMatch(/data-slot="select-value"[^>]*>Sultepec</)
+    expect(picked).toMatch(/data-slot="select-value"[^>]*>LALA</)
+
+    const inactive = render({ preset: 'week', search: { proveedor: 's2' } })
+    expect(inactive).toMatch(
+      /data-slot="select-value"[^>]*>Alpura \(inactivo\)</,
+    )
   })
 
   test('asks for the dates only on a custom period', () => {

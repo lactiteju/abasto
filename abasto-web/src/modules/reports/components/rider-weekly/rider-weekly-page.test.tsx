@@ -8,6 +8,7 @@ import {
 import type { ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
+import { whileHydrated } from '#/modules/reports/components/hydrated-test-helper'
 import { RiderWeeklyPage } from '#/modules/reports/components/rider-weekly/rider-weekly-page'
 import type { RiderWeeklyPageLoad } from '#/modules/reports/server/load-rider-weekly'
 import type { RiderWeeklyReport } from '#/modules/reports/types/rider-weekly'
@@ -111,16 +112,23 @@ describe('RiderWeeklyPage', () => {
   })
 
   test('the current week cannot be stepped past', async () => {
-    const html = await render(
-      load(report),
-      <RiderWeeklyPage
-        load={load({ ...report, weekStart: '2026-11-23' })}
-        search={{ semana: '2026-11-23' }}
-        onSearch={() => undefined}
-        today="2026-11-24"
-      />,
+    const html = await whileHydrated(() =>
+      render(
+        load(report),
+        <RiderWeeklyPage
+          load={load({ ...report, weekStart: '2026-11-23' })}
+          search={{ semana: '2026-11-23' }}
+          onSearch={() => undefined}
+          today="2026-11-24"
+        />,
+      ),
     )
-    expect(html).toMatch(/aria-label="Semana siguiente" disabled=""/)
+    expect(html).toMatch(
+      /aria-label="Semana siguiente" type="button" disabled=""/,
+    )
+    expect(html).not.toMatch(
+      /aria-label="Semana anterior" type="button" disabled=""/,
+    )
   })
 
   test('a refused actor sees the access note', async () => {

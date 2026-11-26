@@ -1,4 +1,7 @@
+import { InputClear, InputGroup } from '@ui-sdk/react/input'
 import { SearchIcon, XIcon } from 'lucide-react'
+
+import { Input } from '#/components/ui/input'
 
 type SearchBoxProps = {
   value: string
@@ -15,24 +18,21 @@ export function SearchBox({
   placeholder,
 }: SearchBoxProps) {
   return (
-    <div className="flex h-[45px] min-w-0 flex-[1_0_100%] items-center gap-2.5 rounded-[9px] border border-[#eee7e0] bg-white px-[13px] text-[#9b888e] focus-within:border-[#b4a0a7] md:h-11 md:flex-1">
-      <SearchIcon size={19} className="shrink-0" />
-      <input
+    <InputGroup className="flex h-[45px] min-w-0 flex-[1_0_100%] items-center gap-2.5 rounded-[9px] border border-input bg-white px-[13px] text-muted-foreground transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 md:h-11 md:flex-1">
+      <SearchIcon size={19} aria-hidden className="shrink-0" />
+      <Input
         aria-label={label}
         placeholder={placeholder}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-full w-full min-w-0 bg-transparent text-xs text-[#53346e] outline-none placeholder:text-[#a29096] wide:text-sm"
+        className="h-full rounded-none border-0 bg-transparent px-0 text-xs text-ink-heading focus-visible:border-0 focus-visible:ring-0 md:text-xs wide:text-sm dark:bg-transparent"
       />
-      {value && (
-        <button
-          type="button"
-          aria-label="Limpiar búsqueda"
-          onClick={() => onChange('')}
-        >
-          <XIcon size={16} />
-        </button>
-      )}
-    </div>
+      <InputClear
+        aria-label="Limpiar búsqueda"
+        className="flex shrink-0 items-center rounded-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      >
+        <XIcon size={16} aria-hidden />
+      </InputClear>
+    </InputGroup>
   )
 }

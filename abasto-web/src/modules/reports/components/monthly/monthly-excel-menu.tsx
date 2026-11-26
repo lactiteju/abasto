@@ -1,6 +1,7 @@
 import { ChevronDownIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
+import { Button } from '#/components/ui/button'
 import { ActionButton } from '#/modules/reports/components/report-buttons'
 
 type ExcelMenuProps = {
@@ -11,7 +12,7 @@ type ExcelMenuProps = {
 }
 
 const item =
-  'flex min-h-11 w-full items-center rounded-lg px-3 py-2 text-left text-sm text-ink-row hover:bg-muted focus-visible:bg-muted focus-visible:outline-2 focus-visible:outline-ring'
+  'h-auto min-h-11 w-full justify-start rounded-lg px-3 py-2 text-left font-normal text-ink-row'
 
 /** "Descargar Excel": opens the choice between the two month files. */
 export function ExcelMenu({ busy, disabled, onDownload }: ExcelMenuProps) {
@@ -60,24 +61,26 @@ export function ExcelMenu({ busy, disabled, onDownload }: ExcelMenuProps) {
           className="absolute top-[calc(100%+6px)] right-0 z-20 w-[230px] rounded-xl border border-border bg-white p-1.5 shadow-[0_8px_24px_#2a1c3622] max-[640px]:right-auto max-[640px]:left-0"
         >
           <li role="none">
-            <button
+            <Button
+              variant="ghost"
               type="button"
               role="menuitem"
               className={item}
               onClick={() => pick('daily')}
             >
               Venta y ganancia diaria
-            </button>
+            </Button>
           </li>
           <li role="none">
-            <button
+            <Button
+              variant="ghost"
               type="button"
               role="menuitem"
               className={item}
               onClick={() => pick('boxes')}
             >
               Cajas por producto
-            </button>
+            </Button>
           </li>
         </ul>
       )}

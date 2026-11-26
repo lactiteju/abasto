@@ -1,3 +1,4 @@
+import { NativeSelect } from '#/components/native-select'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { Textarea } from '#/components/ui/textarea'
@@ -6,7 +7,7 @@ import { cn } from '#/lib/utils/cn'
 import type { ComponentProps, ReactNode } from 'react'
 
 const control =
-  'min-h-[43px] rounded-lg font-normal border-[#e8e1e3] bg-white px-3 py-2.5 text-sm text-[#3b2251] focus-visible:border-[#e8e1e3] focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-1 focus-visible:outline-[#d8c0e9] disabled:bg-[#f9f7f4] disabled:text-[#927981] disabled:opacity-100 md:text-sm'
+  'min-h-[43px] rounded-lg font-normal border-[#e8e1e3] bg-white px-3 py-2.5 text-sm text-[#3b2251] disabled:bg-[#f9f7f4] disabled:text-[#927981] disabled:opacity-100 md:text-sm'
 
 export function Field({
   label,
@@ -54,15 +55,13 @@ export function TextArea({
   )
 }
 
-/** Native select: the reference dialogs use one, and it matches its geometry. */
-export function SelectInput({ className, ...props }: ComponentProps<'select'>) {
+export function SelectInput({
+  className,
+  ...props
+}: ComponentProps<typeof NativeSelect>) {
   return (
-    <select
-      className={cn(
-        'h-auto w-full min-w-0 rounded-lg border border-[#e8e1e3] bg-white px-3 py-2.5 text-sm font-normal text-[#3b2251] outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-1 focus-visible:outline-[#d8c0e9] disabled:bg-[#f9f7f4] disabled:text-[#927981]',
-        'min-h-[43px]',
-        className,
-      )}
+    <NativeSelect
+      className={cn('w-full min-w-0', control, className)}
       {...props}
     />
   )

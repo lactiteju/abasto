@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 
+import { NativeSelect } from '#/components/native-select'
 import { cn } from '#/lib/utils/cn'
 import { formatBpsPercent } from '#/modules/executive/lib/format'
 import { defaultNonMovingDays } from '#/modules/executive/lib/search'
@@ -173,7 +174,7 @@ function IdleStock({
     <Panel className={card}>
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-[15px] font-[650] text-ink-figure">Sin venta</h3>
-        <select
+        <NativeSelect
           aria-label="Días sin venta"
           value={nonMoving.days}
           onChange={(event) => {
@@ -184,14 +185,14 @@ function IdleStock({
               sinventa: days === defaultNonMovingDays ? undefined : days,
             })
           }}
-          className="min-h-8 rounded-[9px] border border-input bg-white px-2 py-[3px] text-xs text-ink-row"
+          className="rounded-[9px] bg-white px-2 py-[3px] text-xs text-ink-row"
         >
           {NON_MOVING_DAYS.map((days) => (
             <option key={days} value={days}>
               en {days} días
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </div>
       <div className="mt-2 text-2xl leading-[1.15] font-bold tracking-[-0.8px] text-ink-figure tabular-nums">
         {formatCents(nonMoving.totalCents)}

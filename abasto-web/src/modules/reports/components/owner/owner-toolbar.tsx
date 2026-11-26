@@ -1,6 +1,9 @@
 import type { ReactNode } from 'react'
 
+import { NativeSelect } from '#/components/native-select'
+import { Input } from '#/components/ui/input'
 import { cn } from '#/lib/utils/cn'
+import { focusRing } from '#/modules/reports/components/report-buttons'
 import { defaultExecutivePreset } from '#/modules/executive/lib/search'
 import type { ExecutiveSearch } from '#/modules/executive/lib/search'
 import type {
@@ -17,7 +20,7 @@ const presets: Array<{ value: PeriodPreset; label: string }> = [
 ]
 
 export const toolbarControl =
-  'min-h-[42px] rounded-[9px] border border-input bg-white px-3 py-1.5 text-[13px] text-ink-row'
+  'h-auto min-h-[42px] rounded-[9px] bg-white px-3 py-1.5 text-[13px] text-ink-row'
 
 type OwnerToolbarProps = {
   preset: PeriodPreset
@@ -73,6 +76,7 @@ export function OwnerToolbar({
                 })
               }
               className={cn(
+                focusRing,
                 'min-h-9 rounded-md px-4 py-1.5 text-[13px] whitespace-nowrap text-muted-foreground',
                 preset === option.value
                   ? 'bg-[#3f1266] font-[650] text-white'
@@ -84,13 +88,13 @@ export function OwnerToolbar({
           ))}
         </div>
         {(!managed || warehouses.length > 1) && (
-          <select
+          <NativeSelect
             aria-label="Almacén del reporte"
             value={managed ? managedWarehouseId : (search.almacen ?? '')}
             onChange={(event) =>
               onChange({ almacen: event.target.value || undefined })
             }
-            className={toolbarControl}
+            className={cn(toolbarControl, 'min-w-44')}
           >
             {!managed && <option value="">Todos los almacenes</option>}
             {warehouses.map((item) => (
@@ -98,15 +102,15 @@ export function OwnerToolbar({
                 {item.name}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         )}
-        <select
+        <NativeSelect
           aria-label="Proveedor del reporte"
           value={search.proveedor ?? ''}
           onChange={(event) =>
             onChange({ proveedor: event.target.value || undefined })
           }
-          className={toolbarControl}
+          className={cn(toolbarControl, 'min-w-44')}
         >
           <option value="">Todos los proveedores</option>
           {suppliers.map((item) => (
@@ -114,31 +118,31 @@ export function OwnerToolbar({
               {item.active ? item.name : `${item.name} (inactivo)`}
             </option>
           ))}
-        </select>
+        </NativeSelect>
         {actions}
       </div>
       {preset === 'custom' && (
         <div className="flex flex-wrap items-center gap-3 text-[13px] text-ink-row">
           <label className="flex items-center gap-2">
             Desde
-            <input
+            <Input
               type="date"
               value={search.desde ?? ''}
               onChange={(event) =>
                 onChange({ desde: event.target.value || undefined })
               }
-              className={toolbarControl}
+              className={cn(toolbarControl, 'w-auto')}
             />
           </label>
           <label className="flex items-center gap-2">
             Hasta
-            <input
+            <Input
               type="date"
               value={search.hasta ?? ''}
               onChange={(event) =>
                 onChange({ hasta: event.target.value || undefined })
               }
-              className={toolbarControl}
+              className={cn(toolbarControl, 'w-auto')}
             />
           </label>
         </div>
