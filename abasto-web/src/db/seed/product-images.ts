@@ -107,4 +107,48 @@ export const productImages: Record<string, string> = {
   YG20: 'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750105591448L.jpg',
   YG78: 'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750105591450L.jpg',
   YG87: 'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750105591446L.jpg',
+  '27247':
+    'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750102057085L.jpg', // approx: photo of 27248
+  '27249':
+    'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750102057085L.jpg', // approx: photo of 27248
+  '25422':
+    'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750102056699L.jpg', // approx: photo of 25421
+  '25405':
+    'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750102056699L.jpg', // approx: photo of 25421
+  '23869':
+    'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750102053831L.jpg', // approx: photo of 11523
+  '11524':
+    'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750102053831L.jpg', // approx: photo of 11523
+  '23641':
+    'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750102056373L.jpg', // approx: photo of 23622
+  '23430':
+    'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750102056115L.jpg', // approx: photo of 23431
+  '23445':
+    'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750102056115L.jpg', // approx: photo of 23431
+  '23427':
+    'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750102056115L.jpg', // approx: photo of 23431
+  '23428':
+    'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750102056115L.jpg', // approx: photo of 23431
+  '23429':
+    'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750102056115L.jpg', // approx: photo of 23431
+  '25889':
+    'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750102056776L.jpg', // approx: photo of 25887
+  '23628':
+    'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750102056379L.jpg', // approx: photo of 23627
+  '23631':
+    'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750102056379L.jpg', // approx: photo of 23627
+  '27182':
+    'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750102056557L.jpg', // approx: photo of 27028
+  '27040':
+    'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750102053821L.jpg', // approx: photo of 27042
+  '27041':
+    'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750102053821L.jpg', // approx: photo of 27042
+  '25927':
+    'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750102056776L.jpg', // approx: photo of 25928
+  '26987':
+    'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750102056776L.jpg', // approx: photo of 25928
+  FP16: 'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750105590237L.jpg', // approx: photo of FP12
+  SA81: 'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750105590008L.jpg', // approx: photo of SA50
+  SA82: 'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750105590007L.jpg', // approx: photo of SA51
+  SA83: 'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750105590006L.jpg', // approx: photo of SA52
 }

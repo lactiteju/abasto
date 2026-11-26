@@ -51,7 +51,7 @@ describe('seedDatabase', () => {
 
       expect(await total(warehouses)).toBe(2)
       expect(await total(suppliers)).toBe(2)
-      expect(await total(products)).toBe(73)
+      expect(await total(products)).toBe(97)
       expect(await total(customers)).toBe(6)
       expect(summary.users.map((u) => u.email)).toContain('dueno@abasto.local')
       expect(summary.users).toHaveLength(3)
@@ -64,7 +64,7 @@ describe('seedDatabase', () => {
       const photos = await db
         .select({ imageUrl: products.imageUrl })
         .from(products)
-      expect(photos).toHaveLength(73)
+      expect(photos).toHaveLength(97)
       expect(photos.every((row) => row.imageUrl?.startsWith('https://'))).toBe(
         true,
       )
@@ -109,6 +109,26 @@ describe('seedDatabase', () => {
       const nutriBox = nutri.presentations.find((p) => p.isDefault)!
       expect(nutriBox.factor).toBe(12)
 
+      // Values taken from the November 25 price sheets.
+      const lalaCream = await productBySku('1271')
+      expect(lalaCream.row).toMatchObject({
+        supplierCode: '1271',
+        listPricePerPiece: 142500,
+      })
+      const dorada = await productBySku('18758')
+      expect(dorada.row.listPricePerPiece).toBe(443000)
+      expect(dorada.presentations.find((p) => p.isDefault)?.factor).toBe(12)
+      const vainilla = await productBySku('SA81')
+      expect(vainilla.row).toMatchObject({
+        brand: 'Alpura',
+        supplierCode: 'LESA800',
+        listPricePerPiece: 293100,
+        fixedDiscountPerPiece: 0,
+        promotionPerPiece: 7923,
+      })
+      const fresaMora = await productBySku('27040')
+      expect(fresaMora.row.supplierCode).toBe('27040')
+
       // Every seeded user can sign in with the default password.
       for (const seeded of summary.users) {
         const actor = await requireActor(
@@ -124,7 +144,7 @@ describe('seedDatabase', () => {
       for (const warehouse of await db.select().from(warehouses)) {
         const prices = await listWarehousePrices(owner, warehouse.id)
         const defaults = prices.filter((row) => row.isDefault)
-        expect(defaults).toHaveLength(73)
+        expect(defaults).toHaveLength(97)
         expect(defaults.every((row) => (row.priceCents ?? 0) > 0)).toBe(true)
         if (warehouse.name === 'Tejupilco') {
           // Route price 22.78 per piece × 12 pieces.
