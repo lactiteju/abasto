@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react'
 
 import type { SessionUser } from '#/modules/access/lib/session-user'
 import { AppFooter } from '#/components/layout/app-footer'
+import { NavigationProgress } from '#/components/layout/navigation-progress'
 import { AppSidebar } from '#/components/layout/app-sidebar'
 import { AppTopbar } from '#/components/layout/app-topbar'
 import { SidebarInset, SidebarProvider } from '#/components/ui/sidebar'
@@ -17,6 +18,7 @@ export function AppShell({
 }) {
   return (
     <SidebarProvider style={sidebarWidth}>
+      <NavigationProgress />
       <AppSidebar user={user} />
       <SidebarInset className="min-w-0 bg-background">
         <AppTopbar user={user} />

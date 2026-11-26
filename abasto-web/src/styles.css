@@ -218,6 +218,7 @@
   --scale-popup: 0.96;
 
   --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-nav-progress: nav-progress 8s var(--ease-out) both;
   --animate-fade-in: fade-in var(--duration-page) var(--ease-out) both;
   --animate-rise-in: rise-in var(--duration-page) var(--ease-out) both;
 
@@ -227,6 +228,17 @@
     }
     to {
       background-position: -200% 0;
+    }
+  }
+
+  /* Crawls toward 85% and holds; the bar vanishes when the router settles. */
+  @keyframes nav-progress {
+    from {
+      scale: 0 1;
+    }
+
+    to {
+      scale: 0.85 1;
     }
   }
 

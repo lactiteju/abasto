@@ -11,6 +11,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
+import { loadRootSession } from '#/components/layout/root-session'
 import { AppShell } from '#/components/layout/app-shell'
 import {
   decideRouteAccess,
@@ -32,7 +33,17 @@ interface MyRouterContext {
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   beforeLoad: async ({ location }) => {
-    const user = await getSessionUser()
+    const { user, business } = await loadRootSession(async () => {
+      const [sessionUser, businessInfo] = await Promise.all([
+        getSessionUser(),
+        // Loaded once for the whole app; a failed read must not take the app down.
+        getBusinessFn().then(
+          (result) => (result.ok ? result.data : { ...workspace.business }),
+          () => ({ ...workspace.business }),
+        ),
+      ])
+      return { user: sessionUser, business: businessInfo }
+    })
     const access = decideRouteAccess(user?.role ?? null, location.pathname)
     if (access.kind === 'redirect') {
       if (access.to === '/login') {
@@ -43,11 +54,6 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       }
       throw redirect({ to: access.to })
     }
-    // Loaded once for the whole app; a failed read must not take the app down.
-    const business = await getBusinessFn().then(
-      (result) => (result.ok ? result.data : { ...workspace.business }),
-      () => ({ ...workspace.business }),
-    )
     return { user, business }
   },
   head: ({ match }) => ({
