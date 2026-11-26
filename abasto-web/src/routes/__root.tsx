@@ -13,6 +13,7 @@ import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 
 import { loadRootSession } from '#/components/layout/root-session'
 import { AppShell } from '#/components/layout/app-shell'
+import { RoutePending } from '#/components/layout/route-pending'
 import {
   decideRouteAccess,
   isStorePath,
@@ -89,11 +90,17 @@ function RootLayout() {
   const { user } = Route.useRouteContext()
   const pathname = useLocation({ select: (location) => location.pathname })
   if (!user || pathname === '/login' || isStorePath(pathname)) {
-    return <Outlet />
+    return (
+      <RoutePending>
+        <Outlet />
+      </RoutePending>
+    )
   }
   return (
     <AppShell user={user}>
-      <Outlet />
+      <RoutePending>
+        <Outlet />
+      </RoutePending>
     </AppShell>
   )
 }

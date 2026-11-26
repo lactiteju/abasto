@@ -4,7 +4,6 @@ import { routeTree } from './routeTree.gen'
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
 
 import { clearRootSession } from '#/components/layout/root-session'
-import { RoutePending } from '#/components/layout/route-pending'
 import { watchRouteEntrance } from '#/components/layout/route-entrance'
 import { getContext } from './integrations/tanstack-query/root-provider'
 
@@ -16,11 +15,10 @@ export function getRouter() {
     context,
     scrollRestoration: true,
     defaultPreload: 'intent',
-    // A skeleton shows after 150ms of loading and stays at least 300ms, so
-    // slow loaders never leave the old page frozen and fast ones never flash.
-    defaultPendingComponent: RoutePending,
-    defaultPendingMs: 150,
-    defaultPendingMinMs: 300,
+    // The router's pending UI replaces the page even for same-path changes
+    // (filters, warehouse, period), so it is off; <RoutePending> in the root
+    // layout shows the section skeleton for path changes only.
+    defaultPendingMs: Infinity,
     // Revisits within 30s render from cache and refresh in the background;
     // mutations call router.invalidate() to bypass it. Hover preloads reuse
     // the same window.
