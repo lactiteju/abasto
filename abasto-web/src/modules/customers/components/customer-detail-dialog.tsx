@@ -128,10 +128,7 @@ export function CustomerDetailDialog({
             <AlertDialogAction
               variant="destructive"
               disabled={pending}
-              onClick={(event) => {
-                event.preventDefault()
-                void toggle(false)
-              }}
+              action={() => toggle(false)}
             >
               Eliminar cliente
             </AlertDialogAction>

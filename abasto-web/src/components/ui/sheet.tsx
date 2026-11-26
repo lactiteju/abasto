@@ -1,101 +1,104 @@
 import * as React from 'react'
-import { cn } from '#/lib/utils/cn'
-import { Dialog as SheetPrimitive } from 'radix-ui'
-
-import { Button } from '#/components/ui/button'
-import { keepOpenOnOutside } from '#/components/ui/dialog'
+import {
+  Drawer,
+  DrawerBackdrop,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerTitle,
+  DrawerTrigger,
+} from '@ui-sdk/react/drawer'
 import { XIcon } from 'lucide-react'
 
-function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
-  return <SheetPrimitive.Root data-slot="sheet" {...props} />
+import { buttonVariants } from '#/components/ui/button'
+import { cn } from '#/lib/utils/cn'
+
+type SheetSide = 'top' | 'right' | 'bottom' | 'left'
+
+type SheetContentProps = Omit<
+  React.ComponentProps<typeof DrawerContent>,
+  'className' | 'children'
+> & {
+  className?: string
+  children?: React.ReactNode
+  side?: SheetSide
+  /** Navigation drawers without a close button must still close on an outside tap. */
+  dismissOnOutside?: boolean
+  showCloseButton?: boolean
 }
 
-function SheetTrigger({
+/**
+ * Drawer takes `side` and the outside-press rule on its root, but callers set
+ * them on `SheetContent`: read them from that child so the API stays put.
+ */
+function Sheet({
+  children,
+  side,
+  closeOnOutsidePress,
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Trigger>) {
-  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />
-}
-
-function SheetClose({
-  ...props
-}: React.ComponentProps<typeof SheetPrimitive.Close>) {
-  return <SheetPrimitive.Close data-slot="sheet-close" {...props} />
-}
-
-function SheetPortal({
-  ...props
-}: React.ComponentProps<typeof SheetPrimitive.Portal>) {
-  return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />
-}
-
-function SheetOverlay({
-  className,
-  ...props
-}: React.ComponentProps<typeof SheetPrimitive.Overlay>) {
-  return (
-    <SheetPrimitive.Overlay
-      data-slot="sheet-overlay"
-      className={cn(
-        'fixed inset-0 z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0',
-        className,
-      )}
-      {...props}
-    />
+}: React.ComponentProps<typeof Drawer>) {
+  const content = React.Children.toArray(children).find(
+    (child): child is React.ReactElement<SheetContentProps> =>
+      React.isValidElement(child) && child.type === SheetContent,
   )
+  return (
+    <Drawer
+      side={side ?? content?.props.side ?? 'right'}
+      closeOnOutsidePress={
+        closeOnOutsidePress ?? content?.props.dismissOnOutside ?? false
+      }
+      {...props}
+    >
+      {children}
+    </Drawer>
+  )
+}
+
+function SheetTrigger(props: React.ComponentProps<typeof DrawerTrigger>) {
+  return <DrawerTrigger data-slot="sheet-trigger" {...props} />
+}
+
+function SheetClose(props: React.ComponentProps<typeof DrawerClose>) {
+  return <DrawerClose data-slot="sheet-close" {...props} />
 }
 
 function SheetContent({
   className,
   children,
-  side = 'right',
+  side: _side,
   showCloseButton = true,
-  dismissOnOutside = false,
-  onPointerDownOutside,
-  onInteractOutside,
+  dismissOnOutside: _dismissOnOutside,
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Content> & {
-  side?: 'top' | 'right' | 'bottom' | 'left'
-  /** Navigation drawers without a close button must still close on an outside tap. */
-  dismissOnOutside?: boolean
-  showCloseButton?: boolean
-}) {
+}: SheetContentProps) {
   return (
-    <SheetPortal>
-      <SheetOverlay />
-      <SheetPrimitive.Content
+    <>
+      <DrawerBackdrop
+        data-slot="sheet-overlay"
+        className="bg-black/10 supports-backdrop-filter:backdrop-blur-xs"
+      />
+      <DrawerContent
         data-slot="sheet-content"
-        data-side={side}
         className={cn(
-          'fixed z-50 flex flex-col gap-4 bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg transition duration-200 ease-in-out data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:border-t data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:border-r data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:border-l data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:h-auto data-[side=top]:border-b data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-[side=bottom]:data-open:slide-in-from-bottom-10 data-[side=left]:data-open:slide-in-from-left-10 data-[side=right]:data-open:slide-in-from-right-10 data-[side=top]:data-open:slide-in-from-top-10 data-closed:animate-out data-closed:fade-out-0 data-[side=bottom]:data-closed:slide-out-to-bottom-10 data-[side=left]:data-closed:slide-out-to-left-10 data-[side=right]:data-closed:slide-out-to-right-10 data-[side=top]:data-closed:slide-out-to-top-10',
+          'relative z-50 flex flex-col gap-4 bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg outline-none data-[side=bottom]:h-auto data-[side=bottom]:w-full data-[side=bottom]:border-t data-[side=left]:h-full data-[side=left]:max-h-none data-[side=left]:w-3/4 data-[side=left]:border-r data-[side=right]:h-full data-[side=right]:max-h-none data-[side=right]:w-3/4 data-[side=right]:border-l data-[side=top]:h-auto data-[side=top]:w-full data-[side=top]:border-b data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm',
           className,
         )}
-        onPointerDownOutside={
-          dismissOnOutside
-            ? onPointerDownOutside
-            : keepOpenOnOutside(onPointerDownOutside)
-        }
-        onInteractOutside={
-          dismissOnOutside
-            ? onInteractOutside
-            : keepOpenOnOutside(onInteractOutside)
-        }
         {...props}
       >
         {children}
         {showCloseButton && (
-          <SheetPrimitive.Close data-slot="sheet-close" asChild>
-            <Button
-              variant="ghost"
-              className="absolute top-3 right-3"
-              size="icon-sm"
-            >
-              <XIcon />
-              <span className="sr-only">Cerrar</span>
-            </Button>
-          </SheetPrimitive.Close>
+          <DrawerClose
+            data-slot="sheet-close"
+            className={cn(
+              buttonVariants({ variant: 'ghost', size: 'icon-sm' }),
+              'absolute top-3 right-3',
+            )}
+          >
+            <XIcon />
+            <span className="sr-only">Cerrar</span>
+          </DrawerClose>
         )}
-      </SheetPrimitive.Content>
-    </SheetPortal>
+      </DrawerContent>
+    </>
   )
 }
 
@@ -122,9 +125,11 @@ function SheetFooter({ className, ...props }: React.ComponentProps<'div'>) {
 function SheetTitle({
   className,
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Title>) {
+}: Omit<React.ComponentProps<typeof DrawerTitle>, 'className'> & {
+  className?: string
+}) {
   return (
-    <SheetPrimitive.Title
+    <DrawerTitle
       data-slot="sheet-title"
       className={cn('text-base font-medium text-foreground', className)}
       {...props}
@@ -135,9 +140,11 @@ function SheetTitle({
 function SheetDescription({
   className,
   ...props
-}: React.ComponentProps<typeof SheetPrimitive.Description>) {
+}: Omit<React.ComponentProps<typeof DrawerDescription>, 'className'> & {
+  className?: string
+}) {
   return (
-    <SheetPrimitive.Description
+    <DrawerDescription
       data-slot="sheet-description"
       className={cn('text-sm text-muted-foreground', className)}
       {...props}

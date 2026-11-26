@@ -1,9 +1,9 @@
 import { Link, useLocation } from '@tanstack/react-router'
-import { AlertDialog as AlertDialogPrimitive } from 'radix-ui'
 import { useState } from 'react'
 
 import {
   AlertDialog,
+  AlertDialogClose,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -118,9 +118,9 @@ export function OrdersPage({ user, orders }: OrdersPageProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogPrimitive.Cancel className="st-btn st-btn--outline">
+            <AlertDialogClose value="cancel" className="st-btn st-btn--outline">
               Conservar apartado
-            </AlertDialogPrimitive.Cancel>
+            </AlertDialogClose>
             <button
               type="button"
               className="st-btn st-btn--danger"

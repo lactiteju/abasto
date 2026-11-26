@@ -1,115 +1,130 @@
 import * as React from 'react'
-import { cn } from '#/lib/utils/cn'
-import { Dialog as DialogPrimitive } from 'radix-ui'
+import {
+  Dialog as DialogRoot,
+  DialogBackdrop,
+  DialogClose as DialogClosePart,
+  DialogContent as DialogContentPart,
+  DialogDescription as DialogDescriptionPart,
+  DialogTitle as DialogTitlePart,
+  DialogTrigger as DialogTriggerPart,
+} from '@ui-sdk/react/dialog'
+import { XIcon } from 'lucide-react'
 
-import { Button } from '#/components/ui/button'
+import { buttonVariants } from '#/components/ui/button'
 import {
   MaximizeButton,
   maximizedClass,
   useMaximized,
 } from '#/components/ui/dialog-maximize'
 import { escapeClosesOpenList } from '#/lib/open-list-escape'
-import { XIcon } from 'lucide-react'
+import { cn } from '#/lib/utils/cn'
+
+/** Backdrop transition shared by dialogs, alert dialogs and sheets. */
+export const backdropClass =
+  'fixed inset-0 z-50 bg-black/10 transition-opacity duration-100 supports-backdrop-filter:backdrop-blur-xs data-starting-style:opacity-0 data-ending-style:opacity-0 motion-reduce:transition-none'
+
+/** Centered in the top layer; the scale/opacity transition replaces tw-animate-css. */
+export const centeredPopupClass =
+  'fixed inset-0 z-50 m-auto h-fit transition duration-100 outline-none data-starting-style:scale-95 data-starting-style:opacity-0 data-ending-style:scale-95 data-ending-style:opacity-0 motion-reduce:transition-none'
+
+type DialogProps = React.ComponentProps<typeof DialogRoot>
 
 /**
- * Outside clicks/focus never dismiss a dialog or sheet (Esc and the close
- * button still do). A caller handler runs first and may still decide.
+ * Outside presses never dismiss a dialog (Esc and the close button still do);
+ * pass `closeOnOutsidePress` to opt back in. Esc in an open picker closes the
+ * list, not the whole dialog.
  */
-function keepOpenOnOutside<TEvent extends Event>(
-  handler?: (event: TEvent) => void,
-): (event: TEvent) => void {
-  return (event) => {
-    handler?.(event)
-    event.preventDefault()
-  }
-}
-
-/**
- * Spread on a hand-drawn `DialogPrimitive.Content` so it keeps the same
- * outside-click behavior as `DialogContent`.
- */
-const keepOpenOnOutsideProps = {
-  onPointerDownOutside: keepOpenOnOutside(),
-  onInteractOutside: keepOpenOnOutside(),
-}
-
 function Dialog({
+  closeOnOutsidePress = false,
+  onOpenChange,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Root>) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />
-}
-
-function DialogTrigger({
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
-}
-
-function DialogPortal({
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Portal>) {
-  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
-}
-
-function DialogClose({
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Close>) {
-  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
-}
-
-function DialogOverlay({
-  className,
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
+}: DialogProps) {
   return (
-    <DialogPrimitive.Overlay
-      data-slot="dialog-overlay"
-      className={cn(
-        'fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0',
-        className,
-      )}
+    <DialogRoot
+      closeOnOutsidePress={closeOnOutsidePress}
+      onOpenChange={(open, details) => {
+        if (
+          !open &&
+          details.reason === 'escape-key' &&
+          escapeClosesOpenList(details.event?.target)
+        ) {
+          details.cancel()
+          return
+        }
+        onOpenChange?.(open, details)
+      }}
       {...props}
     />
   )
 }
 
-function DialogContent({
-  className,
+/** `asChild` keeps Radix-style call sites: the single child becomes the trigger. */
+function DialogTrigger({
+  asChild,
   children,
-  showCloseButton = true,
-  maximizable = true,
-  maximizeButtonClassName,
-  onEscapeKeyDown,
-  onPointerDownOutside,
-  onInteractOutside,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content> & {
+}: React.ComponentProps<typeof DialogTriggerPart> & { asChild?: boolean }) {
+  if (asChild && React.isValidElement(children)) {
+    return (
+      <DialogTriggerPart
+        data-slot="dialog-trigger"
+        render={children}
+        {...props}
+      />
+    )
+  }
+  return (
+    <DialogTriggerPart data-slot="dialog-trigger" {...props}>
+      {children}
+    </DialogTriggerPart>
+  )
+}
+
+function DialogClose(props: React.ComponentProps<typeof DialogClosePart>) {
+  return <DialogClosePart data-slot="dialog-close" {...props} />
+}
+
+type DialogContentProps = Omit<
+  React.ComponentProps<typeof DialogContentPart>,
+  'className' | 'children'
+> & {
+  className?: string
+  children?: React.ReactNode
+  /** Extra classes for the dimmed backdrop. */
+  overlayClassName?: string
   showCloseButton?: boolean
   /** Offer the full-screen corner button; off when a wrapper draws its own. */
   maximizable?: boolean
   /** Where the full-screen button sits, to line up with a custom close button. */
   maximizeButtonClassName?: string
-}) {
+}
+
+function DialogContent({
+  className,
+  overlayClassName,
+  children,
+  showCloseButton = true,
+  maximizable = true,
+  maximizeButtonClassName,
+  ...props
+}: DialogContentProps) {
   const { maximized, toggle } = useMaximized()
   const full = maximizable && maximized
   return (
-    <DialogPortal>
-      <DialogOverlay />
-      <DialogPrimitive.Content
+    <>
+      <DialogBackdrop
+        data-slot="dialog-overlay"
+        className={cn(backdropClass, overlayClassName)}
+      />
+      <DialogContentPart
         data-slot="dialog-content"
         data-maximized={full || undefined}
         className={cn(
-          'group/dialog fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
+          centeredPopupClass,
+          'group/dialog grid w-full max-w-[calc(100%-2rem)] gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 sm:max-w-sm',
           className,
           full && maximizedClass,
         )}
-        onEscapeKeyDown={(event) => {
-          // Esc in an open picker closes the list, not the whole dialog.
-          if (escapeClosesOpenList(event.target)) event.preventDefault()
-          onEscapeKeyDown?.(event)
-        }}
-        onPointerDownOutside={keepOpenOnOutside(onPointerDownOutside)}
-        onInteractOutside={keepOpenOnOutside(onInteractOutside)}
         {...props}
       >
         {children}
@@ -125,19 +140,19 @@ function DialogContent({
           />
         )}
         {showCloseButton && (
-          <DialogPrimitive.Close data-slot="dialog-close" asChild>
-            <Button
-              variant="ghost"
-              className="absolute top-2 right-2"
-              size="icon-sm"
-            >
-              <XIcon />
-              <span className="sr-only">Cerrar</span>
-            </Button>
-          </DialogPrimitive.Close>
+          <DialogClosePart
+            data-slot="dialog-close"
+            className={cn(
+              buttonVariants({ variant: 'ghost', size: 'icon-sm' }),
+              'absolute top-2 right-2',
+            )}
+          >
+            <XIcon />
+            <span className="sr-only">Cerrar</span>
+          </DialogClosePart>
         )}
-      </DialogPrimitive.Content>
-    </DialogPortal>
+      </DialogContentPart>
+    </>
   )
 }
 
@@ -170,9 +185,9 @@ function DialogFooter({
     >
       {children}
       {showCloseButton && (
-        <DialogPrimitive.Close asChild>
-          <Button variant="outline">Cerrar</Button>
-        </DialogPrimitive.Close>
+        <DialogClosePart className={buttonVariants({ variant: 'outline' })}>
+          Cerrar
+        </DialogClosePart>
       )}
     </div>
   )
@@ -181,9 +196,11 @@ function DialogFooter({
 function DialogTitle({
   className,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Title>) {
+}: Omit<React.ComponentProps<typeof DialogTitlePart>, 'className'> & {
+  className?: string
+}) {
   return (
-    <DialogPrimitive.Title
+    <DialogTitlePart
       data-slot="dialog-title"
       className={cn('text-base leading-none font-medium', className)}
       {...props}
@@ -194,9 +211,11 @@ function DialogTitle({
 function DialogDescription({
   className,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Description>) {
+}: Omit<React.ComponentProps<typeof DialogDescriptionPart>, 'className'> & {
+  className?: string
+}) {
   return (
-    <DialogPrimitive.Description
+    <DialogDescriptionPart
       data-slot="dialog-description"
       className={cn(
         'text-sm text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-foreground',
@@ -214,10 +233,6 @@ export {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogOverlay,
-  DialogPortal,
   DialogTitle,
   DialogTrigger,
-  keepOpenOnOutside,
-  keepOpenOnOutsideProps,
 }
