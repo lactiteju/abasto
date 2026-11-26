@@ -9,6 +9,7 @@ import {
   Trash2Icon,
   TruckIcon,
 } from 'lucide-react'
+import { Await } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -19,6 +20,7 @@ import { ActionButton } from '#/modules/inventory/components/action-button'
 import { CountsTab } from '#/modules/inventory/components/counts-tab'
 import { LossesTab } from '#/modules/inventory/components/losses-tab'
 import { MovementsTab } from '#/modules/inventory/components/movements-tab'
+import { PanelSkeleton } from '#/modules/inventory/components/panel-skeleton'
 import type { ProductLabel } from '#/modules/inventory/components/movement-table'
 import { activeProducts } from '#/modules/inventory/lib/active-products'
 import { ProductsTab } from '#/modules/inventory/components/products-tab'
@@ -63,7 +65,7 @@ import { CancelTransferDialog } from '#/modules/transfers/forms/cancel-transfer-
 import { ReceiveDialog } from '#/modules/transfers/forms/receive-dialog'
 import { TransferDialog } from '#/modules/transfers/forms/transfer-dialog'
 import type { TransferListItem } from '#/modules/transfers/services/transfer-reads'
-import type { TransfersOverview } from '#/modules/transfers/types/transfers'
+import type { InventorySecondary } from '#/modules/inventory/types/secondary'
 import type {
   CatalogProduct,
   CatalogSupplier,
@@ -73,10 +75,7 @@ import type {
   SupplierOrder,
   SupplierOrderSummary,
 } from '#/modules/inventory/services/supplier-orders'
-import type {
-  PendingBalance,
-  PendingEntry,
-} from '#/modules/inventory/services/supplier-pendings'
+import type { PendingBalance } from '#/modules/inventory/services/supplier-pendings'
 
 type InventoryPageProps = {
   overview: InventoryOverview
@@ -84,16 +83,8 @@ type InventoryPageProps = {
   suppliers: Array<CatalogSupplier>
   /** Whether the actor may edit catalog products (owner). */
   canEditProducts: boolean
-  transfers: TransfersOverview
-  /** Supplier orders of the selected warehouse, newest first. */
-  supplierOrders: Array<SupplierOrderSummary>
-  /** What suppliers owe, with its ledger history. */
-  pendings: {
-    restock: Array<PendingBalance>
-    returns: Array<PendingBalance>
-    credits: Array<PendingBalance>
-    history: Array<PendingEntry>
-  }
+  /** Transfers, supplier orders and balances; streamed after the main table. */
+  secondary: Promise<InventorySecondary>
   /** Pre-filled product search, e.g. from Catálogo "Consultar inventario". */
   initialQuery: string
   /** Dialog to open on arrival, e.g. from an Inicio alert. */
@@ -139,9 +130,7 @@ export function InventoryPage({
   products,
   suppliers,
   canEditProducts,
-  transfers,
-  supplierOrders,
-  pendings,
+  secondary,
   initialQuery,
   initialAction,
   onActionDone,
@@ -240,11 +229,6 @@ export function InventoryPage({
       : undefined
   const lotsProduct = products.find(({ id }) => id === lotsRow?.productId)
 
-  const badges = tabBadges({
-    orders: supplierOrders,
-    restock: pendings.restock,
-    returns: pendings.returns,
-  })
   const exportCountPdf = async () => {
     const document = buildInventoryCountPdf({
       rows: stock,
@@ -332,14 +316,25 @@ export function InventoryPage({
             >
               <Icon size={17} />
               {name}
-              {name in badges && (
-                <span
-                  className="rounded-full bg-ring px-1.5 text-[11px] leading-[18px] font-[650] text-white"
-                  aria-label={`${badges[name as keyof typeof badges]} pendientes`}
-                >
-                  {badges[name as keyof typeof badges]}
-                </span>
-              )}
+              <Await promise={secondary} fallback={<></>}>
+                {({ supplierOrders, pendings }) => {
+                  const badges = tabBadges({
+                    orders: supplierOrders,
+                    restock: pendings.restock,
+                    returns: pendings.returns,
+                  })
+                  return (
+                    name in badges && (
+                      <span
+                        className="rounded-full bg-ring px-1.5 text-[11px] leading-[18px] font-[650] text-white"
+                        aria-label={`${badges[name as keyof typeof badges]} pendientes`}
+                      >
+                        {badges[name as keyof typeof badges]}
+                      </span>
+                    )
+                  )
+                }}
+              </Await>
             </TabsTrigger>
           ))}
         </TabsList>
@@ -368,26 +363,36 @@ export function InventoryPage({
           />
         </TabsContent>
         <TabsContent value="Por recibir" className="text-base">
-          <SupplierOrdersTab
-            orders={supplierOrders}
-            canManage={canManage}
-            onNew={() => setDialog({ kind: 'order' })}
-            onDetail={(order) => setDialog({ kind: 'orderDetail', order })}
-            onReceive={(order) => setDialog({ kind: 'receiveOrder', order })}
-            onCancel={(order) => setDialog({ kind: 'cancelOrder', order })}
-          />
+          <Await promise={secondary} fallback={<PanelSkeleton />}>
+            {({ supplierOrders }) => (
+              <SupplierOrdersTab
+                orders={supplierOrders}
+                canManage={canManage}
+                onNew={() => setDialog({ kind: 'order' })}
+                onDetail={(order) => setDialog({ kind: 'orderDetail', order })}
+                onReceive={(order) =>
+                  setDialog({ kind: 'receiveOrder', order })
+                }
+                onCancel={(order) => setDialog({ kind: 'cancelOrder', order })}
+              />
+            )}
+          </Await>
         </TabsContent>
         <TabsContent value="Saldos" className="text-base">
-          <SupplierPendingsTab
-            restock={pendings.restock}
-            returns={pendings.returns}
-            credits={pendings.credits}
-            history={pendings.history}
-            suppliers={supplierNames}
-            products={labels}
-            onReturn={(pending) => setDialog({ kind: 'return', pending })}
-            onScrap={(pending) => setDialog({ kind: 'scrap', pending })}
-          />
+          <Await promise={secondary} fallback={<PanelSkeleton />}>
+            {({ pendings }) => (
+              <SupplierPendingsTab
+                restock={pendings.restock}
+                returns={pendings.returns}
+                credits={pendings.credits}
+                history={pendings.history}
+                suppliers={supplierNames}
+                products={labels}
+                onReturn={(pending) => setDialog({ kind: 'return', pending })}
+                onScrap={(pending) => setDialog({ kind: 'scrap', pending })}
+              />
+            )}
+          </Await>
         </TabsContent>
         <TabsContent value="Movimientos" className="text-base">
           <MovementsTab
@@ -418,14 +423,20 @@ export function InventoryPage({
           />
         </TabsContent>
         <TabsContent value="Traslados" className="text-base">
-          <TransfersTab
-            transfers={transfers.transfers}
-            manages={manages}
-            canSend={canManage && transfers.destinations.length > 0}
-            onNew={() => setDialog({ kind: 'transfer' })}
-            onReceive={(transfer) => setDialog({ kind: 'receive', transfer })}
-            onCancel={(transfer) => setDialog({ kind: 'cancel', transfer })}
-          />
+          <Await promise={secondary} fallback={<PanelSkeleton />}>
+            {({ transfers }) => (
+              <TransfersTab
+                transfers={transfers.transfers}
+                manages={manages}
+                canSend={canManage && transfers.destinations.length > 0}
+                onNew={() => setDialog({ kind: 'transfer' })}
+                onReceive={(transfer) =>
+                  setDialog({ kind: 'receive', transfer })
+                }
+                onCancel={(transfer) => setDialog({ kind: 'cancel', transfer })}
+              />
+            )}
+          </Await>
         </TabsContent>
       </Tabs>
 
@@ -449,16 +460,20 @@ export function InventoryPage({
         />
       )}
       {dialog?.kind === 'order' && (
-        <OrderDialog
-          warehouses={managed}
-          initialWarehouseId={selected.id}
-          suppliers={suppliers}
-          products={pickable}
-          canEditProducts={canEditProducts}
-          discountable={[...pendings.restock, ...pendings.credits]}
-          initialProductId={dialog.productId}
-          onClose={closeDialog}
-        />
+        <Await promise={secondary} fallback={<></>}>
+          {({ pendings }) => (
+            <OrderDialog
+              warehouses={managed}
+              initialWarehouseId={selected.id}
+              suppliers={suppliers}
+              products={pickable}
+              canEditProducts={canEditProducts}
+              discountable={[...pendings.restock, ...pendings.credits]}
+              initialProductId={dialog.productId}
+              onClose={closeDialog}
+            />
+          )}
+        </Await>
       )}
       {dialog?.kind === 'orderDetail' && (
         <OrderDetailDialog
@@ -484,13 +499,17 @@ export function InventoryPage({
         />
       )}
       {dialog?.kind === 'receiveOrder' && (
-        <ReceptionDialog
-          order={dialog.order}
-          restock={pendings.restock}
-          products={pickable}
-          canUpdateCatalog={canEditProducts}
-          onClose={() => setDialog(null)}
-        />
+        <Await promise={secondary} fallback={<></>}>
+          {({ pendings }) => (
+            <ReceptionDialog
+              order={dialog.order}
+              restock={pendings.restock}
+              products={pickable}
+              canUpdateCatalog={canEditProducts}
+              onClose={() => setDialog(null)}
+            />
+          )}
+        </Await>
       )}
       {dialog?.kind === 'cancelOrder' && (
         <CancelOrderDialog
@@ -524,13 +543,17 @@ export function InventoryPage({
         />
       )}
       {dialog?.kind === 'transfer' && (
-        <TransferDialog
-          from={selected}
-          destinations={transfers.destinations}
-          products={pickable}
-          stock={stock}
-          onClose={() => setDialog(null)}
-        />
+        <Await promise={secondary} fallback={<></>}>
+          {({ transfers }) => (
+            <TransferDialog
+              from={selected}
+              destinations={transfers.destinations}
+              products={pickable}
+              stock={stock}
+              onClose={() => setDialog(null)}
+            />
+          )}
+        </Await>
       )}
       {dialog?.kind === 'receive' && (
         <ReceiveDialog

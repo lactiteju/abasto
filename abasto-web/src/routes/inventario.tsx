@@ -8,11 +8,7 @@ import {
 import { InventoryPage } from '#/modules/inventory/components/inventory-page'
 import { inventoryActionOf } from '#/modules/inventory/lib/inventory-action'
 import { inventoryOverviewFn } from '#/modules/inventory/server/inventory'
-import {
-  supplierOrdersFn,
-  supplierPendingsFn,
-} from '#/modules/inventory/server/supplier-orders'
-import { transfersOverviewFn } from '#/modules/transfers/server/transfers'
+import { inventorySecondaryFn } from '#/modules/inventory/server/inventory-secondary'
 
 type InventorySearch = {
   /** Optional product query, e.g. from Catálogo "Consultar inventario". */
@@ -42,44 +38,24 @@ export const Route = createFileRoute('/inventario')({
     })(),
   }),
   loaderDeps: ({ search }) => ({ almacen: search.almacen }),
-  loader: async ({ deps }) => {
-    const [overview, products, suppliers] = await Promise.all([
-      inventoryOverviewFn({ data: { warehouseId: deps.almacen } }),
+  loader: ({ deps }) => {
+    const data = { warehouseId: deps.almacen }
+    // Transfers, supplier orders and balances stream in after the table. The
+    // server resolves the selected warehouse for them, so every read starts
+    // now instead of after the overview.
+    const secondary = inventorySecondaryFn({ data }).then(unwrap)
+    // Nobody awaits it before the loader returns; a failure shows in its panels.
+    secondary.catch(() => undefined)
+    return Promise.all([
+      inventoryOverviewFn({ data }),
       listCatalogProductsFn(),
       listSuppliersFn(),
-    ])
-    const loaded = unwrap(overview)
-    const selected = loaded.warehouses.find(
-      ({ id }) => id === loaded.selectedId,
-    )
-    const warehouseId = loaded.selectedId
-    // Transfers, orders and supplier balances only need the selected
-    // warehouse, so they load together. Orders and balances are only for
-    // managers of the warehouse.
-    const [transfersResult, ordersResult, pendingsResult] = await Promise.all([
-      warehouseId ? transfersOverviewFn({ data: { warehouseId } }) : undefined,
-      selected?.canManage && warehouseId
-        ? supplierOrdersFn({ data: { warehouseId } })
-        : undefined,
-      selected?.canManage && warehouseId
-        ? supplierPendingsFn({ data: {} })
-        : undefined,
-    ])
-    const transfers = transfersResult
-      ? unwrap(transfersResult)
-      : { transfers: [], destinations: [] }
-    const supplierOrders = ordersResult ? unwrap(ordersResult) : []
-    const pendings = pendingsResult
-      ? unwrap(pendingsResult)
-      : { restock: [], returns: [], credits: [], history: [] }
-    return {
-      overview: loaded,
-      supplierOrders,
-      pendings,
+    ]).then(([overview, products, suppliers]) => ({
+      overview: unwrap(overview),
       products: unwrap(products),
       suppliers: unwrap(suppliers),
-      transfers,
-    }
+      secondary,
+    }))
   },
   component: InventoryRoute,
 })
@@ -87,8 +63,7 @@ export const Route = createFileRoute('/inventario')({
 function InventoryRoute() {
   const search = Route.useSearch()
   const { q } = search
-  const { overview, products, suppliers, transfers, supplierOrders, pendings } =
-    Route.useLoaderData()
+  const { overview, products, suppliers, secondary } = Route.useLoaderData()
   const { user } = Route.useRouteContext()
   const navigate = Route.useNavigate()
   return (
@@ -100,14 +75,7 @@ function InventoryRoute() {
       suppliers={suppliers}
       // Catalog costs and prices are the owner's.
       canEditProducts={user?.role === 'owner'}
-      transfers={transfers}
-      supplierOrders={[...supplierOrders]}
-      pendings={{
-        restock: [...pendings.restock],
-        returns: [...pendings.returns],
-        credits: [...pendings.credits],
-        history: [...pendings.history],
-      }}
+      secondary={secondary}
       initialQuery={q ?? ''}
       initialAction={inventoryActionOf(search)}
       onActionDone={() =>

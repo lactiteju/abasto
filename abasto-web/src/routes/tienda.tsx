@@ -15,14 +15,29 @@ export const Route = createFileRoute('/tienda')({
       : {},
   loaderDeps: ({ search }) => ({ almacen: search.almacen }),
   loader: async ({ deps }) => {
-    const warehouses = unwrap(await storeWarehousesFn())
+    const catalogOf = async (warehouseId: string) =>
+      unwrap(await storeCatalogFn({ data: { warehouseId } }))
+    // A requested warehouse loads its catalog alongside the list; an unknown
+    // one falls back to the first below, like before.
+    const [warehouseResult, requested] = await Promise.all([
+      storeWarehousesFn(),
+      deps.almacen
+        ? catalogOf(deps.almacen).then(
+            (catalog) => ({ id: deps.almacen, catalog }),
+            () => null,
+          )
+        : null,
+    ])
+    const warehouses = unwrap(warehouseResult)
     const warehouse =
       warehouses.find((entry) => entry.id === deps.almacen) ??
       warehouses.at(0) ??
       null
-    const catalog = warehouse
-      ? unwrap(await storeCatalogFn({ data: { warehouseId: warehouse.id } }))
-      : []
+    const catalog = !warehouse
+      ? []
+      : requested?.id === warehouse.id
+        ? requested.catalog
+        : await catalogOf(warehouse.id)
     return { warehouses, warehouse, catalog }
   },
   head: ({ match }) => ({
