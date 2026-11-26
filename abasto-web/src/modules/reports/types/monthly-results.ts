@@ -53,9 +53,11 @@ export type MonthlyTotals = {
 }
 
 export type MonthlyResults = {
-  /** YYYY-MM. */
+  /** YYYY-MM: the month, or the month a chosen range ends in. */
   month: string
-  /** First and last calendar day of the month. */
+  /** A calendar month, or a range of days chosen on screen. */
+  span: 'month' | 'range'
+  /** First and last day covered: the whole month, or the chosen days. */
   range: { from: string; to: string }
   /** Last day that can have data: today inside the current month, else range.to. */
   through: string
@@ -72,7 +74,7 @@ export type MonthlyResults = {
    */
   products: Array<MonthlyProductRow>
   totals: MonthlyTotals
-  /** Same totals for the previous calendar month, whole month. */
+  /** Same totals for the previous calendar month, or as many days just before the range. */
   previous: MonthlyTotals
 }
 

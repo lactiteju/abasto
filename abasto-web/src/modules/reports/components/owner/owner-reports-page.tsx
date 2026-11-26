@@ -16,12 +16,8 @@ import {
 import { OwnerToolbar } from '#/modules/reports/components/owner/owner-toolbar'
 import { PeriodResult } from '#/modules/reports/components/owner/period-result'
 import { SalesBreakdown } from '#/modules/reports/components/owner/sales-breakdown'
-import {
-  downloadMonthExcel,
-  monthOfRange,
-} from '#/modules/reports/components/monthly/monthly-excel-download'
+import { downloadRangeExcel } from '#/modules/reports/components/monthly/monthly-excel-download'
 import type { MonthlyExcelKind } from '#/modules/reports/components/monthly/monthly-excel-download'
-import { monthLabel } from '#/modules/reports/components/monthly/monthly-format'
 import { monthlyExportMeta } from '#/modules/reports/lib/monthly-results-export-meta'
 import { DownloadMenu } from '#/modules/reports/components/owner/download-menu'
 import { ReportEmpty } from '#/modules/reports/components/report-empty'
@@ -41,7 +37,7 @@ import {
 import { pdfChoices } from '#/modules/reports/lib/pdf-choices'
 import type { PdfChoice } from '#/modules/reports/lib/pdf-choices'
 import { buildPdfReport } from '#/modules/reports/lib/pdf-report'
-import { longRangeLabel } from '#/modules/reports/lib/period'
+import { excelRange, longRangeLabel } from '#/modules/reports/lib/period'
 import { ownerDashboardFn } from '#/modules/reports/server/owner-reports'
 import type { OwnerReportsLoad } from '#/modules/reports/server/load-owner-reports'
 import type { OwnerDashboardData } from '#/modules/reports/types/owner-dashboard'
@@ -124,13 +120,17 @@ export function OwnerReportsPage({
   ]
     .filter(Boolean)
     .join(' · ')
-  // The Excel files cover the month the period on screen ends in.
-  const month = data && monthOfRange(data.sales.range)
+  // The Excel files cover the period on screen, up to today.
+  const excel = data && excelRange(data.sales.range, businessDate())
   const downloadExcel = async (kind: MonthlyExcelKind) => {
-    if (!month) return
-    await downloadMonthExcel(
+    if (!excel) return
+    await downloadRangeExcel(
       kind,
-      { month, warehouseId: search.almacen, supplierId: search.proveedor },
+      {
+        ...excel.range,
+        warehouseId: search.almacen,
+        supplierId: search.proveedor,
+      },
       monthlyExportMeta(business.name, scope, userName),
     )
   }
@@ -148,8 +148,12 @@ export function OwnerReportsPage({
             choices={pdfChoices(businessDate())}
             onPdf={downloadPdf}
             excel={
-              month
-                ? { month: monthLabel(month), onDownload: downloadExcel }
+              excel
+                ? {
+                    label: excel.label,
+                    tooLong: excel.tooLong,
+                    onDownload: downloadExcel,
+                  }
                 : undefined
             }
             onCsv={

@@ -10,7 +10,7 @@ describe('DownloadMenu', () => {
       <DownloadMenu
         choices={pdfChoices('2026-11-19')}
         onPdf={async () => undefined}
-        excel={{ month: 'noviembre 2026', onDownload: async () => undefined }}
+        excel={{ label: '1 al 25 nov 2026', onDownload: async () => undefined }}
       />,
     )
     expect(html).toContain('Descargar PDF')

@@ -6,12 +6,8 @@ import { businessDate } from '#/modules/orders/services/clock'
 import { ManagerBreakdown } from '#/modules/reports/components/manager/manager-breakdown'
 import { WarehouseTodayRail } from '#/modules/reports/components/manager/warehouse-today-rail'
 import { ControlSummary } from '#/modules/reports/components/owner/control-summary'
-import {
-  downloadMonthExcel,
-  monthOfRange,
-} from '#/modules/reports/components/monthly/monthly-excel-download'
+import { downloadRangeExcel } from '#/modules/reports/components/monthly/monthly-excel-download'
 import type { MonthlyExcelKind } from '#/modules/reports/components/monthly/monthly-excel-download'
-import { monthLabel } from '#/modules/reports/components/monthly/monthly-format'
 import { monthlyExportMeta } from '#/modules/reports/lib/monthly-results-export-meta'
 import { DownloadMenu } from '#/modules/reports/components/owner/download-menu'
 import {
@@ -37,7 +33,7 @@ import {
 import { pdfChoices } from '#/modules/reports/lib/pdf-choices'
 import type { PdfChoice } from '#/modules/reports/lib/pdf-choices'
 import { buildManagerPdfReport } from '#/modules/reports/lib/pdf-report'
-import { longRangeLabel } from '#/modules/reports/lib/period'
+import { excelRange, longRangeLabel } from '#/modules/reports/lib/period'
 import { managerDashboardFn } from '#/modules/reports/server/manager-reports'
 import type { ManagerReportsLoad } from '#/modules/reports/server/load-manager-reports'
 import type { ManagerDashboard } from '#/modules/reports/types/manager-dashboard'
@@ -103,12 +99,14 @@ export function ManagerReportsPage({
       await import('#/modules/reports/lib/pdf-render')
     await downloadPdfReport(report)
   }
+  // The Excel files cover the period on screen, up to today.
+  const excel = dashboard && excelRange(dashboard.sales.range, businessDate())
   const downloadExcel = async (kind: MonthlyExcelKind) => {
-    if (!dashboard) return
-    await downloadMonthExcel(
+    if (!excel) return
+    await downloadRangeExcel(
       kind,
       {
-        month: monthOfRange(dashboard.sales.range),
+        ...excel.range,
         warehouseId: dashboard.warehouse.id,
         supplierId: search.proveedor,
       },
@@ -142,10 +140,13 @@ export function ManagerReportsPage({
             <DownloadMenu
               choices={pdfChoices(businessDate())}
               onPdf={downloadPdf}
-              excel={{
-                month: monthLabel(monthOfRange(dashboard.sales.range)),
-                onDownload: downloadExcel,
-              }}
+              excel={
+                excel && {
+                  label: excel.label,
+                  tooLong: excel.tooLong,
+                  onDownload: downloadExcel,
+                }
+              }
               onCsv={() =>
                 downloadText(
                   salesCsv('day', dashboard.sales.byDay),

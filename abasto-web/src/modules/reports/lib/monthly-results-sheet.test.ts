@@ -9,6 +9,9 @@ import {
   longDateLabel,
   moneyLabel,
   monthTitle,
+  resultsTitle,
+  dailyFilename,
+  boxesFilename,
   weekLabel,
 } from '#/modules/reports/lib/monthly-results-sheet'
 import type {
@@ -83,6 +86,7 @@ const byDay = [
 ]
 const results: MonthlyResults = {
   month: '2026-11',
+  span: 'month',
   range: { from: '2026-11-01', to: '2026-11-30' },
   through: '2026-11-09',
   days,
@@ -132,6 +136,35 @@ describe('labels', () => {
       'Semana 1 · 02 al 07 nov',
     )
     expect(weekLabel(2, '2026-11-09', '2026-11-09')).toBe('Semana 2 · 09 nov')
+    expect(weekLabel(1, '2026-10-31', '2026-11-07')).toBe(
+      'Semana 1 · 31 oct al 07 nov',
+    )
+  })
+
+  test('title and filenames follow a month or a chosen range', () => {
+    const month = {
+      month: '2026-11',
+      span: 'month' as const,
+      range: { from: '2026-11-01', to: '2026-11-30' },
+    }
+    expect(resultsTitle(month)).toBe('Resultados de noviembre 2026')
+    expect(dailyFilename(month)).toBe('ventas-diarias-2026-11.xlsx')
+    expect(boxesFilename(month)).toBe('cajas-por-producto-2026-11.xlsx')
+    const range = {
+      month: '2026-11',
+      span: 'range' as const,
+      range: { from: '2026-11-01', to: '2026-11-25' },
+    }
+    expect(resultsTitle(range)).toBe('Resultados del 1 al 25 nov 2026')
+    expect(dailyFilename(range)).toBe(
+      'ventas-diarias 01-11-2026 al 25-11-2026.xlsx',
+    )
+    expect(boxesFilename(range)).toBe(
+      'cajas-por-producto 01-11-2026 al 25-11-2026.xlsx',
+    )
+    const oneDay = { ...range, range: { from: '2026-11-25', to: '2026-11-25' } }
+    expect(resultsTitle(oneDay)).toBe('Resultados del 25 nov 2026')
+    expect(dailyFilename(oneDay)).toBe('ventas-diarias 25-11-2026.xlsx')
   })
 })
 
@@ -171,6 +204,9 @@ describe('buildDailySheet', () => {
     expect(sheet.total.revenueCents).toBe(w1.revenueCents! + w2.revenueCents!)
     expect(sheet.total.marginCents).toBe(w1.marginCents! + w2.marginCents!)
     expect(sheet.total.label).toBe('Total del mes')
+    expect(buildDailySheet({ ...results, span: 'range' }).total.label).toBe(
+      'Total del periodo',
+    )
   })
 
   test('days after `through` are empty, past days without sales are 0', () => {

@@ -59,6 +59,7 @@ const totals = (scale: number): MonthlyTotals => ({
 })
 const results: MonthlyResults = {
   month: '2026-11',
+  span: 'month',
   range: { from: '2026-11-01', to: '2026-11-30' },
   through: '2026-11-04',
   days,

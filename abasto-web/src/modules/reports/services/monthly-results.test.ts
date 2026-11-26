@@ -124,6 +124,52 @@ describe('monthly results', () => {
     }
   })
 
+  test('a date range covers exactly those days and compares with the same length before', async () => {
+    const fx = await stocked()
+    await fx.sell({ at: '2026-10-20T18:00:00Z', quantity: 3 })
+    await fx.sell({ at: '2026-10-31T18:00:00Z', quantity: 2 })
+    await fx.sell({ at: '2026-11-02T18:00:00Z', quantity: 4 })
+    await fx.sell({ at: '2026-11-04T18:00:00Z', quantity: 1 })
+    setToday('2026-11-25T18:00:00Z')
+    const data = (
+      await getMonthlyResults(fx.owner, {
+        from: '2026-10-31',
+        to: '2026-11-03',
+      })
+    ).data!
+    expect(data.span).toBe('range')
+    expect(data.range).toEqual({ from: '2026-10-31', to: '2026-11-03' })
+    expect(data.through).toBe('2026-11-03')
+    expect(data.days).toEqual(['2026-10-31', '2026-11-02', '2026-11-03'])
+    expect(data.totals.revenueCents).toBe(6 * 1000)
+    // Four days before: 27 to 30 oct, nothing sold.
+    expect(data.previous.revenueCents).toBe(0)
+    const wholeMonth = (await getMonthlyResults(fx.owner, { month: '2026-11' }))
+      .data!
+    expect(wholeMonth.span).toBe('month')
+  })
+
+  test('a date range must be valid, not future and at most 92 days', async () => {
+    const fx = await stocked()
+    setToday('2026-11-25T18:00:00Z')
+    const ok = await getMonthlyResults(fx.owner, {
+      from: '2026-08-26',
+      to: '2026-11-25',
+    })
+    expect(ok.data!.range.from).toBe('2026-08-26')
+    for (const [from, to] of [
+      ['2026-08-25', '2026-11-25'],
+      ['2026-11-10', '2026-11-01'],
+      ['2026-11-20', '2026-11-26'],
+      ['2026-11-1', '2026-11-20'],
+    ]) {
+      const error = await errorOf(() =>
+        getMonthlyResults(fx.owner, { from, to }),
+      )
+      expect(error.code).toBe('invalid')
+    }
+  })
+
   test('manager sees only the managed warehouse; others are refused', async () => {
     const fx = await stocked()
     await receive(fx, {

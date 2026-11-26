@@ -9,6 +9,7 @@ import type { MonthlyResults } from '#/modules/reports/types/monthly-results'
 const zero = { orders: 0, revenueCents: 0, costCents: 0, marginCents: 0 }
 const results: MonthlyResults = {
   month: '2026-11',
+  span: 'month',
   range: { from: '2026-11-01', to: '2026-11-30' },
   through: '2026-11-03',
   days: ['2026-11-02', '2026-11-03', '2026-11-04'],

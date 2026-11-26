@@ -8,7 +8,7 @@ import {
   buildDailySheet,
   dailyFilename,
   dailySheetName,
-  monthTitle,
+  resultsTitle,
 } from '#/modules/reports/lib/monthly-results-sheet'
 import type { MonthlyExportMeta } from '#/modules/reports/lib/monthly-results-export-meta'
 import type { MonthlyResults } from '#/modules/reports/types/monthly-results'
@@ -38,7 +38,7 @@ function titleRows(
 ) {
   sheet.getCell('A1').value = meta.business
   sheet.getCell('A1').font = { bold: true, size: 14, color: { argb: plum } }
-  sheet.getCell('A2').value = monthTitle(results.month)
+  sheet.getCell('A2').value = resultsTitle(results)
   sheet.getCell('A2').font = { bold: true, size: 12 }
   sheet.getCell('A3').value = meta.scope
   const by = meta.generatedBy ? ` · por ${meta.generatedBy}` : ''
@@ -245,26 +245,20 @@ export const buildBoxesXlsx = (
 ) =>
   build(boxesSheetName, (sheet) => boxesWorksheet(sheet, results, meta), meta)
 
-/** Builds and downloads ventas-diarias-YYYY-MM.xlsx. */
+/** Builds and downloads the daily sale file (see `dailyFilename`). */
 export async function downloadDailySalesXlsx(
   results: MonthlyResults,
   meta: MonthlyExportMeta,
 ) {
   const buffer = await buildDailySalesXlsx(results, meta)
-  downloadBlob(
-    new Blob([buffer], { type: xlsxType }),
-    dailyFilename(results.month),
-  )
+  downloadBlob(new Blob([buffer], { type: xlsxType }), dailyFilename(results))
 }
 
-/** Builds and downloads cajas-por-producto-YYYY-MM.xlsx. */
+/** Builds and downloads the boxes file (see `boxesFilename`). */
 export async function downloadBoxesXlsx(
   results: MonthlyResults,
   meta: MonthlyExportMeta,
 ) {
   const buffer = await buildBoxesXlsx(results, meta)
-  downloadBlob(
-    new Blob([buffer], { type: xlsxType }),
-    boxesFilename(results.month),
-  )
+  downloadBlob(new Blob([buffer], { type: xlsxType }), boxesFilename(results))
 }

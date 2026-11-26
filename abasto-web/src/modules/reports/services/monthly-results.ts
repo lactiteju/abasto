@@ -3,7 +3,13 @@ import { db } from '#/db'
 import { AppError } from '#/lib/errors'
 import type { Actor } from '#/modules/access/lib/policy'
 import { businessDate } from '#/modules/orders/services/clock'
-import { addDays } from '#/modules/reports/lib/period'
+import {
+  addDays,
+  daysBetween,
+  rangeDays,
+  isBusinessDate,
+  MAX_EXPORT_DAYS,
+} from '#/modules/reports/lib/period'
 import {
   localDay,
   managedWarehouses,
@@ -67,10 +73,37 @@ function monthRange(month: string, today: string): DateRange {
   return { from: `${month}-01`, to }
 }
 
-const previousRange = (range: DateRange): DateRange => {
-  const to = addDays(range.from, -1)
-  return { from: `${to.slice(0, 8)}01`, to }
+/** A chosen range of business days: whole, ordered, not future, at most MAX_EXPORT_DAYS. */
+function dayRange(from: string, to: string, today: string): DateRange {
+  if (!isBusinessDate(from) || !isBusinessDate(to) || from > to) {
+    throw new AppError('invalid', 'Elige un rango de fechas válido.')
+  }
+  if (to > today) {
+    throw new AppError('invalid', 'Elige fechas que no sean futuras.')
+  }
+  if (rangeDays({ from, to }) > MAX_EXPORT_DAYS) {
+    throw new AppError(
+      'invalid',
+      `Elige un rango de hasta ${MAX_EXPORT_DAYS} días.`,
+    )
+  }
+  return { from, to }
 }
+
+/** The previous calendar month, or as many days just before a chosen range. */
+const previousRange = (
+  range: DateRange,
+  span: 'month' | 'range',
+): DateRange => {
+  const to = addDays(range.from, -1)
+  if (span === 'month') return { from: `${to.slice(0, 8)}01`, to }
+  return { from: addDays(to, -daysBetween(range.from, range.to)), to }
+}
+
+export type MonthlyResultsInput = (
+  | { month: string; from?: undefined; to?: undefined }
+  | { month?: undefined; from: string; to: string }
+) & { warehouseId?: string; supplierId?: string }
 
 const isSunday = (day: string) => new Date(`${day}T12:00:00Z`).getUTCDay() === 0
 
@@ -238,12 +271,16 @@ async function resolveScope(
  */
 export async function getMonthlyResults(
   actor: Actor,
-  input: { month: string; warehouseId?: string; supplierId?: string },
+  input: MonthlyResultsInput,
 ): Promise<MonthlyResultsLoad> {
   const today = businessDate()
-  const range = monthRange(input.month, today)
+  const span = input.month === undefined ? 'range' : 'month'
+  const range =
+    input.month === undefined
+      ? dayRange(input.from, input.to, today)
+      : monthRange(input.month, today)
   const { warehouses, scope } = await resolveScope(actor, input)
-  const before = previousRange(range)
+  const before = previousRange(range, span)
   const [
     suppliers,
     days,
@@ -332,9 +369,10 @@ export async function getMonthlyResults(
     .sort((a, b) => b.marginCents - a.marginCents || a.position - b.position)
 
   const data: MonthlyResults = {
-    month: input.month,
+    month: range.to.slice(0, 7),
+    span,
     range,
-    through: today.slice(0, 7) === input.month ? today : range.to,
+    through: today < range.to ? today : range.to,
     days: shown,
     byDay,
     products: rows,

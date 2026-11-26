@@ -3,10 +3,14 @@
  * Pure: no document libraries. Dates are plain YYYY-MM-DD business dates and
  * are formatted at UTC noon so no timezone can shift the calendar day.
  */
+import { longRangeLabel } from '#/modules/reports/lib/period'
 import type {
   MonthlyResults,
   MonthlyProductRow,
 } from '#/modules/reports/types/monthly-results'
+
+/** What names an export: the month, or the range of days chosen on screen. */
+type ExportPeriod = Pick<MonthlyResults, 'month' | 'span' | 'range'>
 
 const parts = (day: string) => {
   const [year, month, date] = day.split('-').map(Number)
@@ -52,6 +56,12 @@ export const dayHeader = (day: string) => two(parts(day).date)
 export const monthTitle = (month: string) =>
   `Resultados de ${monthName.format(atNoon(`${month}-01`))} ${month.slice(0, 4)}`
 
+/** "Resultados de noviembre 2026", or "Resultados del 1 al 25 nov 2026" for a range. */
+export const resultsTitle = (period: ExportPeriod) =>
+  period.span === 'month'
+    ? monthTitle(period.month)
+    : `Resultados del ${longRangeLabel(period.range)}`
+
 /** Cents as "$ 208,925.70" (negatives "-$ 10.05"). */
 export const moneyLabel = (cents: number) =>
   `${cents < 0 ? '-' : ''}$ ${grouped.format(Math.abs(cents) / 100)}`
@@ -74,10 +84,13 @@ export const boxesNumFmt = (boxes: number) =>
 
 /** "Semana 1 · 02 al 07 nov" (single day: "Semana 2 · 09 nov"). */
 export const weekLabel = (index: number, from: string, to: string) => {
-  const short = monthShort.format(atNoon(to)).replace('.', '')
-  return from === to
-    ? `Semana ${index} · ${dayHeader(to)} ${short}`
-    : `Semana ${index} · ${dayHeader(from)} al ${dayHeader(to)} ${short}`
+  const short = (day: string) => monthShort.format(atNoon(day)).replace('.', '')
+  if (from === to) return `Semana ${index} · ${dayHeader(to)} ${short(to)}`
+  const start =
+    from.slice(0, 7) === to.slice(0, 7)
+      ? dayHeader(from)
+      : `${dayHeader(from)} ${short(from)}`
+  return `Semana ${index} · ${start} al ${dayHeader(to)} ${short(to)}`
 }
 
 /**
@@ -112,7 +125,7 @@ export type DailySheet = {
   columns: ['FECHA', 'VENTA DIARIA', 'GANANCIA DIARIA', 'CAJAS']
   rows: Array<DailyRow>
   total: {
-    label: 'Total del mes'
+    label: 'Total del mes' | 'Total del periodo'
     revenueCents: number
     marginCents: number
     boxes: number
@@ -180,7 +193,7 @@ export function buildDailySheet(results: MonthlyResults): DailySheet {
     columns: ['FECHA', 'VENTA DIARIA', 'GANANCIA DIARIA', 'CAJAS'],
     rows,
     total: {
-      label: 'Total del mes',
+      label: results.span === 'month' ? 'Total del mes' : 'Total del periodo',
       revenueCents: revenue,
       marginCents: margin,
       // The month's own total (as the KPI), not the sum of rounded days.
@@ -297,9 +310,21 @@ export const boxesSheetName = 'Cajas por producto'
 export const monthlyFilename = (month: string, extension: 'xlsx' | 'pdf') =>
   `resultados-${month}.${extension}`
 
-/** ventas-diarias-YYYY-MM.xlsx: the daily sale and margin file. */
-export const dailyFilename = (month: string) => `ventas-diarias-${month}.xlsx`
+/** "01-11-2026 al 25-11-2026" (one day: "25-11-2026") for file names. */
+const rangeTag = ({ from, to }: { from: string; to: string }) => {
+  const day = (value: string) => value.split('-').reverse().join('-')
+  return from === to ? day(to) : `${day(from)} al ${day(to)}`
+}
 
-/** cajas-por-producto-YYYY-MM.xlsx: the boxes by product file. */
-export const boxesFilename = (month: string) =>
-  `cajas-por-producto-${month}.xlsx`
+const exportFilename = (name: string, period: ExportPeriod) =>
+  period.span === 'month'
+    ? `${name}-${period.month}.xlsx`
+    : `${name} ${rangeTag(period.range)}.xlsx`
+
+/** The daily sale and margin file: ventas-diarias-YYYY-MM.xlsx, or with the range. */
+export const dailyFilename = (period: ExportPeriod) =>
+  exportFilename('ventas-diarias', period)
+
+/** The boxes by product file: cajas-por-producto-YYYY-MM.xlsx, or with the range. */
+export const boxesFilename = (period: ExportPeriod) =>
+  exportFilename('cajas-por-producto', period)

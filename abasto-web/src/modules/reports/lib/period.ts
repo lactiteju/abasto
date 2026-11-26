@@ -8,6 +8,9 @@ import type {
 const DAY_MS = 86_400_000
 const MAX_DAYS = 366
 
+/** Longest range the Excel exports cover: «Cajas por producto» has a column per day. */
+export const MAX_EXPORT_DAYS = 92
+
 /** Noon UTC, so day arithmetic never crosses a boundary. */
 const parse = (date: string) => new Date(`${date}T12:00:00Z`)
 
@@ -138,4 +141,21 @@ export function longRangeLabel(range: DateRange, knownYear?: number) {
     return `${fromDay} ${month(fromMonth)} al ${toDay} ${month(toMonth)}${tail(toYear)}`
   }
   return `${fromDay} ${month(fromMonth)} ${fromYear} al ${toDay} ${month(toMonth)} ${toYear}`
+}
+
+/** Days a range covers, both ends included. */
+export const rangeDays = (range: DateRange) =>
+  daysBetween(range.from, range.to) + 1
+
+/**
+ * What the Excel downloads cover: the period on screen up to today, labelled
+ * "1 al 25 nov 2026"; `tooLong` past MAX_EXPORT_DAYS.
+ */
+export function excelRange(range: DateRange, today: string) {
+  const covered = { from: range.from, to: range.to > today ? today : range.to }
+  return {
+    range: covered,
+    label: longRangeLabel(covered),
+    tooLong: rangeDays(covered) > MAX_EXPORT_DAYS,
+  }
 }

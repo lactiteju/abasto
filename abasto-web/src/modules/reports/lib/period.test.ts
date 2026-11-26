@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
   comparisonRange,
+  excelRange,
   longRangeLabel,
   resolvePeriod,
 } from '#/modules/reports/lib/period'
@@ -164,5 +165,25 @@ describe('comparisonRange', () => {
     expect(
       comparisonRange('custom', { from: '2026-11-01', to: '2026-11-03' }),
     ).toEqual({ from: '2026-10-29', to: '2026-10-31' })
+  })
+})
+
+describe('excelRange', () => {
+  test('the period on screen, never past today, with its label', () => {
+    expect(
+      excelRange({ from: '2026-11-01', to: '2026-11-30' }, '2026-11-25'),
+    ).toEqual({
+      range: { from: '2026-11-01', to: '2026-11-25' },
+      label: '1 al 25 nov 2026',
+      tooLong: false,
+    })
+    expect(
+      excelRange({ from: '2026-08-25', to: '2026-11-25' }, '2026-11-25')
+        .tooLong,
+    ).toBe(true)
+    expect(
+      excelRange({ from: '2026-08-26', to: '2026-11-25' }, '2026-11-25')
+        .tooLong,
+    ).toBe(false)
   })
 })

@@ -4,16 +4,18 @@ import { monthlyResultsFn } from '#/modules/reports/server/monthly-results'
 
 export type MonthlyExcelKind = 'daily' | 'boxes'
 
-/** Month of the period on screen: the YYYY-MM of its last day. */
-export const monthOfRange = (range: { to: string }) => range.to.slice(0, 7)
-
 /**
- * Loads the month for the warehouse and supplier on screen and saves one of
- * the two Excel files. ExcelJS loads on click, outside the first bundle.
+ * Loads the range of days on screen for its warehouse and supplier and saves
+ * one of the two Excel files. ExcelJS loads on click, outside the first bundle.
  */
-export async function downloadMonthExcel(
+export async function downloadRangeExcel(
   kind: MonthlyExcelKind,
-  filters: { month: string; warehouseId?: string; supplierId?: string },
+  filters: {
+    from: string
+    to: string
+    warehouseId?: string
+    supplierId?: string
+  },
   meta: MonthlyExportMeta,
 ) {
   const load = unwrap(await monthlyResultsFn({ data: filters }))

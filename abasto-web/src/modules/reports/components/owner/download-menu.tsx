@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { ClientError } from '#/lib/boundary'
 import { ActionButton } from '#/modules/reports/components/report-buttons'
 import type { PdfChoice } from '#/modules/reports/lib/pdf-choices'
+import { MAX_EXPORT_DAYS } from '#/modules/reports/lib/period'
 
 type DownloadMenuProps = {
   choices: Array<PdfChoice>
@@ -12,10 +13,12 @@ type DownloadMenuProps = {
   onPdf: (choice: PdfChoice) => Promise<void>
   /** Absent when the period on screen has no sales to export. */
   onCsv?: () => void
-  /** The two month Excel files; absent when there is no period on screen. */
+  /** The two Excel files of the period on screen; absent when there is none. */
   excel?: {
-    /** "noviembre 2026": the month the files cover. */
-    month: string
+    /** "1 al 25 nov 2026": the days the files cover. */
+    label: string
+    /** The period is longer than the files allow; downloads are off. */
+    tooLong?: boolean
     onDownload: (kind: 'daily' | 'boxes') => Promise<void>
   }
 }
@@ -23,7 +26,7 @@ type DownloadMenuProps = {
 const item =
   'flex min-h-10 w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm text-ink-row hover:bg-muted focus-visible:bg-muted focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50'
 
-/** "Descargar PDF": the day, week and month reports, the month Excel files and the sales CSV. */
+/** "Descargar PDF": the day, week and month reports, the Excel files of the period on screen and the sales CSV. */
 export function DownloadMenu({
   choices,
   onPdf,
@@ -124,12 +127,12 @@ export function DownloadMenu({
                   type="button"
                   role="menuitem"
                   className={item}
-                  disabled={busy !== null}
+                  disabled={busy !== null || excel.tooLong}
                   onClick={() =>
                     void run(`excel-${kind}`, () => excel.onDownload(kind))
                   }
                 >
-                  {`Excel · ${name} · ${excel.month}`}
+                  {`Excel · ${name} · ${excel.label}`}
                   {busy === `excel-${kind}` && (
                     <small className="text-xs text-muted-foreground">
                       Generando…
@@ -137,6 +140,12 @@ export function DownloadMenu({
                   )}
                 </button>
               ))}
+              {excel.tooLong && (
+                <p className="px-3 pb-1 text-xs text-muted-foreground">
+                  Elige un periodo de hasta {MAX_EXPORT_DAYS} días para
+                  descargar en Excel.
+                </p>
+              )}
             </li>
           )}
           {onCsv && (
