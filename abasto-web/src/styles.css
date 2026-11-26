@@ -153,6 +153,162 @@
   --color-saved: #3b9270;
 }
 
+/*
+ * Motion tokens. Expressive and fast: nothing over 320ms, only transform,
+ * opacity, filter and colors animate. `static` keeps them even when no
+ * utility mentions them yet, so other modules (store.css) can read them.
+ */
+@theme static {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  /* Damped spring (zeta 0.75), peak 1.028: a 2.8% overshoot, settled at 1. */
+  --ease-spring: linear(
+    0,
+    0.0395,
+    0.1351,
+    0.2593,
+    0.3925,
+    0.5216,
+    0.6386,
+    0.7394,
+    0.8224,
+    0.8881,
+    0.938,
+    0.9742,
+    0.9991,
+    1.0149,
+    1.0239,
+    1.0278,
+    1.0282,
+    1.0264,
+    1.0234,
+    1.0197,
+    1.0159,
+    1.0124,
+    1.0092,
+    1.0065,
+    1.0043,
+    1.0026,
+    1.0014,
+    1.0004,
+    1
+  );
+
+  --duration-press: 120ms;
+  --duration-hover: 150ms;
+  --duration-popup-in: 150ms;
+  --duration-popup-out: 110ms;
+  --duration-dialog-in: 220ms;
+  --duration-dialog-out: 160ms;
+  --duration-tab: 180ms;
+  --duration-page: 240ms;
+  --duration-toast-in: 320ms;
+  --duration-toast-out: 200ms;
+  --duration-reduced: 100ms;
+
+  /* Entrances step by 30ms per item, capped at 8 items (240ms). */
+  --stagger: 30ms;
+  --stagger-max: 8;
+
+  --distance-sm: 6px;
+  --distance-md: 8px;
+  --distance-lg: 12px;
+
+  --scale-press: 0.97;
+  --scale-popup: 0.96;
+
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-fade-in: fade-in var(--duration-page) var(--ease-out) both;
+  --animate-rise-in: rise-in var(--duration-page) var(--ease-out) both;
+
+  @keyframes shimmer {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  /* Pair with `--stagger-index` (0..7) on the element for a staggered list. */
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      translate: 0 var(--rise-distance, var(--distance-md));
+    }
+  }
+}
+
+/* Sonner hardcodes 400ms; retime its enter (320ms) and exit (200ms) with our curve. */
+[data-sonner-toaster] [data-sonner-toast] {
+  transition:
+    transform var(--duration-toast-in) var(--ease-out),
+    opacity var(--duration-toast-in) var(--ease-out),
+    height var(--duration-toast-in) var(--ease-out),
+    box-shadow var(--duration-hover) var(--ease-out);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-removed='true'] {
+  transition:
+    transform var(--duration-toast-out) var(--ease-out),
+    opacity var(--duration-toast-out) var(--ease-out),
+    height var(--duration-toast-out) var(--ease-out);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-swiping='true'] {
+  transition: none;
+}
+
+/* Reduced motion: no movement or staggers, only short opacity/color fades. Drawers handle their own. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    --rise-distance: 0px;
+    animation-delay: 0s !important;
+    transition-delay: 0s !important;
+    transition-duration: var(--duration-reduced) !important;
+    transition-timing-function: ease !important;
+    scroll-behavior: auto !important;
+  }
+
+  *:not(.animate-spin),
+  ::before,
+  ::after {
+    animation-duration: var(--duration-reduced) !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  [data-starting-style]:not([data-slot='sheet-content']),
+  [data-ending-style]:not([data-slot='sheet-content']),
+  [data-slot='button']:active {
+    scale: none !important;
+  }
+
+  [data-slot='tabs-indicator'] {
+    transition-property: none !important;
+  }
+}
+
+@utility transition-press {
+  transition-property:
+    color, background-color, border-color, box-shadow, text-decoration-color,
+    fill, stroke, scale;
+  transition-duration:
+    var(--duration-hover), var(--duration-hover), var(--duration-hover),
+    var(--duration-hover), var(--duration-hover), var(--duration-hover),
+    var(--duration-hover), var(--duration-dialog-in);
+  transition-timing-function:
+    var(--ease-out), var(--ease-out), var(--ease-out), var(--ease-out),
+    var(--ease-out), var(--ease-out), var(--ease-out), var(--ease-spring);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

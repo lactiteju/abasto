@@ -34,7 +34,7 @@ export function MaximizeButton({
       title={label}
       onClick={onToggle}
       className={cn(
-        'rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:outline-2 focus:outline-offset-2',
+        'rounded-xs opacity-70 transition-opacity duration-(--duration-hover) ease-out hover:opacity-100 focus:outline-2 focus:outline-offset-2',
         className,
       )}
     >

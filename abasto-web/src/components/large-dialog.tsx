@@ -89,7 +89,7 @@ export function LargeDialog({
           onToggle={toggle}
           className="absolute top-4 right-11"
         />
-        <DialogClose className="absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:outline-2 focus:outline-offset-2">
+        <DialogClose className="absolute top-4 right-4 rounded-xs opacity-70 transition-opacity duration-(--duration-hover) ease-out hover:opacity-100 focus:outline-2 focus:outline-offset-2">
           <XIcon className="size-4" />
           <span className="sr-only">Cerrar</span>
         </DialogClose>

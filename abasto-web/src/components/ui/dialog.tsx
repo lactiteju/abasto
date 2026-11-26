@@ -21,11 +21,11 @@ import { cn } from '#/lib/utils/cn'
 
 /** Backdrop transition shared by dialogs, alert dialogs and sheets. */
 export const backdropClass =
-  'fixed inset-0 z-50 bg-black/10 transition-opacity duration-100 supports-backdrop-filter:backdrop-blur-xs data-starting-style:opacity-0 data-ending-style:opacity-0 motion-reduce:transition-none'
+  'fixed inset-0 z-50 bg-black/10 transition-opacity duration-(--duration-dialog-in) ease-out supports-backdrop-filter:backdrop-blur-xs data-starting-style:opacity-0 data-ending-style:opacity-0 data-ending-style:duration-(--duration-dialog-out)'
 
-/** Centered in the top layer; the scale/opacity transition replaces tw-animate-css. */
+/** Centered in the top layer: scale 0.96 to 1 with a spring on enter, 220ms in and 160ms out. */
 export const centeredPopupClass =
-  'fixed inset-0 z-50 m-auto h-fit transition duration-100 outline-none data-starting-style:scale-95 data-starting-style:opacity-0 data-ending-style:scale-95 data-ending-style:opacity-0 motion-reduce:transition-none'
+  'fixed inset-0 z-50 m-auto h-fit outline-none transition-[opacity,scale] duration-(--duration-dialog-in) ease-spring data-starting-style:scale-(--scale-popup) data-starting-style:opacity-0 data-ending-style:scale-(--scale-popup) data-ending-style:opacity-0 data-ending-style:duration-(--duration-dialog-out) data-ending-style:ease-out'
 
 type DialogProps = React.ComponentProps<typeof DialogRoot>
 

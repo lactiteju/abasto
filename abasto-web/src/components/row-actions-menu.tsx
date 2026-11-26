@@ -9,6 +9,7 @@ import {
 
 import { ActionButton } from '#/modules/inventory/components/action-button'
 import { cn } from '#/lib/utils/cn'
+import { popupMotionClass } from '#/components/ui/popup-motion'
 
 import { Fragment } from 'react'
 import type { ReactNode } from 'react'
@@ -30,7 +31,7 @@ type RowActionsMenuProps = {
 }
 
 const item =
-  'flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-ink-heading outline-none select-none data-disabled:cursor-default data-disabled:opacity-50 data-highlighted:bg-muted'
+  'flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-ink-heading outline-none select-none data-disabled:cursor-default data-disabled:opacity-50 transition-colors duration-100 ease-out data-highlighted:bg-muted'
 
 /** One «⋯» button per table row that opens the row's actions. */
 export function RowActionsMenu({ label, items }: RowActionsMenuProps) {
@@ -47,7 +48,10 @@ export function RowActionsMenu({ label, items }: RowActionsMenuProps) {
       <MenuContent
         align="end"
         sideOffset={6}
-        className="z-50 min-w-48 rounded-[10px] border border-border bg-popover p-1 shadow-md transition duration-100 data-starting-style:opacity-0 data-ending-style:opacity-0 motion-reduce:transition-none"
+        className={cn(
+          'z-50 min-w-48 rounded-[10px] border border-border bg-popover p-1 shadow-md',
+          popupMotionClass,
+        )}
       >
         {items.map((entry, index) => (
           <Fragment key={entry.key}>

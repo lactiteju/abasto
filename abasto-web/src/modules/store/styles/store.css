@@ -38,7 +38,7 @@ body:has(.store) {
 
 .store {
   --st-focus: var(--color-st-plum);
-  --st-ease: cubic-bezier(0.25, 1, 0.5, 1);
+  --st-ease: var(--ease-out);
   font-family: var(--font-st-sans);
   color: var(--color-st-ink);
   caret-color: var(--color-st-brand);
@@ -127,8 +127,8 @@ body:has(.store) {
     text-decoration: none;
     box-shadow: 0 2px 3px rgb(200 29 78 / 0.04);
     transition:
-      background-color 160ms var(--st-ease),
-      box-shadow 160ms var(--st-ease);
+      background-color var(--duration-hover) var(--st-ease),
+      box-shadow var(--duration-hover) var(--st-ease);
   }
 
   .st-btn:hover:not(:disabled) {
@@ -298,7 +298,7 @@ body:has(.store) {
     height: 44px;
     background: transparent;
     color: var(--color-st-plum-ink);
-    transition: background-color 160ms var(--st-ease);
+    transition: background-color var(--duration-hover) var(--st-ease);
   }
 
   .st-stepper button:hover:not(:disabled) {
@@ -319,7 +319,7 @@ body:has(.store) {
     font-size: 17px;
     font-weight: 650;
     font-variant-numeric: tabular-nums;
-    transition: background-color 160ms var(--st-ease);
+    transition: background-color var(--duration-hover) var(--st-ease);
   }
 
   .st-stepper--set input {
@@ -350,7 +350,7 @@ body:has(.store) {
     border-radius: 10px;
     background: var(--color-st-brand);
     color: #fff;
-    transition: background-color 160ms var(--st-ease);
+    transition: background-color var(--duration-hover) var(--st-ease);
   }
 
   .st-add:hover {
@@ -380,7 +380,7 @@ body:has(.store) {
     font-weight: 600;
     text-align: left;
     white-space: nowrap;
-    transition: background-color 160ms var(--st-ease);
+    transition: background-color var(--duration-hover) var(--st-ease);
   }
 
   /* Extent: a track inset from the tab edge, filled to the brand's share of the catalog. */
@@ -437,7 +437,7 @@ body:has(.store) {
     column-gap: 10px;
     padding: 8px 12px;
     border-top: 1px solid var(--color-st-line);
-    transition: background-color 160ms var(--st-ease);
+    transition: background-color var(--duration-hover) var(--st-ease);
   }
 
   .st-strip[data-picked] {
@@ -457,7 +457,7 @@ body:has(.store) {
 
   .st-tick {
     display: inline-block;
-    animation: st-tick 200ms var(--st-ease) 1;
+    animation: st-tick var(--duration-tab) var(--st-ease) 1;
   }
 
   @keyframes st-tick {
