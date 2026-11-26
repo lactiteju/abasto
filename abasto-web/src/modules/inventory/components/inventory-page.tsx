@@ -322,19 +322,19 @@ export function InventoryPage({
         <TabsList
           ref={tabListRef}
           variant="line"
-          className="max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden mb-5 h-12 w-full justify-start gap-[22px] overflow-x-auto overflow-y-hidden rounded-none border-b border-[#ede6df] p-0 md:mb-[25px] md:gap-[17px] md:overflow-visible tablet:gap-6 wide:gap-[26px]"
+          className="max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden mb-5 h-12 w-full justify-start gap-[22px] overflow-x-auto overflow-y-hidden rounded-none border-b border-panel-border p-0 md:mb-[25px] md:gap-[17px] md:overflow-visible tablet:gap-6 wide:gap-[26px]"
         >
           {tabs.map(({ name, icon: Icon }) => (
             <TabsTrigger
               key={name}
               value={name}
-              className="h-full flex-none gap-[5px] rounded-none border-0 px-0.5 pt-0 pb-[13px] max-md:px-0 text-xs font-[550] text-[#938086] data-selected:font-[650] data-selected:text-[#44186a] md:gap-2 md:text-sm after:inset-x-0 after:-bottom-px after:h-[3px] after:rounded-t-[3px] after:bg-[#542280] data-selected:after:opacity-100 max-md:[&_svg]:size-3.5"
+              className="h-full flex-none gap-[5px] rounded-none border-0 px-0.5 pt-0 pb-[13px] max-md:px-0 text-xs font-[550] text-ink-faint data-selected:font-[650] data-selected:text-ink-heading md:gap-2 md:text-sm after:inset-x-0 after:-bottom-px after:h-[3px] after:rounded-t-[3px] after:bg-ring data-selected:after:opacity-100 max-md:[&_svg]:size-3.5"
             >
               <Icon size={17} />
               {name}
               {name in badges && (
                 <span
-                  className="rounded-full bg-[#542280] px-1.5 text-[11px] leading-[18px] font-[650] text-white"
+                  className="rounded-full bg-ring px-1.5 text-[11px] leading-[18px] font-[650] text-white"
                   aria-label={`${badges[name as keyof typeof badges]} pendientes`}
                 >
                   {badges[name as keyof typeof badges]}

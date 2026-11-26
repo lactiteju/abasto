@@ -35,12 +35,16 @@ export function ActionButton({
 }
 
 /** Inline link-style button (`.text-link`). */
-export function TextLink({ className, ...props }: ComponentProps<'button'>) {
+export function TextLink({
+  className,
+  ...props
+}: ComponentProps<typeof Button>) {
   return (
-    <button
+    <Button
       type="button"
+      variant="link"
       className={cn(
-        'inline-flex items-center gap-[7px] text-left text-sm font-[650] text-ink-link hover:underline',
+        'h-auto justify-start gap-[7px] rounded-none p-0 text-left text-sm font-[650] text-ink-link',
         className,
       )}
       {...props}
@@ -49,12 +53,17 @@ export function TextLink({ className, ...props }: ComponentProps<'button'>) {
 }
 
 /** Square ghost button for row actions (`.icon-button`). */
-export function IconButton({ className, ...props }: ComponentProps<'button'>) {
+export function IconButton({
+  className,
+  ...props
+}: ComponentProps<typeof Button>) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="icon-lg"
       className={cn(
-        'inline-flex size-9 items-center justify-center rounded-[7px] text-[#826c73] hover:bg-[#f6f0e9]',
+        'rounded-[7px] text-[#826c73] hover:bg-[#f6f0e9]',
         className,
       )}
       {...props}

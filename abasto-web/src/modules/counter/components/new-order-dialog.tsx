@@ -1,3 +1,4 @@
+import { Button } from '#/components/ui/button'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -269,20 +270,21 @@ export function NewOrderDialog({
                 onChange={setSupplierId}
               />
             )}
-            <button
+            <Button
               type="button"
+              variant="outline"
               aria-pressed={showOnlyAdded}
               disabled={lines.length === 0}
               className={cn(
-                'min-h-[42px] rounded-[10px] border px-3.5 text-sm disabled:opacity-50',
+                'h-auto min-h-[42px] rounded-[10px] px-3.5 text-sm font-normal',
                 showOnlyAdded
-                  ? 'border-[#785e67] bg-[#785e67] text-white'
+                  ? 'border-[#785e67] bg-[#785e67] text-white hover:bg-[#785e67]'
                   : 'border-[#eee7e0] bg-white text-[#785e67] hover:bg-[#f4eef0]',
               )}
               onClick={() => setOnlyAdded((current) => !current)}
             >
               Solo agregados ({addedProducts.size})
-            </button>
+            </Button>
           </div>
           <TableWrap className="h-full min-h-[14rem] overflow-y-auto rounded-xl border border-[#f1ebe5]">
             <DataTable>
@@ -343,7 +345,7 @@ export function NewOrderDialog({
                             {shortage && (
                               <p
                                 role="alert"
-                                className="mt-1 text-xs text-[#a1372e]"
+                                className="mt-1 text-xs text-destructive"
                               >
                                 {stockShortageMessage(shortage)}
                               </p>
@@ -410,7 +412,7 @@ export function NewOrderDialog({
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#f4eee8] pt-4">
         <div className="text-sm">
           {quote.status === 'error' ? (
-            <span className="text-[#a1372e]">{quote.message}</span>
+            <span className="text-destructive">{quote.message}</span>
           ) : (
             <>
               <strong>
@@ -420,7 +422,7 @@ export function NewOrderDialog({
                   : '—'}
               </strong>
               {hasUnpriced && (
-                <small role="alert" className="block text-xs text-[#a1372e]">
+                <small role="alert" className="block text-xs text-destructive">
                   Hay productos sin precio en este almacén; no se pueden vender.
                 </small>
               )}

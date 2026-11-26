@@ -59,7 +59,7 @@ export function CatalogModal({
           <DialogTitle className="text-[23px] leading-[1.3] font-semibold tracking-[-0.7px] md:text-[25px]">
             {title}
           </DialogTitle>
-          <DialogDescription className="text-[13px] leading-[1.7] text-[#9d8c92] md:text-sm">
+          <DialogDescription className="text-[13px] leading-[1.7] text-ink-faint md:text-sm">
             {description}
           </DialogDescription>
         </DialogHeader>

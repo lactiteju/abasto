@@ -128,7 +128,7 @@ function AssignmentRow({
       <ListCell>
         <button
           type="button"
-          className="group block max-w-[340px] text-left"
+          className="group block max-w-[340px] rounded-md text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           aria-label={`Ver productos de ${assignment.riderName}`}
           onClick={() => onAction('view', assignment)}
         >

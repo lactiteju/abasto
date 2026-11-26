@@ -5,7 +5,7 @@ import { cn } from '#/lib/utils/cn'
 import type { NavItem } from '#/config/navigation'
 
 const itemClass =
-  'flex w-full items-center gap-[13px] rounded-lg px-[15px] py-2.5 text-left text-sm text-sidebar-text hover:bg-sidebar-hover hover:text-white data-[status=active]:bg-primary data-[status=active]:font-bold data-[status=active]:text-sidebar-active data-[status=active]:hover:bg-primary data-[status=active]:hover:text-sidebar-active'
+  'flex w-full items-center outline-none focus-visible:ring-3 focus-visible:ring-ring/50 gap-[13px] rounded-lg px-[15px] py-2.5 text-left text-sm text-sidebar-text hover:bg-sidebar-hover hover:text-white data-[status=active]:bg-primary data-[status=active]:font-bold data-[status=active]:text-sidebar-active data-[status=active]:hover:bg-primary data-[status=active]:hover:text-sidebar-active'
 
 type SidebarNavItemProps = {
   item: NavItem

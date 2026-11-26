@@ -1,3 +1,5 @@
+import { Button } from '#/components/ui/button'
+import { cn } from '#/lib/utils/cn'
 import { useEffect, useMemo, useState } from 'react'
 
 import { ActionButton } from '#/modules/inventory/components/action-button'
@@ -426,18 +428,20 @@ export function OrderDialog({
                     onChange={setQuery}
                   />
                 </div>
-                <button
+                <Button
                   type="button"
+                  variant="outline"
                   aria-pressed={onlyBoxes}
-                  className={`min-h-[42px] rounded-[10px] border px-3.5 text-sm ${
+                  className={cn(
+                    'h-auto min-h-[42px] rounded-[10px] px-3.5 text-sm font-normal',
                     onlyBoxes
-                      ? 'border-[#785e67] bg-[#785e67] text-white'
-                      : 'border-[#eee7e0] bg-white text-[#785e67] hover:bg-[#f4eef0]'
-                  }`}
+                      ? 'border-[#785e67] bg-[#785e67] text-white hover:bg-[#785e67]'
+                      : 'border-[#eee7e0] bg-white text-[#785e67] hover:bg-[#f4eef0]',
+                  )}
                   onClick={() => setOnlyBoxes((current) => !current)}
                 >
                   Solo con cajas
-                </button>
+                </Button>
               </div>
               {own.length ? (
                 <OrderTable

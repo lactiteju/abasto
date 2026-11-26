@@ -33,12 +33,16 @@ export function ActionButton({
 }
 
 /** Inline link-style button (`.text-link`). */
-export function TextLink({ className, ...props }: ComponentProps<'button'>) {
+export function TextLink({
+  className,
+  ...props
+}: ComponentProps<typeof Button>) {
   return (
-    <button
+    <Button
       type="button"
+      variant="link"
       className={cn(
-        'inline-flex items-center gap-[7px] text-sm font-[650] text-ink-link hover:underline',
+        'h-auto gap-[7px] rounded-none p-0 text-sm font-[650] text-ink-link',
         className,
       )}
       {...props}

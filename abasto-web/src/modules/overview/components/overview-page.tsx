@@ -102,7 +102,7 @@ export function OverviewPage({ overview }: { overview: Overview }) {
           <SectionTitle>Requiere atención</SectionTitle>
           {attention.isEmpty ? (
             <p className="flex items-center gap-2 rounded-[14px] border border-panel-border bg-white p-[17px] text-sm text-ink-muted md:p-[22px]">
-              <CircleCheck size={18} className="text-green-700" />
+              <CircleCheck size={18} className="text-status-green" />
               Todo en orden: cajas abiertas, sin lotes vencidos ni productos
               bajo el mínimo.
             </p>

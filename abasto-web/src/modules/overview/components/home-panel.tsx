@@ -36,14 +36,16 @@ export function HomePanel({
     <section
       className={cn(
         'min-w-0 rounded-[14px] border bg-white p-[17px] md:p-[22px]',
-        danger ? 'border-red-200 bg-red-50/40' : 'border-panel-border',
+        danger
+          ? 'border-status-red/30 bg-status-red-bg/40'
+          : 'border-panel-border',
       )}
     >
       <div className="mb-[13px] flex items-start justify-between gap-2.5 md:items-center">
         <h3
           className={cn(
             'flex items-center gap-2 text-[15px] font-[650] panels:text-base',
-            danger ? 'text-red-800' : 'text-ink-heading',
+            danger ? 'text-destructive' : 'text-ink-heading',
           )}
         >
           <Icon size={19} />

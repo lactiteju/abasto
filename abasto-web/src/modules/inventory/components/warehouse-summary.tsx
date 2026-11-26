@@ -1,5 +1,6 @@
 import { WarehouseIcon } from 'lucide-react'
 
+import { Button } from '#/components/ui/button'
 import { Picker } from '#/modules/inventory/components/picker'
 import type { StatusFilter } from '#/modules/inventory/lib/stock-metrics'
 import type { WarehouseOption } from '#/modules/inventory/types/stock'
@@ -15,7 +16,7 @@ type WarehouseSummaryProps = {
 }
 
 const statButton =
-  'flex items-center gap-2.5 whitespace-nowrap md:flex-col md:items-baseline md:gap-0.5 tablet:flex-row tablet:gap-[7px]'
+  'h-auto justify-start rounded-none p-0 hover:bg-transparent flex items-center gap-2.5 whitespace-nowrap md:flex-col md:items-baseline md:gap-0.5 tablet:flex-row tablet:gap-[7px]'
 const statNumber =
   'text-[23px] leading-9 font-[650] tracking-[-0.7px] md:text-[22px] tablet:text-2xl'
 const statLabel = 'text-xs text-[#95858a] tablet:text-sm'
@@ -58,17 +59,19 @@ export function WarehouseSummary({
         </div>
       </div>
       <div className="flex w-full items-center justify-around gap-3 border-t border-[#f4eee7] pt-4 md:ml-auto md:w-auto md:justify-start md:border-0 md:p-0 tablet:gap-5 wide:ml-0 wide:gap-[19px]">
-        <button
+        <Button
           type="button"
+          variant="ghost"
           className={statButton}
           onClick={() => onStat('Todos')}
         >
           <strong className={statNumber}>{counts.products}</strong>
           <span className={statLabel}>Productos</span>
-        </button>
+        </Button>
         <span className="h-[19px] w-px bg-[#f0ece7] md:h-6" />
-        <button
+        <Button
           type="button"
+          variant="ghost"
           className={statButton}
           onClick={() => onStat('Stock bajo')}
         >
@@ -76,10 +79,11 @@ export function WarehouseSummary({
             {counts.low}
           </strong>
           <span className={statLabel}>Stock bajo</span>
-        </button>
+        </Button>
         <span className="h-[19px] w-px bg-[#f0ece7] md:h-6" />
-        <button
+        <Button
           type="button"
+          variant="ghost"
           className={statButton}
           onClick={() => onStat('Sin existencias')}
         >
@@ -87,7 +91,7 @@ export function WarehouseSummary({
             {counts.soldOut}
           </strong>
           <span className={statLabel}>Sin existencias</span>
-        </button>
+        </Button>
       </div>
       {!canManage && (
         <span className="ml-auto text-xs whitespace-nowrap text-[#a19096]">

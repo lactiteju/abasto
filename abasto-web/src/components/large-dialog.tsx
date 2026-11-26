@@ -68,7 +68,7 @@ export function LargeDialog({
           <DialogTitle className="text-[23px] leading-[1.3] md:text-[25px] font-semibold tracking-[-0.7px]">
             {title}
           </DialogTitle>
-          <DialogDescription className="text-[13px] leading-[1.7] text-[#9d8c92]">
+          <DialogDescription className="text-[13px] leading-[1.7] text-ink-faint">
             {description}
           </DialogDescription>
         </DialogHeader>

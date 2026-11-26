@@ -1,3 +1,4 @@
+import { Button } from '#/components/ui/button'
 import { PlusIcon, Trash2Icon } from 'lucide-react'
 import { CatalogButton } from '#/modules/catalog/components/catalog-button'
 import { SelectInput, TextInput } from '#/modules/catalog/forms/form-field'
@@ -73,7 +74,8 @@ function PriceHint({
   pricing: PresentationPricing
 }) {
   const error = pricing.errors[row.key]
-  if (error) return <span className="text-[11px] text-[#b42318]">{error}</span>
+  if (error)
+    return <span className="text-[11px] text-destructive">{error}</span>
   const typed = parsePesos(row.price)
   const check =
     typed.ok && pricing.netPerPiece !== null
@@ -239,16 +241,18 @@ export function PresentationRows({
               )}
             >
               {removable && (
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-lg"
                   aria-label={`Quitar presentación ${label}`}
-                  className="flex size-9 items-center justify-center rounded-lg text-[#927981] hover:bg-[#f8f2ec] hover:text-[#b42318] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[#d8c0e9] sm:mt-[3.5px]"
+                  className="text-[#927981] hover:bg-[#f8f2ec] hover:text-destructive sm:mt-[3.5px]"
                   onClick={() =>
                     onChange(removeDraft(rows, defaultKey, row.key))
                   }
                 >
                   <Trash2Icon className="size-4" />
-                </button>
+                </Button>
               )}
             </div>
           </div>

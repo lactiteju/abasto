@@ -1,3 +1,4 @@
+import { Button } from '#/components/ui/button'
 import { cn } from '#/lib/utils/cn'
 
 export type CatalogStatus = 'active' | 'archived'
@@ -25,18 +26,20 @@ export function CatalogStatusFilter({
       className="inline-flex h-[45px] shrink-0 rounded-[9px] border border-[#eee7e0] bg-white p-1 md:h-11"
     >
       {options.map((option) => (
-        <button
+        <Button
           key={option.value}
           type="button"
+          variant="ghost"
           aria-pressed={value === option.value}
           onClick={() => onChange(option.value)}
           className={cn(
-            'inline-flex items-center rounded-[6px] px-3 text-xs font-semibold text-[#907e84] hover:text-[#53346e] md:text-sm',
-            value === option.value && 'bg-[#f3ebf8] text-[#4d2b6a]',
+            'h-auto rounded-[6px] px-3 text-xs font-semibold text-[#907e84] hover:bg-transparent hover:text-[#53346e] md:text-sm',
+            value === option.value &&
+              'bg-[#f3ebf8] text-[#4d2b6a] hover:bg-[#f3ebf8]',
           )}
         >
           {option.label}
-        </button>
+        </Button>
       ))}
     </div>
   )

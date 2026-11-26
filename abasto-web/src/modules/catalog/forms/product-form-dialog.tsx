@@ -1,3 +1,4 @@
+import { Button } from '#/components/ui/button'
 import { useId, useState } from 'react'
 
 import { ChevronDownIcon } from 'lucide-react'
@@ -94,17 +95,18 @@ function Disclosure({
   onToggle: () => void
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       aria-expanded={open}
-      className="flex items-center gap-1.5 justify-self-start rounded-md text-[13px] font-medium text-[#4d2b6a] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d8c0e9] md:col-span-2"
+      className="h-auto justify-self-start rounded-md px-0 text-[13px] font-medium text-[#4d2b6a] hover:bg-transparent md:col-span-2"
       onClick={onToggle}
     >
       <ChevronDownIcon
         className={cn('size-4 transition-transform', open && 'rotate-180')}
       />
       {label}
-    </button>
+    </Button>
   )
 }
 
@@ -215,7 +217,7 @@ export function ProductFormDialog({
         onChange={(event) => patch({ [key]: event.target.value })}
       />
       {errorOf(key) && (
-        <span className="text-xs text-[#b42318]">{errorOf(key)}</span>
+        <span className="text-xs text-destructive">{errorOf(key)}</span>
       )}
     </Field>
   )
@@ -315,7 +317,9 @@ export function ProductFormDialog({
               onChange={(event) => patch({ routePay: event.target.value })}
             />
             {showErrors && routePayMessage && (
-              <span className="text-xs text-[#b42318]">{routePayMessage}</span>
+              <span className="text-xs text-destructive">
+                {routePayMessage}
+              </span>
             )}
           </Field>
           <p className={hintClass}>
@@ -387,7 +391,7 @@ export function ProductFormDialog({
         </Section>
       </div>
       {failure && (
-        <p role="alert" className="mt-[18px] text-sm text-[#b42318]">
+        <p role="alert" className="mt-[18px] text-sm text-destructive">
           {failure}
         </p>
       )}

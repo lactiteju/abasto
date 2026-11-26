@@ -1,6 +1,7 @@
 import { useLocation, useRouter } from '@tanstack/react-router'
 import { LogOut } from 'lucide-react'
 
+import { Button } from '#/components/ui/button'
 import { SidebarTrigger } from '#/components/ui/sidebar'
 import { navItemForPath } from '#/config/navigation'
 import { authClient } from '#/lib/auth-client'
@@ -33,17 +34,19 @@ export function AppTopbar({ user }: { user: SessionUser }) {
         >
           {user.initials}
         </span>
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon-lg"
           aria-label="Cerrar sesión"
           title="Cerrar sesión"
           onClick={() => {
             void authClient.signOut().then(() => router.invalidate())
           }}
-          className="grid size-9 place-items-center rounded-full text-crumb hover:bg-[#faf6f1]"
+          className="rounded-full text-crumb hover:bg-[#faf6f1]"
         >
           <LogOut size={17} />
-        </button>
+        </Button>
       </div>
     </header>
   )

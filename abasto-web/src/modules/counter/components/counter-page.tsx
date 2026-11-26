@@ -1,3 +1,4 @@
+import { Button } from '#/components/ui/button'
 import { PlusIcon } from 'lucide-react'
 import { useState } from 'react'
 
@@ -96,19 +97,20 @@ export function CounterPage({ overview, onSelectWarehouse }: CounterPageProps) {
           className="flex flex-wrap gap-2"
         >
           {orderStatusFilters.map((status) => (
-            <button
+            <Button
               key={status}
               type="button"
+              variant="outline"
               aria-pressed={filter === status}
               onClick={() => setFilter(status)}
               className={cn(
-                'rounded-full border border-[#e8e1e3] bg-white px-3.5 py-2 text-[13px] text-[#866a73]',
+                'h-auto rounded-full border-[#e8e1e3] bg-white px-3.5 py-2 text-[13px] font-normal text-[#866a73]',
                 filter === status &&
-                  'border-transparent bg-primary font-[650] text-brand-ink',
+                  'border-transparent bg-primary font-[650] text-brand-ink hover:bg-primary',
               )}
             >
               {status} ({counts[status]})
-            </button>
+            </Button>
           ))}
         </div>
       </div>

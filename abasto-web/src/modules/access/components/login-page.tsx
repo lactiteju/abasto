@@ -109,7 +109,7 @@ export function LoginPage({ redirectTo }: { redirectTo: string }) {
           </div>
 
           {error ? (
-            <p role="alert" className="mt-4 text-sm text-red-700">
+            <p role="alert" className="mt-4 text-sm text-destructive">
               {error}
             </p>
           ) : null}
