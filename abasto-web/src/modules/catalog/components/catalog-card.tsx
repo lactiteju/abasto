@@ -40,7 +40,7 @@ export function CatalogCard({
       ? 'Publicado'
       : 'Pausado'
   return (
-    <article className="relative overflow-hidden rounded-xl border border-[#eee8e2] bg-white shadow-[0_3px_5px_#35145202] transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-[#ddd4d7] hover:shadow-[0_7px_22px_#3712570b]">
+    <article className="relative h-full overflow-hidden rounded-xl border border-[#eee8e2] bg-white shadow-[0_3px_5px_#35145202] transition-[box-shadow,translate,border-color] duration-(--duration-hover) ease-(--ease-out) pointer-fine:hover:-translate-y-0.5 motion-reduce:pointer-fine:hover:translate-y-0 pointer-fine:hover:border-[#ddd4d7] pointer-fine:hover:shadow-[0_7px_22px_#3712570b]">
       {product.imageUrl ? (
         <div className="relative m-[5px_5px_0] flex h-[162px] items-center justify-center overflow-hidden rounded-[7px] bg-[#faf9f7] md:m-[7px_7px_0] md:h-[205px]">
           <ProductImage

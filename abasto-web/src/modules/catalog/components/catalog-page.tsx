@@ -171,54 +171,62 @@ export function CatalogPage({
           : ''}
         {inventoryNote(active)}
       </p>
-      {view === 'table' ? (
-        <CatalogTable
-          products={visible}
-          groups={priceGroups}
-          supplierNames={supplierNames}
-          showPrices={Boolean(warehouse)}
-          costOf={canSeeCost ? netCostPerPieceOf : undefined}
-          canManage={canManage}
-          onPrices={canManage ? setPricesId : undefined}
-          onEdit={(productId) => setEditor({ productId })}
-          onRestore={(productId) => void actions.restoreProduct(productId)}
-        />
-      ) : (
-        <div className="grid grid-cols-2 gap-2.5 phone:gap-3.5 md:gap-4 tablet:grid-cols-3 wide:gap-5">
-          {visible.map((product) => (
-            <CatalogCard
-              key={product.id}
-              product={product}
-              canManage={canManage}
-              supplierName={
-                product.supplierId
-                  ? supplierNames.get(product.supplierId)
-                  : undefined
-              }
-              prices={
-                warehouse ? (
-                  <CardPrices
-                    group={priceGroups.get(product.id)}
-                    warehouseName={warehouse.name}
-                    netCostPerPiece={
-                      canSeeCost ? netCostPerPieceOf(product) : undefined
-                    }
-                  />
-                ) : undefined
-              }
-              onPrices={
-                canManage &&
-                warehouse &&
-                priceGroups.get(product.id)?.rows.length
-                  ? () => setPricesId(product.id)
-                  : undefined
-              }
-              onEdit={() => setEditor({ productId: product.id })}
-              onRestore={() => void actions.restoreProduct(product.id)}
-            />
-          ))}
-        </div>
-      )}
+      {/* Switching the view remounts the block: the new one fades in. */}
+      <div key={view} data-late-enter="fade">
+        {view === 'table' ? (
+          <CatalogTable
+            products={visible}
+            groups={priceGroups}
+            supplierNames={supplierNames}
+            showPrices={Boolean(warehouse)}
+            costOf={canSeeCost ? netCostPerPieceOf : undefined}
+            canManage={canManage}
+            onPrices={canManage ? setPricesId : undefined}
+            onEdit={(productId) => setEditor({ productId })}
+            onRestore={(productId) => void actions.restoreProduct(productId)}
+          />
+        ) : (
+          <div
+            data-stagger
+            className="grid grid-cols-2 gap-2.5 phone:gap-3.5 md:gap-4 tablet:grid-cols-3 wide:gap-5"
+          >
+            {visible.map((product) => (
+              // The wrapper carries the entrance (data-stagger); the card keeps its hover lift.
+              <div key={product.id}>
+                <CatalogCard
+                  product={product}
+                  canManage={canManage}
+                  supplierName={
+                    product.supplierId
+                      ? supplierNames.get(product.supplierId)
+                      : undefined
+                  }
+                  prices={
+                    warehouse ? (
+                      <CardPrices
+                        group={priceGroups.get(product.id)}
+                        warehouseName={warehouse.name}
+                        netCostPerPiece={
+                          canSeeCost ? netCostPerPieceOf(product) : undefined
+                        }
+                      />
+                    ) : undefined
+                  }
+                  onPrices={
+                    canManage &&
+                    warehouse &&
+                    priceGroups.get(product.id)?.rows.length
+                      ? () => setPricesId(product.id)
+                      : undefined
+                  }
+                  onEdit={() => setEditor({ productId: product.id })}
+                  onRestore={() => void actions.restoreProduct(product.id)}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
       {visible.length === 0 && <CatalogEmpty />}
       {canManage && warehouse && openPrices && openProduct && (
         <ProductPricesDialog

@@ -43,6 +43,7 @@ export function MonthlyKpis({
       <Figure
         label="Venta"
         size="lg"
+        enter={0}
         value={formatCents(totals.revenueCents)}
         note={note(
           <Delta
@@ -53,6 +54,7 @@ export function MonthlyKpis({
       <Figure
         label="Ganancia"
         size="lg"
+        enter={1}
         tone={totals.marginCents < 0 ? 'negative' : undefined}
         value={formatCents(totals.marginCents)}
         note={note(
@@ -64,12 +66,14 @@ export function MonthlyKpis({
       <Figure
         label="Margen"
         size="lg"
+        enter={2}
         value={formatBpsPercent(currentBps)}
         note={note(<Delta bps={currentBps - previousMarginBps} points />)}
       />
       <Figure
         label="Cajas vendidas"
         size="lg"
+        enter={3}
         value={boxesLabel(totals.boxes)}
         note={note(
           <Delta bps={relativeChangeBps(totals.boxes, previous.boxes)} />,

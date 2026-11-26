@@ -35,7 +35,7 @@ export function OrderList({
   }
   return (
     <>
-      <ul className="flex flex-col gap-2.5 md:hidden">
+      <ul data-stagger className="flex flex-col gap-2.5 md:hidden">
         {orders.map((order) => (
           <li
             key={order.id}

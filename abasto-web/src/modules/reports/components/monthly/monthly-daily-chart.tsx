@@ -30,6 +30,17 @@ const pad = { top: 14, right: 12, bottom: 58, left: 58 }
 /** Narrowest slot per day: a 44px touch target, so a phone scrolls the card. */
 const slotMin = 44
 const plotHeight = height - pad.top - pad.bottom
+/**
+ * Bars grow from the baseline: `starting:` is their first style, so a bar
+ * that already exists never replays. The scrub tooltip and hover add no motion.
+ */
+const barGrow =
+  'origin-bottom [transform-box:fill-box] transition-[scale,opacity] duration-300 ease-(--ease-out) starting:scale-y-0 starting:opacity-0 motion-reduce:starting:scale-y-100'
+
+/** The first 8 days step by one stagger; later bars grow with the eighth. */
+const barDelay = (index: number) => ({
+  transitionDelay: `calc(min(${index}, 7) * var(--stagger))`,
+})
 
 type Props = { results: MonthlyResults; today: string }
 
@@ -229,7 +240,8 @@ export function MonthlyDailyChart({ results, today }: Props) {
                           y(0) - y(Math.max(0, item.revenueCents) / 100),
                         )}
                         rx={2}
-                        className="fill-primary"
+                        style={barDelay(index)}
+                        className={cn('fill-primary', barGrow)}
                       />
                       <rect
                         x={cx + 1}
@@ -240,7 +252,8 @@ export function MonthlyDailyChart({ results, today }: Props) {
                           y(0) - y(Math.max(0, item.marginCents) / 100),
                         )}
                         rx={2}
-                        className="fill-secondary-foreground"
+                        style={barDelay(index)}
+                        className={cn('fill-secondary-foreground', barGrow)}
                       />
                     </>
                   )}

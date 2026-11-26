@@ -44,7 +44,7 @@ export function PickListPanel({
             return (
               <li
                 key={line.presentation.id}
-                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 px-3 py-2.5"
+                className="grid animate-rise-in grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 [--rise-distance:var(--distance-sm)] gap-y-1.5 px-3 py-2.5"
               >
                 <p className="line-clamp-2 text-[14px] leading-tight font-semibold">
                   {line.product.name}
@@ -70,7 +70,7 @@ export function PickListPanel({
           })}
         </ul>
       ) : (
-        <div className="m-3 rounded-xl border border-dashed border-st-line p-5 text-center">
+        <div className="m-3 animate-rise-in rounded-xl border border-dashed border-st-line p-5 text-center">
           <p className="st-stencil text-[16px]">Hoja vacía</p>
           <p className="mt-1 text-[14px] text-st-muted">
             Toca + en un producto de {warehouseName} y se suma aquí.

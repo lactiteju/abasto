@@ -27,7 +27,10 @@ export function WarehousesPage({ warehouses, canCreate }: WarehousesPageProps) {
         }
       />
       {warehouses.length ? (
-        <div className="grid grid-cols-1 gap-[15px] tablet:grid-cols-3 wide:gap-[22px]">
+        <div
+          data-stagger
+          className="grid grid-cols-1 gap-[15px] tablet:grid-cols-3 wide:gap-[22px]"
+        >
           {warehouses.map((warehouse) => (
             <WarehouseCard
               key={warehouse.id}
@@ -37,7 +40,7 @@ export function WarehousesPage({ warehouses, canCreate }: WarehousesPageProps) {
           ))}
         </div>
       ) : (
-        <p className="text-sm text-ink-muted">
+        <p className="animate-rise-in text-sm text-ink-muted">
           {canCreate
             ? 'Aún no hay almacenes. Crea el primero.'
             : 'Aún no tienes almacenes asignados.'}

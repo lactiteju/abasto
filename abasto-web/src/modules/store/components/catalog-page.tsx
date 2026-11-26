@@ -27,7 +27,7 @@ type CatalogPageProps = {
 }
 
 const chip =
-  'min-h-11 shrink-0 rounded-full border px-4 text-[14px] font-semibold transition-colors duration-150 motion-reduce:transition-none'
+  'min-h-11 shrink-0 rounded-full border px-4 text-[14px] font-semibold transition-colors duration-(--duration-hover) ease-(--ease-out) motion-reduce:transition-none'
 
 export function CatalogPage({
   catalog,
@@ -122,7 +122,10 @@ export function CatalogPage({
         </p>
 
         {visible.length ? (
-          <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-3 xl:grid-cols-2">
+          <div
+            data-stagger
+            className="grid grid-cols-[minmax(0,1fr)] items-start gap-3 xl:grid-cols-2"
+          >
             {visible.map((product) => (
               <ProductCard
                 key={product.id}
@@ -133,7 +136,7 @@ export function CatalogPage({
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-st-line-strong bg-st-card p-8 text-center">
+          <div className="animate-rise-in rounded-2xl border border-dashed border-st-line-strong bg-st-card p-8 text-center">
             <p className="st-stencil text-lg">
               {catalog.length
                 ? 'Sin productos con ese filtro'

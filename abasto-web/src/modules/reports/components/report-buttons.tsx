@@ -7,9 +7,12 @@ type ActionButtonProps = ComponentProps<typeof Button> & {
   tone?: 'primary' | 'secondary'
 }
 
-/** The focus ring of every ui primitive, for bespoke toggles and chips. */
+/**
+ * The focus ring of every ui primitive, for bespoke toggles and chips. Colors
+ * ease in at the hover token, so a toggle's active background fades, not snaps.
+ */
 export const focusRing =
-  'outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
+  'outline-none transition-colors duration-(--duration-hover) ease-(--ease-out) focus-visible:ring-3 focus-visible:ring-ring/50'
 
 const base =
   'h-auto min-h-11 gap-[9px] rounded-[9px] px-[17px] py-2.5 text-sm font-[650] disabled:opacity-50'

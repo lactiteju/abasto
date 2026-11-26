@@ -45,17 +45,31 @@ export function Figure({
   note,
   size = 'md',
   tone,
+  enter,
 }: {
   label: string
   value: string
   note?: React.ReactNode
   size?: 'xl' | 'lg' | 'md'
   tone?: 'negative' | 'quiet'
+  /** Position in a row of figures: rises in on page entrance, one stagger step after the previous. */
+  enter?: number
 }) {
   return (
-    <div className="min-w-0">
+    <div
+      className="min-w-0 [--rise-distance:var(--distance-sm)]"
+      data-enter={enter === undefined ? undefined : ''}
+      style={
+        enter === undefined
+          ? undefined
+          : ({ '--enter-index': enter } as React.CSSProperties)
+      }
+    >
       <div className="text-[13px] text-muted-foreground">{label}</div>
+      {/* A new value remounts the figure: it ticks in. */}
       <div
+        key={value}
+        data-tick
         className={cn(
           'leading-[1.15] font-bold tracking-[-0.8px] text-ink-figure tabular-nums',
           size === 'xl' && 'text-4xl tracking-[-1.2px]',

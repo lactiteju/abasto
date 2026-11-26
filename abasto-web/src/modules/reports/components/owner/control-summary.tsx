@@ -53,6 +53,10 @@ export function ControlSummary({
   defaultOpen,
 }: ControlSummaryProps) {
   const [open, setOpen] = useState<Detail | null>(defaultOpen ?? null)
+  // The drawer keeps showing the detail it is closing while its rows collapse.
+  const [shown, setShown] = useState<Detail | null>(open)
+  if (open && open !== shown) setShown(open)
+  const current = open ?? shown
   const cash = cashDifferenceSummary(cashCuts.rows)
   const riders = cashCuts.riderShortfalls
   const ridersNet = riders.reduce((sum, row) => sum + row.netCents, 0)
@@ -77,6 +81,7 @@ export function ControlSummary({
       >
         <Cell
           detail="cash"
+          index={0}
           open={open}
           onToggle={toggle}
           label={supplierRecovery ? 'Caja' : 'Cortes de caja'}
@@ -92,6 +97,7 @@ export function ControlSummary({
         />
         <Cell
           detail="riders"
+          index={1}
           open={open}
           onToggle={toggle}
           label="Repartos"
@@ -106,6 +112,7 @@ export function ControlSummary({
         {supplierRecovery && (
           <Cell
             detail="suppliers"
+            index={2}
             open={open}
             onToggle={toggle}
             label="Proveedores, por recuperar"
@@ -137,21 +144,34 @@ export function ControlSummary({
             .join(' ')}
         </p>
       )}
-      {open === 'cash' && (
-        <Drawer id="control-cash">
-          <CashDetail cashCuts={cashCuts} oneWarehouse={oneWarehouse} />
-        </Drawer>
-      )}
-      {open === 'riders' && (
-        <Drawer id="control-riders">
-          <RidersDetail rows={riders} oneWarehouse={oneWarehouse} />
-        </Drawer>
-      )}
-      {open === 'suppliers' && supplierRecovery && (
-        <Drawer id="control-suppliers">
-          <SuppliersDetail data={supplierRecovery} />
-        </Drawer>
-      )}
+      <div
+        inert={!open}
+        className={cn(
+          'grid transition-[grid-template-rows] duration-(--duration-page) ease-(--ease-out)',
+          open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+        )}
+        onTransitionEnd={(event) => {
+          if (event.target === event.currentTarget && !open) setShown(null)
+        }}
+      >
+        <div className="min-h-0 overflow-hidden">
+          {current === 'cash' && (
+            <Drawer id="control-cash">
+              <CashDetail cashCuts={cashCuts} oneWarehouse={oneWarehouse} />
+            </Drawer>
+          )}
+          {current === 'riders' && (
+            <Drawer id="control-riders">
+              <RidersDetail rows={riders} oneWarehouse={oneWarehouse} />
+            </Drawer>
+          )}
+          {current === 'suppliers' && supplierRecovery && (
+            <Drawer id="control-suppliers">
+              <SuppliersDetail data={supplierRecovery} />
+            </Drawer>
+          )}
+        </div>
+      </div>
     </Panel>
   )
 }
@@ -165,6 +185,7 @@ const toneOf = (cents: number) =>
 
 function Cell({
   detail,
+  index,
   open,
   onToggle,
   label,
@@ -173,6 +194,8 @@ function Cell({
   note,
 }: {
   detail: Detail
+  /** Position in the row: cells rise in on page entrance, a stagger step apart. */
+  index: number
   open: Detail | null
   onToggle: (detail: Detail) => void
   label: string
@@ -187,14 +210,19 @@ function Cell({
       aria-expanded={expanded}
       aria-controls={`control-${detail}`}
       onClick={() => onToggle(detail)}
+      data-enter
+      style={{ '--enter-index': index } as React.CSSProperties}
       className={cn(
         focusRing,
+        '[--rise-distance:var(--distance-sm)]',
         'grid gap-0.5 border-b border-border px-[22px] pt-3.5 pb-4 text-left last:border-b-0 hover:bg-[#fdf9f4] min-[820px]:border-r min-[820px]:border-b-0 min-[820px]:last:border-r-0',
         expanded && 'bg-secondary hover:bg-secondary',
       )}
     >
       <span className="text-[13px] text-muted-foreground">{label}</span>
       <span
+        key={value}
+        data-tick
         className={cn(
           'text-[22px] leading-[1.15] font-bold tracking-[-0.8px] text-ink-figure tabular-nums',
           tone === 'negative' && 'text-destructive',
