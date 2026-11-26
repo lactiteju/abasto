@@ -3,6 +3,8 @@ import type { LucideIcon } from 'lucide-react'
 
 import { PackageIcon } from 'lucide-react'
 
+import { useMountedAfterHydration } from '#/components/layout/use-mounted-after-hydration'
+
 type EmptyPanelProps = {
   title: string
   description: string
@@ -17,8 +19,13 @@ export function EmptyPanel({
   icon: Icon = PackageIcon,
   children,
 }: EmptyPanelProps) {
+  // Fades in when a list empties (filter, delete), not on server HTML.
+  const lateMount = useMountedAfterHydration()
   return (
-    <div className="flex flex-col items-center gap-[15px] rounded-[14px] border border-dashed border-[#e6dfeb] bg-white px-[25px] py-[60px] text-center text-[#91757e]">
+    <div
+      data-late-enter={lateMount ? 'fade' : undefined}
+      className="flex flex-col items-center gap-[15px] rounded-[14px] border border-dashed border-[#e6dfeb] bg-white px-[25px] py-[60px] text-center text-[#91757e]"
+    >
       <Icon size={32} />
       <h3 className="text-[19px] text-[#502973]">{title}</h3>
       <p className="text-sm">{description}</p>

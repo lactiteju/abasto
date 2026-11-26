@@ -296,6 +296,158 @@
   }
 }
 
+/*
+ * Page entrances. `data-entering` is set on <html> by the router for ~600ms
+ * after a client navigation to another path (see layout/route-entrance.ts), so
+ * SSR first paint and in-page filtering never replay them. Without JS nothing
+ * is hidden. Only opacity/translate animate, so no layout shift.
+ *   [data-enter]        element rises in; `--enter-index` (0..7) staggers it
+ *   [data-enter=fade]   opacity only
+ *   [data-stagger]      its first 8 children rise in, 30ms apart
+ *   tbody > tr          first 8 rows rise in, 30ms apart
+ * `data-late-enter` is for things mounted after hydration (empty states).
+ */
+@keyframes value-tick {
+  from {
+    opacity: 0.35;
+    translate: 0 var(--distance-sm);
+  }
+}
+
+html[data-entering] {
+  [data-enter],
+  [data-stagger] > :nth-child(-n + 8),
+  tbody > tr:nth-child(-n + 8) {
+    animation: rise-in var(--duration-page) var(--ease-out) both;
+    animation-delay: calc(
+      min(var(--enter-index, 0), var(--stagger-max) - 1) * var(--stagger)
+    );
+  }
+
+  [data-enter='fade'] {
+    animation-name: fade-in;
+  }
+
+  tbody > tr {
+    --rise-distance: var(--distance-sm);
+  }
+
+  :is([data-stagger], tbody) > :nth-child(2) {
+    --enter-index: 1;
+  }
+  :is([data-stagger], tbody) > :nth-child(3) {
+    --enter-index: 2;
+  }
+  :is([data-stagger], tbody) > :nth-child(4) {
+    --enter-index: 3;
+  }
+  :is([data-stagger], tbody) > :nth-child(5) {
+    --enter-index: 4;
+  }
+  :is([data-stagger], tbody) > :nth-child(6) {
+    --enter-index: 5;
+  }
+  :is([data-stagger], tbody) > :nth-child(7) {
+    --enter-index: 6;
+  }
+  :is([data-stagger], tbody) > :nth-child(8) {
+    --enter-index: 7;
+  }
+}
+
+[data-late-enter='fade'] {
+  animation: fade-in var(--duration-tab) var(--ease-out) both;
+}
+
+/*
+ * Tab panels: ui-sdk marks a panel `data-starting-style` for its first frame
+ * after a tab is picked (never on server HTML), so the panel transitions from
+ * there. Content arrives from the side the selection moved to.
+ */
+[data-slot='tabs-panel'] {
+  transition:
+    opacity var(--duration-tab) var(--ease-out),
+    translate var(--duration-tab) var(--ease-out);
+}
+
+[data-slot='tabs-panel'][data-starting-style] {
+  opacity: 0;
+  translate: var(--distance-md) 0;
+}
+
+[data-activation-direction='left']
+  [data-slot='tabs-panel'][data-starting-style] {
+  translate: calc(var(--distance-md) * -1) 0;
+}
+
+[data-activation-direction='none']
+  [data-slot='tabs-panel'][data-starting-style] {
+  translate: none;
+}
+
+[data-tick] {
+  animation: value-tick var(--duration-tab) var(--ease-out) both;
+}
+
+/*
+ * Route transition (TanStack Router defaultViewTransition). Only the page
+ * (`view-transition-name: page` on the shell's content) crossfades; the
+ * sidebar, topbar and footer stay in the static root snapshot. Movement comes
+ * from the heading/rows entrances inside the new page, so no extra slide here.
+ */
+::view-transition-group(root),
+::view-transition-old(root),
+::view-transition-new(root),
+::view-transition-group(page) {
+  animation: none;
+}
+
+::view-transition-image-pair(page) {
+  isolation: auto;
+}
+
+::view-transition-old(page),
+::view-transition-new(page) {
+  mix-blend-mode: normal;
+  animation-timing-function: var(--ease-out);
+  animation-fill-mode: both;
+}
+
+::view-transition-old(page) {
+  animation-name: fade-out;
+  animation-duration: var(--duration-popup-out);
+}
+
+::view-transition-new(page) {
+  animation-name: fade-in;
+  animation-duration: var(--duration-page);
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot='tabs-panel'][data-starting-style] {
+    translate: none !important;
+  }
+
+  html[data-entering] tbody > tr {
+    --rise-distance: 0px;
+  }
+
+  [data-tick] {
+    animation-name: fade-in;
+  }
+
+  ::view-transition-old(page),
+  ::view-transition-new(page) {
+    animation-duration: var(--duration-reduced);
+  }
+}
+
 @utility transition-press {
   transition-property:
     color, background-color, border-color, box-shadow, text-decoration-color,

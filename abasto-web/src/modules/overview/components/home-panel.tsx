@@ -59,7 +59,10 @@ export function HomePanel({
         </Link>
       </div>
       {isEmpty ? (
-        <p className="mt-3 mb-5 text-sm leading-[1.8] text-ink-subtle">
+        <p
+          data-enter="fade"
+          className="mt-3 mb-5 text-sm leading-[1.8] text-ink-subtle"
+        >
           {emptyMessage}
         </p>
       ) : (

@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import { cn } from '#/lib/utils/cn'
 
 const statusBadgeVariants = cva(
-  'inline-flex items-center gap-[5px] whitespace-nowrap rounded-[5px] px-[7px] py-1 text-xs leading-[1.3] font-semibold',
+  'inline-flex items-center gap-[5px] whitespace-nowrap rounded-[5px] px-[7px] py-1 text-xs leading-[1.3] font-semibold transition-colors duration-(--duration-hover) ease-(--ease-out)',
   {
     variants: {
       tone: {

@@ -20,7 +20,7 @@ export function AppShell({
       <AppSidebar user={user} />
       <SidebarInset className="min-w-0 bg-background">
         <AppTopbar user={user} />
-        <div className="mx-auto w-full max-w-[1640px] flex-1 px-3.5 py-[23px] phone:px-5 phone:pt-[25px] phone:pb-5 md:px-[26px] md:pt-[29px] wide:px-[38px] wide:pt-9 wide:pb-[22px]">
+        <div className="[view-transition-name:page] mx-auto w-full max-w-[1640px] flex-1 px-3.5 py-[23px] phone:px-5 phone:pt-[25px] phone:pb-5 md:px-[26px] md:pt-[29px] wide:px-[38px] wide:pt-9 wide:pb-[22px]">
           {children}
         </div>
         <AppFooter />

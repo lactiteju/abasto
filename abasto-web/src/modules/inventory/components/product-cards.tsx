@@ -35,7 +35,7 @@ export function ProductCards({
   onMerma,
 }: ProductCardsProps) {
   return (
-    <ul className="flex flex-col gap-2.5 md:hidden">
+    <ul data-stagger className="flex flex-col gap-2.5 md:hidden">
       {rows.map((row) => {
         const pack = packs.get(row.productId) ?? {
           packName: row.unit,

@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 export type OverviewMetric = { label: string; value: string }
 
 export function OverviewMetrics({
@@ -6,7 +8,10 @@ export function OverviewMetrics({
   metrics: Array<OverviewMetric>
 }) {
   return (
-    <div className="my-[18px] grid grid-cols-2 rounded-xl border border-[#f0e9e1] bg-white md:grid-cols-4">
+    <div
+      data-stagger
+      className="my-[18px] grid grid-cols-2 rounded-xl border border-[#f0e9e1] bg-white md:grid-cols-4"
+    >
       {metrics.map((metric) => (
         <div
           key={metric.label}
@@ -15,11 +20,24 @@ export function OverviewMetrics({
           <span className="mb-[9px] block text-[11px] text-metric-label">
             {metric.label}
           </span>
-          <strong className="block text-xl tracking-[-0.7px] text-ink-figure metrics:text-[23px]">
-            {metric.value}
-          </strong>
+          <MetricValue value={metric.value} />
         </div>
       ))}
     </div>
+  )
+}
+
+/** Replays a short tick when the figure changes (refetch), not on first render. */
+function MetricValue({ value }: { value: string }) {
+  const [seen, setSeen] = useState({ value, ticks: 0 })
+  if (seen.value !== value) setSeen({ value, ticks: seen.ticks + 1 })
+  return (
+    <strong
+      key={seen.ticks}
+      data-tick={seen.ticks > 0 ? '' : undefined}
+      className="block text-xl tracking-[-0.7px] text-ink-figure metrics:text-[23px]"
+    >
+      {value}
+    </strong>
   )
 }

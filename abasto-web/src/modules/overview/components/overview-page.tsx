@@ -107,7 +107,10 @@ export function OverviewPage({ overview }: { overview: Overview }) {
               bajo el mínimo.
             </p>
           ) : (
-            <div className="grid grid-cols-1 items-start gap-5 panels:grid-cols-2">
+            <div
+              data-stagger
+              className="grid grid-cols-1 items-start gap-5 panels:grid-cols-2"
+            >
               {overview.expired.length > 0 && (
                 <HomePanel
                   title="Lotes vencidos en existencia"
@@ -254,7 +257,10 @@ export function OverviewPage({ overview }: { overview: Overview }) {
           <OverviewMetrics metrics={metricsOf(overview)} />
 
           {warehouses.length > 1 && attention.activeWarehouses.length > 0 && (
-            <div className="grid grid-cols-1 items-start gap-5 panels:grid-cols-2">
+            <div
+              data-stagger
+              className="grid grid-cols-1 items-start gap-5 panels:grid-cols-2"
+            >
               <HomePanel
                 title="Por almacén"
                 icon={Truck}

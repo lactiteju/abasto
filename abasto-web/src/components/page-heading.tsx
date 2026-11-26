@@ -8,7 +8,10 @@ type PageHeadingProps = {
 
 export function PageHeading({ title, description, actions }: PageHeadingProps) {
   return (
-    <div className="mb-[22px] block items-center justify-between gap-5 md:mb-7 md:flex">
+    <div
+      data-enter
+      className="mb-[22px] block items-center justify-between gap-5 md:mb-7 md:flex"
+    >
       <div>
         <h1 className="mb-1 text-[31px] leading-[1.3] font-bold tracking-[-1.2px] md:mb-[7px] wide:text-[34px]">
           {title}
