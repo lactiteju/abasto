@@ -23,7 +23,7 @@ type CatalogRowActionsProps = {
 }
 
 const item =
-  'flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-ink-heading outline-none select-none transition-colors duration-100 ease-out data-highlighted:bg-muted'
+  'flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-ink-heading outline-none select-none data-highlighted:bg-muted'
 
 function Action({
   icon,

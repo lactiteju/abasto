@@ -1,3 +1,4 @@
+import { LateEnter } from '#/components/layout/late-enter'
 import { formatCents } from '#/modules/pricing/lib/money'
 import { QuantityStepper } from '#/modules/store/components/quantity-stepper'
 import type { PickLine, PricedTotal } from '#/modules/store/lib/pick-list'
@@ -42,9 +43,10 @@ export function PickListPanel({
           {lines.map((line) => {
             const label = `${line.product.name}, ${line.presentation.name}`
             return (
-              <li
+              <LateEnter
+                as="li"
                 key={line.presentation.id}
-                className="grid animate-rise-in grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 [--rise-distance:var(--distance-sm)] gap-y-1.5 px-3 py-2.5"
+                className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 [--rise-distance:var(--distance-sm)] gap-y-1.5 px-3 py-2.5"
               >
                 <p className="line-clamp-2 text-[14px] leading-tight font-semibold">
                   {line.product.name}
@@ -65,17 +67,17 @@ export function PickListPanel({
                   label={label}
                   onChange={(next) => onSet(line.presentation.id, next)}
                 />
-              </li>
+              </LateEnter>
             )
           })}
         </ul>
       ) : (
-        <div className="m-3 animate-rise-in rounded-xl border border-dashed border-st-line p-5 text-center">
+        <LateEnter className="m-3 rounded-xl border border-dashed border-st-line p-5 text-center">
           <p className="st-stencil text-[16px]">Hoja vacía</p>
           <p className="mt-1 text-[14px] text-st-muted">
             Toca + en un producto de {warehouseName} y se suma aquí.
           </p>
-        </div>
+        </LateEnter>
       )}
 
       <div className="grid gap-2 border-t border-st-line p-3">

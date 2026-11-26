@@ -294,6 +294,17 @@
   [data-slot='tabs-indicator'] {
     transition-property: none !important;
   }
+
+  /* ui-sdk's drawer fades in; its exit would still slide, so fade it out too. */
+  [data-slot='drawer-content'][data-ending-style] {
+    translate: none !important;
+  }
+
+  /* The offcanvas sidebar snaps open and shut instead of sliding. */
+  [data-slot='sidebar-container'],
+  [data-slot='sidebar-gap'] {
+    transition-duration: 0s !important;
+  }
 }
 
 /*
@@ -357,6 +368,10 @@ html[data-entering] {
 
 [data-late-enter='fade'] {
   animation: fade-in var(--duration-tab) var(--ease-out) both;
+}
+
+[data-late-enter='rise'] {
+  animation: rise-in var(--duration-page) var(--ease-out) both;
 }
 
 /*

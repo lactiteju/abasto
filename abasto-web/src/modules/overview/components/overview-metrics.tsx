@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useValueTick } from '#/components/layout/use-value-tick'
 
 export type OverviewMetric = { label: string; value: string }
 
@@ -29,12 +29,11 @@ export function OverviewMetrics({
 
 /** Replays a short tick when the figure changes (refetch), not on first render. */
 function MetricValue({ value }: { value: string }) {
-  const [seen, setSeen] = useState({ value, ticks: 0 })
-  if (seen.value !== value) setSeen({ value, ticks: seen.ticks + 1 })
+  const ticks = useValueTick(value)
   return (
     <strong
-      key={seen.ticks}
-      data-tick={seen.ticks > 0 ? '' : undefined}
+      key={ticks}
+      data-tick={ticks > 0 ? '' : undefined}
       className="block text-xl tracking-[-0.7px] text-ink-figure metrics:text-[23px]"
     >
       {value}

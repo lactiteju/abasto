@@ -1,3 +1,4 @@
+import { LateEnter } from '#/components/layout/late-enter'
 import { PageHeading } from '#/components/page-heading'
 import { OwnerTransferDialog } from '#/modules/transfers/forms/owner-transfer-dialog'
 import { CreateWarehouseDialog } from '#/modules/warehouses/components/create-warehouse-dialog'
@@ -40,11 +41,11 @@ export function WarehousesPage({ warehouses, canCreate }: WarehousesPageProps) {
           ))}
         </div>
       ) : (
-        <p className="animate-rise-in text-sm text-ink-muted">
+        <LateEnter as="p" className="text-sm text-ink-muted">
           {canCreate
             ? 'Aún no hay almacenes. Crea el primero.'
             : 'Aún no tienes almacenes asignados.'}
-        </p>
+        </LateEnter>
       )}
     </>
   )

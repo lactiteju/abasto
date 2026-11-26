@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { useValueTick } from '#/components/layout/use-value-tick'
 import { cn } from '#/lib/utils/cn'
 import { focusRing } from '#/modules/reports/components/report-buttons'
 import { formatDeltaCents } from '#/modules/executive/lib/format'
@@ -203,6 +204,7 @@ function Cell({
   tone?: 'negative' | 'quiet'
   note: React.ReactNode
 }) {
+  const ticks = useValueTick(value)
   const expanded = open === detail
   return (
     <button
@@ -221,8 +223,8 @@ function Cell({
     >
       <span className="text-[13px] text-muted-foreground">{label}</span>
       <span
-        key={value}
-        data-tick
+        key={ticks}
+        data-tick={ticks > 0 ? '' : undefined}
         className={cn(
           'text-[22px] leading-[1.15] font-bold tracking-[-0.8px] text-ink-figure tabular-nums',
           tone === 'negative' && 'text-destructive',

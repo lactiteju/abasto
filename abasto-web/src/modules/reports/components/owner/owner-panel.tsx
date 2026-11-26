@@ -1,5 +1,6 @@
 import type { ComponentProps } from 'react'
 
+import { useValueTick } from '#/components/layout/use-value-tick'
 import { cn } from '#/lib/utils/cn'
 import { formatBpsPercent } from '#/modules/executive/lib/format'
 
@@ -55,6 +56,7 @@ export function Figure({
   /** Position in a row of figures: rises in on page entrance, one stagger step after the previous. */
   enter?: number
 }) {
+  const ticks = useValueTick(value)
   return (
     <div
       className="min-w-0 [--rise-distance:var(--distance-sm)]"
@@ -68,8 +70,8 @@ export function Figure({
       <div className="text-[13px] text-muted-foreground">{label}</div>
       {/* A new value remounts the figure: it ticks in. */}
       <div
-        key={value}
-        data-tick
+        key={ticks}
+        data-tick={ticks > 0 ? '' : undefined}
         className={cn(
           'leading-[1.15] font-bold tracking-[-0.8px] text-ink-figure tabular-nums',
           size === 'xl' && 'text-4xl tracking-[-1.2px]',

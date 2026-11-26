@@ -2,6 +2,7 @@ import { PlusIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
+import { useMountedAfterHydration } from '#/components/layout/use-mounted-after-hydration'
 import { PageHeading } from '#/components/page-heading'
 import { SupplierSelect } from '#/components/supplier-select'
 import { CatalogButton } from '#/modules/catalog/components/catalog-button'
@@ -73,6 +74,10 @@ export function CatalogPage({
   const actions = useCatalogActions()
   const pricingActions = usePricingActions(pricing.selectedId)
   const [view, setView] = useCatalogView()
+  // The view block fades in when switched or mounted by navigation, never on server HTML.
+  const lateMount = useMountedAfterHydration()
+  const [firstView] = useState(view)
+  const enterView = lateMount || view !== firstView
   const [query, setQuery] = useState('')
   const [supplierId, setSupplierId] = useState('')
   const [status, setStatus] = useState<CatalogStatus>('active')
@@ -172,7 +177,7 @@ export function CatalogPage({
         {inventoryNote(active)}
       </p>
       {/* Switching the view remounts the block: the new one fades in. */}
-      <div key={view} data-late-enter="fade">
+      <div key={view} data-late-enter={enterView ? 'fade' : undefined}>
         {view === 'table' ? (
           <CatalogTable
             products={visible}

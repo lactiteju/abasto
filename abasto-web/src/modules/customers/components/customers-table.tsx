@@ -1,3 +1,4 @@
+import { LateEnter } from '#/components/layout/late-enter'
 import {
   Table,
   TableBody,
@@ -38,9 +39,12 @@ export function CustomersTable({
 }: CustomersTableProps) {
   if (customers.length === 0) {
     return (
-      <p className="animate-rise-in rounded-[14px] border border-dashed border-[#e6dfeb] bg-white px-[25px] py-[60px] text-center text-sm text-[#91757e]">
+      <LateEnter
+        as="p"
+        className="rounded-[14px] border border-dashed border-[#e6dfeb] bg-white px-[25px] py-[60px] text-center text-sm text-[#91757e]"
+      >
         No hay clientes que coincidan.
-      </p>
+      </LateEnter>
     )
   }
   return (

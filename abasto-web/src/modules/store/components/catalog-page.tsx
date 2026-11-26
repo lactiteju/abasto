@@ -1,6 +1,7 @@
 import { SearchIcon, XIcon } from 'lucide-react'
 import { useDeferredValue, useMemo } from 'react'
 
+import { LateEnter } from '#/components/layout/late-enter'
 import { cn } from '#/lib/utils/cn'
 import { BrandNav } from '#/modules/store/components/brand-nav'
 import { ProductCard } from '#/modules/store/components/product-card'
@@ -136,7 +137,7 @@ export function CatalogPage({
             ))}
           </div>
         ) : (
-          <div className="animate-rise-in rounded-2xl border border-dashed border-st-line-strong bg-st-card p-8 text-center">
+          <LateEnter className="rounded-2xl border border-dashed border-st-line-strong bg-st-card p-8 text-center">
             <p className="st-stencil text-lg">
               {catalog.length
                 ? 'Sin productos con ese filtro'
@@ -147,7 +148,7 @@ export function CatalogPage({
                 ? 'Prueba con otra palabra o quita la marca o la categoría.'
                 : 'Prueba con otro almacén o vuelve más tarde.'}
             </p>
-          </div>
+          </LateEnter>
         )}
       </div>
     </div>

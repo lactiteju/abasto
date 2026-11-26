@@ -31,7 +31,7 @@ type RowActionsMenuProps = {
 }
 
 const item =
-  'flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-ink-heading outline-none select-none data-disabled:cursor-default data-disabled:opacity-50 transition-colors duration-100 ease-out data-highlighted:bg-muted'
+  'flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-ink-heading outline-none select-none data-disabled:cursor-default data-disabled:opacity-50 data-highlighted:bg-muted'
 
 /** One «⋯» button per table row that opens the row's actions. */
 export function RowActionsMenu({ label, items }: RowActionsMenuProps) {

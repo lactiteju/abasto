@@ -104,7 +104,6 @@ function TabsContent({
 }: React.ComponentProps<typeof TabsPanel>) {
   return (
     <TabsPanel
-      data-slot="tabs-content"
       className={cn('flex-1 text-sm outline-none', className)}
       {...props}
     />

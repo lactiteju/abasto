@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 
+import { useHydrated } from '#/hooks/use-hydrated'
 import { cn } from '#/lib/utils/cn'
 import { formatCents } from '#/modules/pricing/lib/money'
 import {
@@ -32,10 +33,12 @@ const slotMin = 44
 const plotHeight = height - pad.top - pad.bottom
 /**
  * Bars grow from the baseline: `starting:` is their first style, so a bar
- * that already exists never replays. The scrub tooltip and hover add no motion.
+ * that already exists never replays. Only applied once hydrated, so the server
+ * HTML and a hard reload paint the bars static; bars that mount later (client
+ * navigation, a day gaining sales) grow. The scrub tooltip and hover add no motion.
  */
 const barGrow =
-  'origin-bottom [transform-box:fill-box] transition-[scale,opacity] duration-300 ease-(--ease-out) starting:scale-y-0 starting:opacity-0 motion-reduce:starting:scale-y-100'
+  'origin-bottom [transform-box:fill-box] transition-[scale,opacity] duration-(--duration-page) ease-(--ease-out) starting:scale-y-0 starting:opacity-0 motion-reduce:starting:scale-y-100'
 
 /** The first 8 days step by one stagger; later bars grow with the eighth. */
 const barDelay = (index: number) => ({
@@ -52,6 +55,7 @@ export function MonthlyDailyChart({ results, today }: Props) {
   const { days, byDay, through } = results
   const [ref, measured] = useElementWidth<HTMLDivElement>(1000)
   const [active, setActive] = useState<string | undefined>()
+  const grow = useHydrated()
   // A phone gets 44px touch targets and scrolls the card; wider screens fit.
   const slotFloor = measured < 700 ? slotMin : 26
   const minWidth = days.length * slotFloor + pad.left + pad.right
@@ -241,7 +245,7 @@ export function MonthlyDailyChart({ results, today }: Props) {
                         )}
                         rx={2}
                         style={barDelay(index)}
-                        className={cn('fill-primary', barGrow)}
+                        className={cn('fill-primary', grow && barGrow)}
                       />
                       <rect
                         x={cx + 1}
@@ -253,7 +257,10 @@ export function MonthlyDailyChart({ results, today }: Props) {
                         )}
                         rx={2}
                         style={barDelay(index)}
-                        className={cn('fill-secondary-foreground', barGrow)}
+                        className={cn(
+                          'fill-secondary-foreground',
+                          grow && barGrow,
+                        )}
                       />
                     </>
                   )}
